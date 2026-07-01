@@ -41,3 +41,15 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: background
+    uniqueID: 3974132725
+    locked: 0
+  - name: mine
+    uniqueID: 2742000685
+    locked: 0
+  - name: warehouse
+    uniqueID: 3738961591
+    locked: 0
+  - name: elevator
+    uniqueID: 2302334227
+    locked: 0
