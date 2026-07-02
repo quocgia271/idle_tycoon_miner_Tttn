@@ -1,20 +1,33 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class Gamemanager : MonoBehaviour
 {
+    public static Gamemanager Instance;
     public double IdleCash = 0;
 
-    // Start is called before the first frame update
-    void Start()
+    // Tạo một sự kiện (Event) báo hiệu khi tiền thay đổi
+    public Action<double> OnCashChanged;
+
+    void Awake()
     {
-        
+        // Setup Singleton
+        if (Instance == null) 
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    public void AddCash(double amount)
     {
+        IdleCash += amount;
+        Debug.Log("IdleCash: " + IdleCash); // In ra console để dễ test
         
+        // Phát sự kiện cho bất kỳ Script UI nào đang lắng nghe
+        OnCashChanged?.Invoke(IdleCash);
     }
 }
