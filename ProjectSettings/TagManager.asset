@@ -44,6 +44,9 @@ TagManager:
   - name: background
     uniqueID: 3974132725
     locked: 0
+  - name: ele_bg
+    uniqueID: 2109834211
+    locked: 0
   - name: mine
     uniqueID: 2742000685
     locked: 0
@@ -52,4 +55,7 @@ TagManager:
     locked: 0
   - name: elevator
     uniqueID: 2302334227
+    locked: 0
+  - name: highest
+    uniqueID: 3607076311
     locked: 0

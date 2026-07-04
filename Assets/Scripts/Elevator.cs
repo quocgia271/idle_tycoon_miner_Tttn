@@ -1,20 +1,22 @@
 using UnityEngine;
 using System.Collections;
 
-public class Elevator : MonoBehaviour
+public class Elevator : Facility
 {
-    public int Level = 1;
-    public double CurrentLoad = 0; // Lượng quặng đang chở trên thang máy
-    public double DroppedResource = 0; // Lượng quặng đã đổ ở thùng chứa trên mặt đất
+    public double CurrentLoad = 0; 
+    public double DroppedResource = 0; 
     
-    // Thông số cơ bản (Hào sẽ cân bằng sau)
-    public double Capacity = 50; 
-    public float MoveTime = 2f; // Thời gian đi lên/xuống (giây)
+    public double BaseCapacity = 50; 
+    // Sức chứa thang máy tăng trưởng tuyến tính theo cấp độ
+    public double Capacity => BaseCapacity * Level; 
 
-    public MineShaft mineShaft; // Kéo thả MineShaft vào đây trên Unity
+    public float MoveTime = 2f; 
 
-    void Start()
+    public MineShaft mineShaft; 
+
+    protected override void Start()
     {
+        base.Start(); // Gọi hàm Start của lớp cha Facility để cập nhật Text
         StartCoroutine(ElevatorRoutine());
     }
 
@@ -22,10 +24,8 @@ public class Elevator : MonoBehaviour
     {
         while (true)
         {
-            // 1. Thang máy chạy xuống hầm
             yield return new WaitForSeconds(MoveTime);
 
-            // 2. Lấy tài nguyên từ hầm
             if (mineShaft != null)
             {
                 double spaceLeft = Capacity - CurrentLoad;
@@ -33,16 +33,13 @@ public class Elevator : MonoBehaviour
                 CurrentLoad += collected;
             }
 
-            // 3. Thang máy chạy lên mặt đất
             yield return new WaitForSeconds(MoveTime);
 
-            // 4. Đổ tài nguyên vào thùng chứa mặt đất (Surface Bin)
             DroppedResource += CurrentLoad;
             CurrentLoad = 0;
         }
     }
 
-    // Nhà kho sẽ gọi hàm này để lấy tài nguyên từ thùng chứa mặt đất
     public double TakeResource(double amountToTake)
     {
         if (amountToTake > DroppedResource)
@@ -56,5 +53,11 @@ public class Elevator : MonoBehaviour
             DroppedResource -= amountToTake;
             return amountToTake;
         }
+    }
+
+    protected override void OnUpgraded()
+    {
+        // Sức chứa tự tăng nhờ biến Capacity.
+        // Có thể lập trình giảm MoveTime khi đạt cấp độ cao (chạy nhanh hơn)
     }
 }

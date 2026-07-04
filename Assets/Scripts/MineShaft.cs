@@ -1,20 +1,20 @@
 using UnityEngine;
 
-public class MineShaft : MonoBehaviour
+// Kế thừa Facility thay vì MonoBehaviour để có sẵn tính năng Nâng cấp
+public class MineShaft : Facility 
 {
-    public int Level = 1;
-    public double CurrentResource = 0; // Tài nguyên đang tích trữ dưới hầm
+    public double CurrentResource = 0; 
     
-    // Các thông số này Hào sẽ thay đổi công thức sau
-    public double ResourcePerSecond = 10; 
+    public double BaseResourcePerSecond = 10; 
+    
+    // Năng suất tăng theo Level (Code sạch, không cần cập nhật rườm rà)
+    public double ResourcePerSecond => BaseResourcePerSecond * Level; 
 
     void Update()
     {
-        // Tự động sinh tài nguyên theo thời gian (Tuần 2)
         CurrentResource += ResourcePerSecond * Time.deltaTime;
     }
 
-    // Thang máy sẽ gọi hàm này để lấy tài nguyên
     public double TakeResource(double amountToTake)
     {
         if (amountToTake > CurrentResource)
@@ -28,5 +28,12 @@ public class MineShaft : MonoBehaviour
             CurrentResource -= amountToTake;
             return amountToTake;
         }
+    }
+
+    // Logic xử lý thêm (nếu có) khi Hầm mỏ được nâng cấp
+    protected override void OnUpgraded()
+    {
+        // Vì ResourcePerSecond tính trực tiếp từ Level, nên nó tự động tăng.
+        // Có thể thêm hiệu ứng particle/âm thanh ở đây.
     }
 }

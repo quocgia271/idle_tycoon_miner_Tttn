@@ -1,18 +1,19 @@
 using UnityEngine;
 using System.Collections;
 
-public class Warehouse : MonoBehaviour
+public class Warehouse : Facility
 {
-    public int Level = 1;
-    
-    // Thông số cơ bản (Hào sẽ cân bằng sau)
-    public double Capacity = 40;
-    public float MoveTime = 3f; // Thời gian đi và về
+    public double BaseCapacity = 40;
+    // Sức chứa của nhà kho tự động scale theo Level
+    public double Capacity => BaseCapacity * Level;
 
-    public Elevator elevator; // Kéo thả Elevator vào đây trên Unity
+    public float MoveTime = 3f; 
 
-    void Start()
+    public Elevator elevator; 
+
+    protected override void Start()
     {
+        base.Start(); // Gọi hàm Start của lớp cha Facility để cập nhật Text
         StartCoroutine(WarehouseRoutine());
     }
 
@@ -20,24 +21,25 @@ public class Warehouse : MonoBehaviour
     {
         while (true)
         {
-            // 1. Xe goòng chạy từ Kho đến Thang máy
             yield return new WaitForSeconds(MoveTime);
 
             double collected = 0;
-            // 2. Lấy tài nguyên từ thùng chứa của Thang máy
             if (elevator != null)
             {
                 collected = elevator.TakeResource(Capacity);
             }
 
-            // 3. Xe goòng chạy về Kho
             yield return new WaitForSeconds(MoveTime);
 
-            // 4. Bán tài nguyên thành tiền và nạp vào GameManager
             if (Gamemanager.Instance != null && collected > 0)
             {
                 Gamemanager.Instance.AddCash(collected);
             }
         }
+    }
+
+    protected override void OnUpgraded()
+    {
+        // Chạy hiệu ứng nhà kho to ra, hoặc xe bự ra
     }
 }
