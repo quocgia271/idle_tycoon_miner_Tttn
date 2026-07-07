@@ -56,6 +56,9 @@ TagManager:
   - name: elevator
     uniqueID: 2302334227
     locked: 0
+  - name: miner
+    uniqueID: 2075612309
+    locked: 0
   - name: highest
     uniqueID: 3607076311
     locked: 0
