@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro; // Thêm thư viện này để dùng TextMeshPro
 
 // Kế thừa Facility thay vì MonoBehaviour để có sẵn tính năng Nâng cấp
 public class MineShaft : Facility 
@@ -10,23 +11,46 @@ public class MineShaft : Facility
     // Năng suất tăng theo Level (Code sạch, không cần cập nhật rườm rà)
     public double ResourcePerSecond => BaseResourcePerSecond * Level; 
 
-    void Update()
+    [Header("UI")]
+    public TextMeshProUGUI shaftCashText; // Hiển thị số tiền/tài nguyên hiện tại của hầm
+
+    protected override void Start()
     {
-        CurrentResource += ResourcePerSecond * Time.deltaTime;
+        base.Start(); // Gọi hàm Start của lớp cha (Facility) để update text Level
+        UpdateUI();
+    }
+
+    // Hàm này được gọi bởi con thợ mỏ sau khi nó đào xong
+    public void AddResource(double amount)
+    {
+        CurrentResource += amount;
+        UpdateUI();
     }
 
     public double TakeResource(double amountToTake)
     {
+        double taken = 0;
         if (amountToTake > CurrentResource)
         {
-            double taken = CurrentResource;
+            taken = CurrentResource;
             CurrentResource = 0;
-            return taken;
         }
         else
         {
             CurrentResource -= amountToTake;
-            return amountToTake;
+            taken = amountToTake;
+        }
+        
+        UpdateUI(); // Cập nhật lại UI sau khi thang máy lấy đi
+        return taken;
+    }
+
+    private void UpdateUI()
+    {
+        if (shaftCashText != null)
+        {
+            // Sử dụng CurrencyFormatter để hiển thị số mượt hơn (K, M, B)
+            shaftCashText.text = CurrencyFormatter.FormatMoney(CurrentResource);
         }
     }
 
