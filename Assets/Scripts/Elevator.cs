@@ -28,6 +28,7 @@ public class Elevator : Facility
     public ProgressBar progressBar; // Thanh hiển thị thời gian load
     public TextMeshProUGUI droppedResourceText; // Hiển thị số tiền xả ra
     public ProgressBar capacityBar; // Thanh UI hiển thị khối lượng chứa
+    public TextMeshProUGUI currentLoadText; // Hiển thị tiền trên thang máy (khối đi lên xuống)
 
     [Header("Data")]
     public double CurrentLoad = 0; 
@@ -59,6 +60,19 @@ public class Elevator : Facility
         if (capacityBar != null)
         {
             capacityBar.SetProgress((float)(CurrentLoad / Capacity));
+        }
+
+        if (currentLoadText != null)
+        {
+            if (CurrentLoad > 0)
+            {
+                currentLoadText.gameObject.SetActive(true);
+                currentLoadText.text = CurrencyFormatter.FormatMoney(CurrentLoad);
+            }
+            else
+            {
+                currentLoadText.gameObject.SetActive(false);
+            }
         }
     }
 
