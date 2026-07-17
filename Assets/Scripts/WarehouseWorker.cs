@@ -135,7 +135,7 @@ public class WarehouseWorker : MonoBehaviour
                 // Khi nạp xong đứng chờ, tự động quay mặt về phía thang máy để "ngóng" (scale x = -1)
                 currentScale.x = -Mathf.Abs(initialScale.x);
                 transform.localScale = currentScale;
-                FlipTextIfNeeded();
+                FlipUIIfNeeded();
                 break;
 
             case WorkerState.WalkingToElevator:
@@ -143,7 +143,7 @@ public class WarehouseWorker : MonoBehaviour
                 // Hướng mặt về bên trái (đi tới thang máy) (scale x = -1)
                 currentScale.x = -Mathf.Abs(initialScale.x);
                 transform.localScale = currentScale;
-                FlipTextIfNeeded();
+                FlipUIIfNeeded();
                 
                 // Ẩn text nếu đang đi lấy tiền
                 if (moneyText != null && !isFloatingText) 
@@ -165,7 +165,7 @@ public class WarehouseWorker : MonoBehaviour
                 // Hướng mặt về bên phải (đi nạp tiền) (scale x = 1)
                 currentScale.x = Mathf.Abs(initialScale.x);
                 transform.localScale = currentScale;
-                FlipTextIfNeeded();
+                FlipUIIfNeeded();
                 
                 // Show text số tiền đang giữ khi đi về kho
                 if (moneyText != null && currentLoad > 0)
@@ -193,23 +193,32 @@ public class WarehouseWorker : MonoBehaviour
         }
     }
 
-    private void FlipTextIfNeeded()
+    private void FlipUIIfNeeded()
     {
-        if (moneyText == null) return;
-        Vector3 tScale = moneyText.transform.localScale;
-        
-        // Tránh lỗi ngược chữ (Backface Culling làm chữ bị tàng hình) khi nhân vật bị lật Scale.
-        // Nhân vật đi về kho (bên phải -> Scale X dương) thì ta lật âm Scale chữ lại để nó vẫn hướng ra màn hình.
-        if (transform.localScale.x > 0)
+        if (moneyText != null)
         {
-            tScale.x = -Mathf.Abs(tScale.x);
+            Vector3 tScale = moneyText.transform.localScale;
+            // Logic cũ: Giữ nguyên cách lật của Text
+            if (transform.localScale.x > 0) tScale.x = -Mathf.Abs(tScale.x);
+            else tScale.x = Mathf.Abs(tScale.x);
+            moneyText.transform.localScale = tScale;
         }
-        else
+
+        if (progressBar != null)
         {
-            tScale.x = Mathf.Abs(tScale.x);
+            Vector3 pScale = progressBar.transform.localScale;
+            // Vì bản gốc Prefab của bạn được setup hiển thị đúng lúc nhân viên quay mặt sang trái (Scale -1)
+            // Nên khi nhân viên quay sang phải (Scale 1), ta phải lật (-) cái Progress Bar lại thì nó mới đúng chiều.
+            if (transform.localScale.x > 0)
+            {
+                pScale.x = -Mathf.Abs(pScale.x); // Ép ngược lại
+            }
+            else
+            {
+                pScale.x = Mathf.Abs(pScale.x); // Giữ nguyên dương
+            }
+            progressBar.transform.localScale = pScale;
         }
-        
-        moneyText.transform.localScale = tScale;
     }
 
     private void ResetTextState()
