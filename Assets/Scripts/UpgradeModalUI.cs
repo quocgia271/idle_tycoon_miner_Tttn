@@ -53,11 +53,30 @@ public class UpgradeModalUI : MonoBehaviour
         
         gameObject.SetActive(true);
         SetMultiplier(1); // Mặc định mở lên là mua x1 và bôi sáng nút x1
+
+        if (ModalPanel != null)
+        {
+            ModalPanel.DOKill(); // Ngắt animation cũ (nếu có)
+            ModalPanel.localScale = Vector3.zero; // Thu nhỏ về 0
+            ModalPanel.DOScale(Vector3.one, 0.25f).SetEase(Ease.OutBack).SetUpdate(true); // Tốc độ vừa phải, mượt mà (0.25s)
+        }
     }
 
     public void CloseModal()
     {
-        gameObject.SetActive(false);
+        if (ModalPanel != null)
+        {
+            ModalPanel.DOKill();
+            // Thu nhỏ lại cũng mượt hơn chút (0.15s)
+            ModalPanel.DOScale(Vector3.zero, 0.15f).SetEase(Ease.InBack).SetUpdate(true).OnComplete(() => 
+            {
+                gameObject.SetActive(false);
+            });
+        }
+        else
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     // Gắn vào các nút x1, x10, x50 trên UI

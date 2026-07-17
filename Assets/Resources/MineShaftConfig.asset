@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MineShaftConfig
   m_EditorClassIdentifier: 
   FacilityName: "H\u1EA7m M\u1ECF"
-  FacilityIcon: {fileID: 0}
+  FacilityIcon: {fileID: 1767042984, guid: 573decbdc79de0b428048494ad9b2153, type: 3}
   StatNames:
   - "T\u1ED5ng khai th\xE1c"
   - "S\u1EE9c ch\u1EE9a c\xF4ng nh\xE2n"

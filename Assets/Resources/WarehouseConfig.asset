@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WarehouseConfig
   m_EditorClassIdentifier: 
   FacilityName: "Nh\xE0 Kho"
-  FacilityIcon: {fileID: 0}
+  FacilityIcon: {fileID: -74492, guid: ca0bac7e03ad62d42a0d0bc781c056b1, type: 3}
   StatNames:
   - "T\u1ED5ng v\u1EADn chuy\u1EC3n"
   - "S\u1EE9c ch\u1EE9a xe \u0111\u1EA9y"
