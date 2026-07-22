@@ -20,9 +20,9 @@ public class Miner : MonoBehaviour
     public Transform startPos;
     public Transform digPos;
 
-    [Header("Settings")]
-    public float moveSpeed = 2f;
-    public float digTime = 2f; // Thời gian đào mỗi lần
+    // Tự động lấy tốc độ chạy và tốc độ đào từ Hầm mỏ để đồng bộ Level và Buff
+    public float moveSpeed => currentShaft != null ? currentShaft.GetMinerMoveSpeed(currentShaft.Level) : 2f;
+    public float digTime => currentShaft != null ? currentShaft.GetMinerDigTime(currentShaft.Level) : 2f;
 
     [Header("UI")]
     public ProgressBar progressBar; // Kéo thả cục Prefab chứa script ProgressBar vào đây

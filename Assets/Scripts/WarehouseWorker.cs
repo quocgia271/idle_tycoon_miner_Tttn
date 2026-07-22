@@ -15,6 +15,7 @@ public class WarehouseWorker : MonoBehaviour
 
     [Header("References")]
     public Warehouse warehouse; // Tham chiếu đến nhà kho quản lý nhân viên này
+    public Transform myDepositPos; // Điểm xếp hàng riêng cho từng nhân viên (nếu có)
     public Animator anim;
     public ProgressBar progressBar;
     public TextMeshProUGUI moneyText; // Text hiển thị tiền và bay lên
@@ -59,7 +60,8 @@ public class WarehouseWorker : MonoBehaviour
                 HandleLoading();
                 break;
             case WorkerState.WalkingToDeposit:
-                MoveTowards(warehouse.depositPos.position, WorkerState.Depositing);
+                Vector3 targetDep = myDepositPos != null ? myDepositPos.position : warehouse.depositPos.position;
+                MoveTowards(targetDep, WorkerState.Depositing);
                 break;
             case WorkerState.Depositing:
                 HandleDepositing();

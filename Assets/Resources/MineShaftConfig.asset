@@ -15,9 +15,11 @@ MonoBehaviour:
   FacilityName: "H\u1EA7m M\u1ECF"
   FacilityIcon: {fileID: 1767042984, guid: 573decbdc79de0b428048494ad9b2153, type: 3}
   StatNames:
-  - "T\u1ED5ng khai th\xE1c"
-  - "S\u1EE9c ch\u1EE9a c\xF4ng nh\xE2n"
-  - "T\u1ED1c \u0111\u1ED9 khai th\xE1c"
+  - "T\u1ED5ng Khai Th\xE1c"
+  - "S\u1ED1 Th\u1EE3 M\u1ECF"
+  - "T\u1ED1c \u0110\u1ED9 Di Chuy\u1EC3n"
+  - "T\u1ED1c \u0110\u1ED9 Cu\u1ED1c"
+  - "N\u0103ng Su\u1EA5t"
   BaseCost: 50
   CostMultiplier: 1.15
   BaseCapacity: 100

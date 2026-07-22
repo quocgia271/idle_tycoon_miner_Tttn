@@ -166,7 +166,8 @@ public class UpgradeModalUI : MonoBehaviour
         currentTotalCost = 0;
         for (int i = 0; i < upgradeMultiplier; i++)
         {
-            currentTotalCost += MathHelper.CalculateUpgradeCost(currentConfig.BaseCost, currentConfig.CostMultiplier, currentLevel + i);
+            double costForNextLevel = MathHelper.CalculateUpgradeCost(currentConfig.BaseCost, currentConfig.CostMultiplier, currentLevel + i);
+            currentTotalCost += costForNextLevel * currentFacility.UpgradeCostDiscount;
         }
         
         if (UpgradeCostText != null)
@@ -198,26 +199,7 @@ public class UpgradeModalUI : MonoBehaviour
         for (int i = 0; i < currentConfig.StatNames.Count; i++)
         {
             string statName = currentConfig.StatNames[i];
-            
-            string curVal = "0";
-            string nextVal = "0";
-            
-            if (i == 0) // Slot 1: Tổng Sản lượng
-            {
-                curVal = currentFacility.GetTotalThroughput(currentLevel).ToString("F1") + "/s";
-                nextVal = currentFacility.GetTotalThroughput(nextLevel).ToString("F1") + "/s";
-            }
-            else if (i == 1) // Slot 2: Sức chứa
-            {
-                curVal = Mathf.FloorToInt(currentFacility.GetCapacity(currentLevel)).ToString();
-                nextVal = Mathf.FloorToInt(currentFacility.GetCapacity(nextLevel)).ToString();
-            }
-            else if (i == 2) // Slot 3: Tốc độ
-            {
-                curVal = currentFacility.GetSpeed(currentLevel).ToString("F2");
-                nextVal = currentFacility.GetSpeed(nextLevel).ToString("F2");
-            }
-
+            var (curVal, nextVal) = currentFacility.GetStatDisplay(i, currentLevel, nextLevel);
             spawnedStats[i].Setup(statName, curVal, nextVal);
         }
     }

@@ -9,11 +9,48 @@ public class Warehouse : Facility
     
     [Header("Warehouse Settings")]
     public double BaseCapacity = 40;
-    // Sức chứa của 1 công nhân (Tạm tính bằng Capacity của kho, nếu nhiều công nhân sẽ tính phân bổ khác)
-    public double Capacity => BaseCapacity * Level;
     
-    public float moveSpeed = 3f;
-    public float loadTime = 2f;
+    [Header("Worker Settings")]
+    public int MaxWorkers = 5;
+    public float MaxMoveSpeed = 5f;
+    public float MinLoadTime = 0.5f;
+
+    [Header("Worker Spawn Settings")]
+    public WarehouseWorker workerPrefab;
+    public float spawnOffsetX = 0.5f;
+
+    public double Capacity => GetWorkerCapacity(Level);
+    public float moveSpeed => GetWorkerMoveSpeed(Level);
+    public float loadTime => GetWorkerLoadTime(Level);
+
+    public int GetWorkersCount(int targetLevel)
+    {
+        int count = 1 + (targetLevel / 10);
+        return Mathf.Min(count, MaxWorkers);
+    }
+
+    public float GetWorkerMoveSpeed(int targetLevel)
+    {
+        float speed = Config != null ? Config.BaseSpeed + (targetLevel * 0.05f) : 3f;
+        return Mathf.Min(speed, MaxMoveSpeed);
+    }
+
+    public float GetWorkerLoadTime(int targetLevel)
+    {
+        float time = 2f - (targetLevel * 0.01f);
+        return Mathf.Max(time, MinLoadTime);
+    }
+
+    public double GetWorkerCapacity(int targetLevel)
+    {
+        return BaseCapacity * targetLevel;
+    }
+
+    public double GetTotalThroughputDisplay(int targetLevel)
+    {
+        // Giả lập tổng vận chuyển (Sức chứa * Số lượng xe) / Thời gian trung bình
+        return (GetWorkerCapacity(targetLevel) * GetWorkersCount(targetLevel)) / (GetWorkerLoadTime(targetLevel) + 2f);
+    }
     
     public Elevator elevator; 
 
@@ -76,7 +113,66 @@ public class Warehouse : Facility
 
     protected override void OnUpgraded()
     {
-        // Chạy hiệu ứng nhà kho to ra, hoặc xe bự ra
-        // Bạn có thể code logic sinh thêm WarehouseWorker tại đây nếu đạt Level nhất định
+        CheckAndSpawnWorkers();
+    }
+
+    private void CheckAndSpawnWorkers()
+    {
+        if (workerPrefab == null || depositPos == null || elevatorPos == null) return;
+
+        int targetCount = GetWorkersCount(Level);
+        int requiredSpawns = targetCount - 1; // Luôn có 1 con gốc do bạn đặt tay
+
+        while (workers.Count < requiredSpawns)
+        {
+            int index = workers.Count + 1;
+            
+            // Xếp hàng lùi ra sau (theo trục X)
+            Vector3 spawnPos = depositPos.position + new Vector3(spawnOffsetX * index, 0, 0); 
+
+            WarehouseWorker newWorker = Instantiate(workerPrefab, spawnPos, Quaternion.identity, transform);
+            newWorker.warehouse = this;
+            
+            // Tạo 1 điểm chờ riêng để nó đi về đứng xếp hàng chứ không đè lên con gốc
+            GameObject tempDeposit = new GameObject($"DepositPos_Worker_{index}");
+            tempDeposit.transform.position = spawnPos;
+            tempDeposit.transform.SetParent(transform);
+
+            newWorker.myDepositPos = tempDeposit.transform;
+
+            workers.Add(newWorker);
+        }
+    }
+
+    public override (string curVal, string nextVal) GetStatDisplay(int statIndex, int currentLevel, int nextLevel)
+    {
+        string curVal = "0";
+        string nextVal = "0";
+        
+        switch (statIndex)
+        {
+            case 0: // Tổng vận chuyển
+                curVal = GetTotalThroughputDisplay(currentLevel).ToString("F1") + "/s";
+                nextVal = GetTotalThroughputDisplay(nextLevel).ToString("F1") + "/s";
+                break;
+            case 1: // Số lượng nhân viên
+                curVal = GetWorkersCount(currentLevel).ToString();
+                nextVal = GetWorkersCount(nextLevel).ToString();
+                break;
+            case 2: // Sức chứa 1 người
+                curVal = GetWorkerCapacity(currentLevel).ToString("F0");
+                nextVal = GetWorkerCapacity(nextLevel).ToString("F0");
+                break;
+            case 3: // Tốc độ di chuyển
+                curVal = GetWorkerMoveSpeed(currentLevel).ToString("F2");
+                nextVal = GetWorkerMoveSpeed(nextLevel).ToString("F2");
+                break;
+            case 4: // Tốc độ bốc vác (thời gian)
+                curVal = GetWorkerLoadTime(currentLevel).ToString("F2") + "s";
+                nextVal = GetWorkerLoadTime(nextLevel).ToString("F2") + "s";
+                break;
+        }
+
+        return (curVal, nextVal);
     }
 }

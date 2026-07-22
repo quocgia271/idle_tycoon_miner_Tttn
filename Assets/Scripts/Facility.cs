@@ -13,8 +13,11 @@ public abstract class Facility : MonoBehaviour
     [Header("UI Reference")]
     public TextMeshProUGUI UpgradeText; // Kéo thả cái Text bên trong Button vào đây
 
+    [Header("Manager Buffs")]
+    public float UpgradeCostDiscount = 1f;
+
     // Tự động tính toán chi phí hiện tại bằng cách gọi sang MathHelper
-    public double CurrentUpgradeCost => Config == null ? 0 : MathHelper.CalculateUpgradeCost(Config.BaseCost, Config.CostMultiplier, Level);
+    public double CurrentUpgradeCost => Config == null ? 0 : MathHelper.CalculateUpgradeCost(Config.BaseCost, Config.CostMultiplier, Level) * UpgradeCostDiscount;
 
     // Chạy lần đầu tiên khi mở game để cập nhật số Level 1 lên nút bấm
     protected virtual void Start()
@@ -92,5 +95,30 @@ public abstract class Facility : MonoBehaviour
     public virtual float GetTotalThroughput(int targetLevel)
     {
         return GetCapacity(targetLevel) * GetSpeed(targetLevel);
+    }
+
+    // 4. Lấy thông tin hiển thị UI (Cho phép lớp con tùy chỉnh)
+    public virtual (string curVal, string nextVal) GetStatDisplay(int statIndex, int currentLevel, int nextLevel)
+    {
+        string curVal = "0";
+        string nextVal = "0";
+        
+        if (statIndex == 0) // Slot 1: Tổng Sản lượng
+        {
+            curVal = GetTotalThroughput(currentLevel).ToString("F1") + "/s";
+            nextVal = GetTotalThroughput(nextLevel).ToString("F1") + "/s";
+        }
+        else if (statIndex == 1) // Slot 2: Sức chứa
+        {
+            curVal = Mathf.FloorToInt(GetCapacity(currentLevel)).ToString();
+            nextVal = Mathf.FloorToInt(GetCapacity(nextLevel)).ToString();
+        }
+        else if (statIndex == 2) // Slot 3: Tốc độ
+        {
+            curVal = GetSpeed(currentLevel).ToString("F2");
+            nextVal = GetSpeed(nextLevel).ToString("F2");
+        }
+
+        return (curVal, nextVal);
     }
 }
