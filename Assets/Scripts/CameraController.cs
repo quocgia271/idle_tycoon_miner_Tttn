@@ -40,6 +40,12 @@ public class CameraController : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
+            // Kiểm tra xem chuột có đang nằm trên UI không, và nếu có thì UI đó có cho phép kéo hay không
+            if (IsPointerOverUIBlockingPan())
+            {
+                return; // Chặn kéo camera nếu chạm trúng UI (như bảng Level Up, Modal)
+            }
+
             // Hủy hiệu ứng nảy nếu người chơi chạm vào lại
             transform.DOKill();
             
@@ -133,5 +139,32 @@ public class CameraController : MonoBehaviour
         Vector3 minCenter = new Vector3(camX, minY, camZ);
         Vector3 maxCenter = new Vector3(camX, maxY, camZ);
         Gizmos.DrawLine(minCenter, maxCenter);
+    }
+
+    private bool IsPointerOverUIBlockingPan()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current == null) return false;
+
+        // Bắn tia raycast xuyên qua các lớp UI
+        UnityEngine.EventSystems.PointerEventData eventData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current);
+        eventData.position = Input.mousePosition;
+
+        System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult> results = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+        UnityEngine.EventSystems.EventSystem.current.RaycastAll(eventData, results);
+
+        foreach (UnityEngine.EventSystems.RaycastResult result in results)
+        {
+            // Nếu trúng cái UI hoặc BẤT KỲ con nào của UI có gắn AllowPan (như Text, Icon nằm trong)
+            // thì bỏ qua, cho phép kéo camera tiếp tục
+            if (result.gameObject.GetComponentInParent<AllowPan>() != null)
+            {
+                continue;
+            }
+
+            // Nếu trúng bất kỳ UI nào khác (như Modal, Nút bấm không nằm trong AllowPan) thì block kéo camera
+            return true;
+        }
+
+        return false;
     }
 }

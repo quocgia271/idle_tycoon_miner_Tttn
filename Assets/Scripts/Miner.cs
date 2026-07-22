@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems; // Thêm thư viện để check click UI
 
 public class Miner : MonoBehaviour
 {
@@ -61,6 +62,13 @@ public class Miner : MonoBehaviour
 
     private void OnMouseDown()
     {
+        // Kiểm tra xem ngón tay/con trỏ chuột có đang nằm trên UI nào không
+        // Nếu có thì return luôn, không xử lý click vật lý của Hầm mỏ nữa
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
         Debug.Log("Miner clicked! Current state: " + currentState);
         // Chỉ cho phép click bắt đầu đi khi đang đứng chơi (Idle)
         if (currentState == MinerState.Idle)

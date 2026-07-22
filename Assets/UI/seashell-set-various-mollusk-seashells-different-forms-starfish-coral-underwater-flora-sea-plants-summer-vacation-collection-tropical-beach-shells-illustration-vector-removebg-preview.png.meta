@@ -1,0 +1,501 @@
+fileFormatVersion: 2
+guid: 6c019713c6575b0438900b76a7258c46
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_0
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 244
+        width: 79
+        height: 102
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b702067e4c325ff46bcd109cb7bc476d
+      internalID: 557094798
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_1
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 163
+        width: 110
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c8adb236b79e50f47b54cb55030d1230
+      internalID: 2134118060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_2
+      rect:
+        serializedVersion: 2
+        x: 105
+        y: 243
+        width: 129
+        height: 96
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 96046cd83ec20a8448ac81c6654e214f
+      internalID: -1100225372
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_3
+      rect:
+        serializedVersion: 2
+        x: 254
+        y: 262
+        width: 95
+        height: 80
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 05e161812f528f64b8b30c2511f55b83
+      internalID: 503361708
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_4
+      rect:
+        serializedVersion: 2
+        x: 377
+        y: 263
+        width: 115
+        height: 79
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 61c0b8382ab268a4b8f9a1a9b75b1712
+      internalID: -622883680
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_5
+      rect:
+        serializedVersion: 2
+        x: 445
+        y: 122
+        width: 78
+        height: 144
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3e04aaaa9e4f3724c98ce460f8406e70
+      internalID: -405623923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_6
+      rect:
+        serializedVersion: 2
+        x: 515
+        y: 259
+        width: 85
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c84e78650bb72da44aa5801c3c21589c
+      internalID: 1159986683
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_7
+      rect:
+        serializedVersion: 2
+        x: 162
+        y: 127
+        width: 109
+        height: 112
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b442642cc77324940934887a46ebd0ff
+      internalID: -1078796225
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_8
+      rect:
+        serializedVersion: 2
+        x: 282
+        y: 167
+        width: 111
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2bcca005c60d9c74f89396c73140aab5
+      internalID: -154185538
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_9
+      rect:
+        serializedVersion: 2
+        x: 383
+        y: 138
+        width: 62
+        height: 67
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fcf66bfd58f4ef944ba711048da2b6c6
+      internalID: -1175659542
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_10
+      rect:
+        serializedVersion: 2
+        x: 537
+        y: 152
+        width: 71
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ef59ae6a94f42d6438e5d4e56eeaa282
+      internalID: 1392324486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_11
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 7
+        width: 64
+        height: 157
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3549389052886f44183062bb81583fb6
+      internalID: -967032713
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_12
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 44
+        width: 69
+        height: 117
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1f31db5db4830ab4a8ef76c28a14937a
+      internalID: 36367564
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_13
+      rect:
+        serializedVersion: 2
+        x: 152
+        y: 2
+        width: 166
+        height: 127
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c74c54be5e5b4254191055cdda70dd1a
+      internalID: 1143746841
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_14
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 26
+        width: 82
+        height: 123
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 011edff15b03c5d42bbac599ef507fe8
+      internalID: 1880182409
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_15
+      rect:
+        serializedVersion: 2
+        x: 398
+        y: 10
+        width: 114
+        height: 122
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5de9e9d9d53bc9645939817a153e4d1b
+      internalID: 1603988644
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_16
+      rect:
+        serializedVersion: 2
+        x: 523
+        y: 34
+        width: 84
+        height: 100
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d5956870cc96da94ca3bd634780e3c08
+      internalID: -994241346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_0: 557094798
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_1: 2134118060
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_10: 1392324486
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_11: -967032713
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_12: 36367564
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_13: 1143746841
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_14: 1880182409
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_15: 1603988644
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_16: -994241346
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_2: -1100225372
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_3: 503361708
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_4: -622883680
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_5: -405623923
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_6: 1159986683
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_7: -1078796225
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_8: -154185538
+      seashell-set-various-mollusk-seashells-different-forms-starfish-coral-underwater-flora-sea-plants-summer-vacation-collection-tropical-beach-shells-illustration-vector-removebg-preview_9: -1175659542
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

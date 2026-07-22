@@ -5,6 +5,7 @@ public class UIManager : MonoBehaviour
 {
     [Header("UI Elements")]
     public TextMeshProUGUI cashText; // Kéo thả Text hiển thị tiền vào đây
+    public TextMeshProUGUI levelText; // Kéo thả Text hiển thị Level vào đây
 
     void Start()
     {
@@ -12,9 +13,11 @@ public class UIManager : MonoBehaviour
         if (Gamemanager.Instance != null)
         {
             Gamemanager.Instance.OnCashChanged += UpdateCashUI;
+            Gamemanager.Instance.OnLevelChanged += UpdateLevelUI;
             
             // Cập nhật giao diện lần đầu tiên lúc vừa vào game
             UpdateCashUI(Gamemanager.Instance.IdleCash);
+            UpdateLevelUI(Gamemanager.Instance.PlayerLevel);
         }
     }
 
@@ -24,6 +27,7 @@ public class UIManager : MonoBehaviour
         if (Gamemanager.Instance != null)
         {
             Gamemanager.Instance.OnCashChanged -= UpdateCashUI;
+            Gamemanager.Instance.OnLevelChanged -= UpdateLevelUI;
         }
     }
 
@@ -33,7 +37,16 @@ public class UIManager : MonoBehaviour
         if (cashText != null)
         {
             // Hiển thị số tiền kèm dấu $ và làm tròn 2 chữ số (VD: $150.50)
-            cashText.text = "$" + newCash.ToString("F2");
+            cashText.text = newCash.ToString("F2");
+        }
+    }
+
+    // Hàm này sẽ tự động được gọi mỗi khi level thay đổi
+    private void UpdateLevelUI(int newLevel)
+    {
+        if (levelText != null)
+        {
+            levelText.text = "Lv." + newLevel.ToString();
         }
     }
 }
