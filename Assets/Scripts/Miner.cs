@@ -44,6 +44,12 @@ public class Miner : MonoBehaviour
 
     private void Update()
     {
+        // Tự động di chuyển nếu hầm có người quản lý
+        if (currentState == MinerState.Idle && currentShaft != null && currentShaft.currentManager != null)
+        {
+            ChangeState(MinerState.WalkingToDig);
+        }
+
         switch (currentState)
         {
             case MinerState.WalkingToDig:

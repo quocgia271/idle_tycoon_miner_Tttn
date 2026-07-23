@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30bd6a6af4be8954790a96189cd13a06, type: 3}
+  m_Name: ManagerConfig
+  m_EditorClassIdentifier: 
+  BuffVisuals:
+  - BuffType: 2
+    SkillIcon: {fileID: 21300000, guid: 34ad4b1600ff93d439f349b4ae27074e, type: 3}
+  - BuffType: 0
+    SkillIcon: {fileID: 21300000, guid: 359f30fba39a81a4bb5ff4ea01327de0, type: 3}
+  - BuffType: 1
+    SkillIcon: {fileID: 21300000, guid: aee166ec6945f7c4c982aa9eb436e097, type: 3}
+  CharacterVisuals:
+  - CharacterID: Char1
+    AvatarStatic: {fileID: -1240147884, guid: 2682caaed46ba444b9110d902da7a04b, type: 3}
+    AnimationFrames:
+    - {fileID: -1240147884, guid: 2682caaed46ba444b9110d902da7a04b, type: 3}
+    - {fileID: -673173462, guid: 2682caaed46ba444b9110d902da7a04b, type: 3}
+    - {fileID: 1681801197, guid: 2682caaed46ba444b9110d902da7a04b, type: 3}
+    - {fileID: -1910401953, guid: 2682caaed46ba444b9110d902da7a04b, type: 3}
+    - {fileID: 2143679236, guid: 2682caaed46ba444b9110d902da7a04b, type: 3}
+    - {fileID: 1360767260, guid: 2682caaed46ba444b9110d902da7a04b, type: 3}
+    - {fileID: -646640600, guid: 2682caaed46ba444b9110d902da7a04b, type: 3}
+  - CharacterID: Char2
+    AvatarStatic: {fileID: 1025292862, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+    AnimationFrames:
+    - {fileID: 1025292862, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+    - {fileID: 94592471, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+    - {fileID: 856141176, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+    - {fileID: -569742263, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+    - {fileID: -949853204, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+    - {fileID: -805368528, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+    - {fileID: 2015657052, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+    - {fileID: -823697769, guid: 57c117644f960444c9c7260bafaa59f7, type: 3}
+  PityThreshold: 10
+  RaritySettings:
+  - Rarity: 0
+    Weight: 72
+    MinBuffValue: 5
+    MaxBuffValue: 7
+    MinDuration: 3
+    MaxDuration: 10
+    MinCooldown: 10
+    MaxCooldown: 20
+  - Rarity: 1
+    Weight: 35
+    MinBuffValue: 2
+    MaxBuffValue: 5
+    MinDuration: 2
+    MaxDuration: 10
+    MinCooldown: 10
+    MaxCooldown: 40
+  - Rarity: 2
+    Weight: 3
+    MinBuffValue: 2
+    MaxBuffValue: 10
+    MinDuration: 2
+    MaxDuration: 10
+    MinCooldown: 30
+    MaxCooldown: 90

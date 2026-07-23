@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro; // Thêm thư viện này để dùng TextMeshPro
 using System.Collections.Generic; // Thêm thư viện dùng List
+using DG.Tweening; // Thư viện tạo hiệu ứng DOTween
 
 // Kế thừa Facility thay vì MonoBehaviour để có sẵn tính năng Nâng cấp
 public class MineShaft : Facility 
@@ -20,6 +21,16 @@ public class MineShaft : Facility
     public Transform minerDigPos;
     public float spawnOffsetX = 0.5f;
     private List<Miner> activeMiners = new List<Miner>();
+
+    [Header("Manager Settings")]
+    public SimpleSpriteAnimator WorldManagerAnimator; // Kéo object nhân vật có sẵn ngoài hầm vào đây
+    public Transform EmptyManagerLine; // Kéo ảnh "Line" (chưa có quản lý) vào đây để làm hiệu ứng nhịp đập
+
+
+    public ManagerData currentManager;
+    public bool IsSkillActive = false;
+    public float SkillTimer = 0f;
+    public float CooldownTimer = 0f;
 
 
     // Các buff này sẽ nằm chung dưới thẻ Manager Buffs của lớp cha Facility
@@ -64,14 +75,231 @@ public class MineShaft : Facility
 
     [Header("UI")]
     public TextMeshProUGUI shaftCashText; // Hiển thị số tiền/tài nguyên hiện tại của hầm
+    
+    [Header("World Space Manager UI")]
+    public UnityEngine.UI.Button worldSkillButton;
+    public TextMeshProUGUI worldSkillTimerText;
+    public UnityEngine.UI.Image worldSkillIconImage; // Ảnh Icon của kỹ năng
+
+    private Sprite defaultManagerSprite; // Lưu lại ảnh viền gốc
 
     protected override void Start()
     {
         base.Start(); // Gọi hàm Start của lớp cha (Facility) để update text Level
+        
+        // Sửa lỗi: Unity tự động khởi tạo class [Serializable] làm hầm bị kẹt một quản lý "ảo" từ đầu
+        currentManager = null; 
+
+        // Lưu lại ảnh viền ban đầu
+        if (WorldManagerAnimator != null)
+        {
+            var img = WorldManagerAnimator.GetComponent<UnityEngine.UI.Image>();
+            if (img != null) defaultManagerSprite = img.sprite;
+            else
+            {
+                var sr = WorldManagerAnimator.GetComponent<SpriteRenderer>();
+                if (sr != null) defaultManagerSprite = sr.sprite;
+            }
+        }
+
         UpdateUI();
 
-        // Không gọi CheckAndSpawnMiners() ở đây nữa để tránh đẻ thêm lúc mới vào game
-        // Hầm đã có sẵn 1 người gốc do bạn đặt tay.
+        // Đăng ký sự kiện cho nút Kích hoạt kỹ năng WorldSpace
+        if (worldSkillButton != null)
+        {
+            worldSkillButton.onClick.AddListener(ActivateManagerSkill);
+            UpdateWorldSkillUI(); // Cập nhật hiển thị ban đầu
+        }
+
+        // Gọi hàm này để nó set trạng thái DOTween đập nhịp và tắt quản lý ảo lúc mới vào game
+        SpawnManagerVisual();
+        
+        if (worldSkillIconImage == null)
+        {
+            Debug.LogWarning("Chú ý: Hầm mỏ chưa được kéo Ảnh Icon Kỹ Năng vào ô 'World Skill Icon Image' trong Inspector!");
+        }
+    }
+
+    private void Update()
+    {
+        if (currentManager == null) 
+        {
+            if (worldSkillButton != null && worldSkillButton.gameObject.activeSelf)
+                worldSkillButton.gameObject.SetActive(false); // Ẩn nút nếu không có quản lý
+            return;
+        }
+        else
+        {
+            if (worldSkillButton != null && !worldSkillButton.gameObject.activeSelf)
+                worldSkillButton.gameObject.SetActive(true); // Hiện nút nếu có quản lý
+        }
+
+        if (IsSkillActive)
+        {
+            SkillTimer -= Time.deltaTime;
+            if (SkillTimer <= 0)
+            {
+                IsSkillActive = false;
+                CooldownTimer = currentManager.CooldownDuration;
+                RemoveManagerBuff();
+            }
+            UpdateWorldSkillUI();
+        }
+        else if (CooldownTimer > 0)
+        {
+            CooldownTimer -= Time.deltaTime;
+            UpdateWorldSkillUI();
+        }
+    }
+
+    private void UpdateWorldSkillUI()
+    {
+        if (worldSkillButton == null || worldSkillTimerText == null) return;
+
+        // Nếu không có quản lý, tắt luôn text
+        if (currentManager == null)
+        {
+            worldSkillTimerText.gameObject.SetActive(false);
+            return;
+        }
+
+        if (IsSkillActive)
+        {
+            worldSkillButton.interactable = false;
+            worldSkillTimerText.gameObject.SetActive(true);
+            worldSkillTimerText.text = $"{Mathf.CeilToInt(SkillTimer)}s";
+        }
+        else if (CooldownTimer > 0)
+        {
+            worldSkillButton.interactable = false;
+            worldSkillTimerText.gameObject.SetActive(true);
+            worldSkillTimerText.text = $"{Mathf.CeilToInt(CooldownTimer)}s";
+        }
+        else
+        {
+            worldSkillButton.interactable = true;
+            worldSkillTimerText.gameObject.SetActive(false); // Ẩn Text đi khi sẵn sàng
+        }
+    }
+
+    public void AssignManager(ManagerData manager)
+    {
+        currentManager = manager;
+        IsSkillActive = false;
+        SkillTimer = 0f;
+        CooldownTimer = 0f;
+        
+        SpawnManagerVisual();
+        
+        RemoveManagerBuff();
+        UpdateWorldSkillUI();
+    }
+
+    public void RemoveManager()
+    {
+        currentManager = null;
+        IsSkillActive = false;
+        SkillTimer = 0f;
+        CooldownTimer = 0f;
+        
+        SpawnManagerVisual(); // Sẽ tắt hiển thị nhân vật vì currentManager = null
+        
+        RemoveManagerBuff();
+        UpdateWorldSkillUI();
+    }
+
+    private void SpawnManagerVisual()
+    {
+        if (ManagerController.Instance == null || ManagerController.Instance.Config == null) return;
+
+        if (currentManager != null)
+        {
+            if (WorldManagerAnimator != null)
+            {
+                WorldManagerAnimator.gameObject.SetActive(true);
+                var charVis = ManagerController.Instance.Config.GetCharacterVisual(currentManager.CharacterID);
+                if (charVis != null && charVis.AnimationFrames != null && charVis.AnimationFrames.Length > 0)
+                {
+                    WorldManagerAnimator.enabled = true; // Bật animation
+                    WorldManagerAnimator.frames = charVis.AnimationFrames;
+                    
+                    var sr = WorldManagerAnimator.GetComponent<SpriteRenderer>();
+                    if (sr != null) sr.sprite = charVis.AnimationFrames[0];
+                    var img = WorldManagerAnimator.GetComponent<UnityEngine.UI.Image>();
+                    if (img != null) img.sprite = charVis.AnimationFrames[0];
+                }
+                
+                // Tắt hiệu ứng nhịp đập vì đã có quản lý
+                WorldManagerAnimator.transform.DOKill();
+                WorldManagerAnimator.transform.localScale = Vector3.one;
+            }
+            
+            // Đổi Icon nút Kỹ năng ngoài World
+            if (worldSkillIconImage != null)
+            {
+                worldSkillIconImage.sprite = ManagerController.Instance.Config.GetSkillIcon(currentManager.BuffType);
+            }
+        }
+        else
+        {
+            if (WorldManagerAnimator != null)
+            {
+                WorldManagerAnimator.gameObject.SetActive(true); // Vẫn bật object để hiển thị viền
+                WorldManagerAnimator.enabled = false; // Tắt script animation để khỏi đè hình
+
+                // Khôi phục lại ảnh viền gốc ban đầu (nếu lưu được lúc Start)
+                var sr = WorldManagerAnimator.GetComponent<SpriteRenderer>();
+                if (sr != null && defaultManagerSprite != null) sr.sprite = defaultManagerSprite;
+                var img = WorldManagerAnimator.GetComponent<UnityEngine.UI.Image>();
+                if (img != null && defaultManagerSprite != null) img.sprite = defaultManagerSprite;
+
+                // Bật hiệu ứng nhịp đập cho ảnh viền
+                WorldManagerAnimator.transform.DOKill();
+                WorldManagerAnimator.transform.localScale = Vector3.one;
+                WorldManagerAnimator.transform.DOScale(1.1f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+            }
+        }
+    }
+
+    public void ActivateManagerSkill()
+    {
+        if (currentManager != null && !IsSkillActive && CooldownTimer <= 0)
+        {
+            IsSkillActive = true;
+            SkillTimer = currentManager.BuffDuration;
+            ApplyManagerBuff();
+            UpdateWorldSkillUI();
+        }
+    }
+
+    private void ApplyManagerBuff()
+    {
+        if (currentManager == null) return;
+        
+        float buffMultiplier = 1f + (currentManager.BuffValue / 100f);
+        float costDiscount = 1f - (currentManager.BuffValue / 100f);
+
+        switch (currentManager.BuffType)
+        {
+            case ManagerBuffType.MoveSpeed:
+                MinerMoveSpeedBuff = buffMultiplier;
+                break;
+            case ManagerBuffType.MiningSpeed:
+                MinerDigSpeedBuff = buffMultiplier;
+                break;
+            case ManagerBuffType.ReduceCost:
+                UpgradeCostDiscount = Mathf.Max(0.1f, costDiscount); // Giảm tối đa 90%
+                UpdateUpgradeUI(); // Update UI cost
+                break;
+        }
+    }
+
+    private void RemoveManagerBuff()
+    {
+        MinerMoveSpeedBuff = 1f;
+        MinerDigSpeedBuff = 1f;
+        UpgradeCostDiscount = 1f;
+        UpdateUpgradeUI();
     }
 
     // Hàm này được gọi bởi con thợ mỏ sau khi nó đào xong
@@ -178,5 +406,28 @@ public class MineShaft : Facility
         }
 
         return (curVal, nextVal);
+    }
+
+    // Hàm gọi từ Button UI của Hầm mỏ để mở bảng Quản lý
+    public void OpenManagerModal()
+    {
+        Debug.Log("Đang gọi lệnh mở Modal Quản lý...");
+        // Khắc phục lỗi nếu UI Modal bị tắt (Inactive) từ đầu khiến Awake không chạy được
+        ManagerModalUI modal = ManagerModalUI.Instance;
+        if (modal == null)
+        {
+            modal = FindObjectOfType<ManagerModalUI>(true);
+        }
+
+        if (modal != null)
+        {
+            modal.gameObject.SetActive(true); // Bật GameObject lên trước
+            modal.OpenModal(this);
+            Debug.Log("Đã bật Modal Quản lý thành công.");
+        }
+        else
+        {
+            Debug.LogError("Chưa kéo ManagerModalUI vào scene hoặc đã bị xóa!");
+        }
     }
 }

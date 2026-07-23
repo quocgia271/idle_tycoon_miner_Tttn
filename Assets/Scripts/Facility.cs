@@ -62,7 +62,7 @@ public abstract class Facility : MonoBehaviour
     }
 
     // Hàm chuyên dùng để đổi chữ trên nút bấm
-    private void UpdateUpgradeUI()
+    protected virtual void UpdateUpgradeUI()
     {
         if (UpgradeText != null)
         {
