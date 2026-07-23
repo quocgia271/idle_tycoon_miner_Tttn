@@ -48,7 +48,7 @@ public class ManagerItemUI : MonoBehaviour
         {
             case ManagerRarity.Junior: RarityText.text = "Trẻ tuổi"; break;
             case ManagerRarity.Director: RarityText.text = "Giám đốc"; break;
-            case ManagerRarity.Senior: RarityText.text = "Cấp cao"; break;
+            case ManagerRarity.Senior: RarityText.text = $"Cấp cao_{data.SupportType}"; break;
         }
 
         string buffDesc = "";

@@ -20,6 +20,8 @@ public class ManagerModalUI : MonoBehaviour
     public TextMeshProUGUI TopDurationText; // Hiển thị thời gian đếm ngược hoặc thời gian gốc
     public Button UnassignButton;
 
+    [Header("Sell Modal")]
+    public SellManagerModalUI SellModal;
 
     [Header("Scroll View (Inventory)")]
     public Transform InventoryContent;
@@ -163,7 +165,7 @@ public class ManagerModalUI : MonoBehaviour
             {
                 case ManagerRarity.Junior: TopRarityText.text = "Trẻ tuổi"; break;
                 case ManagerRarity.Director: TopRarityText.text = "Giám đốc"; break;
-                case ManagerRarity.Senior: TopRarityText.text = "Cấp cao"; break;
+                case ManagerRarity.Senior: TopRarityText.text = $"Cấp cao_{md.SupportType}"; break;
             }
 
             string buffDesc = "";
@@ -310,6 +312,20 @@ public class ManagerModalUI : MonoBehaviour
 
     public void OnSellManager(ManagerData manager, GameObject itemObj)
     {
+        Debug.Log($"OnSellManager called for {manager.Name}. SellModal is {(SellModal != null ? "Assigned" : "NULL")}");
+        if (SellModal != null)
+        {
+            SellModal.Setup(manager, this);
+        }
+        else
+        {
+            ExecuteSellManager(manager);
+        }
+    }
+
+    public void ExecuteSellManager(ManagerData manager)
+    {
+        Debug.Log($"ExecuteSellManager called for {manager.Name}");
         // Nếu quản lý này đang được gán ở hầm hiện tại, phải tháo ra
         if (currentShaft != null && currentShaft.currentManager == manager)
         {
@@ -318,6 +334,8 @@ public class ManagerModalUI : MonoBehaviour
 
         ManagerController.Instance.SellManager(manager);
         RefreshBottomPanel(); // Cập nhật có thể bấm đc Hire ko (vì vừa cộng tiền)
+        RefreshInventory();   // Refresh danh sách sau khi bán
+        Debug.Log("ExecuteSellManager completed!");
     }
 
     private void OnHireButtonClicked()

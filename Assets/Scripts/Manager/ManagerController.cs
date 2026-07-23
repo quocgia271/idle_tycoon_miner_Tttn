@@ -121,6 +121,9 @@ public class ManagerController : MonoBehaviour
         // Random Buff Type
         md.BuffType = (ManagerBuffType)Random.Range(0, 3); // 0: Mining, 1: Move, 2: Cost
 
+        // Mặc định mua ra đều là None
+        md.SupportType = SeniorSupportType.None;
+
         // Gán chỉ số từ SO
         var setting = Config.GetRaritySetting(md.Rarity);
         if (setting != null)
