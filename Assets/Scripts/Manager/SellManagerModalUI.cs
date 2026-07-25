@@ -65,7 +65,9 @@ public class SellManagerModalUI : MonoBehaviour
             {
                 case ManagerRarity.Junior: RarityText.text = "Trẻ tuổi"; break;
                 case ManagerRarity.Director: RarityText.text = "Giám đốc"; break;
-                case ManagerRarity.Senior: RarityText.text = $"Cấp cao_{data.SupportType}"; break;
+                case ManagerRarity.Senior: 
+                    RarityText.text = $"Cấp cao ({data.AssignedFacilityType}) - {data.SpecialFeature}"; 
+                    break;
             }
         }
 

@@ -42,7 +42,7 @@ public class ManagerModalUI : MonoBehaviour
 
     public static ManagerModalUI Instance { get; private set; }
 
-    private MineShaft currentShaft;
+    private Facility currentFacility;
     private ManagerBuffType? currentFilter = null;
 
     private void Awake()
@@ -78,16 +78,31 @@ public class ManagerModalUI : MonoBehaviour
         RefreshPityText();
     }
 
-    // Đã xóa hàm Update vì Modal không cần đếm ngược thời gian (đếm ngược chỉ ở WorldSpace)
-    public void OpenModal(MineShaft shaft)
+    private void Update()
     {
-        Debug.Log($"Bắt đầu OpenModal cho hầm: {shaft.gameObject.name}");
-        currentShaft = shaft;
+        // Liên tục kiểm tra xem tiền hiện tại có đủ để bật nút Thuê không
+        if (currentFacility != null && ManagerController.Instance != null && Gamemanager.Instance != null)
+        {
+            double price = ManagerController.Instance.GetCurrentHireCost(currentFacility.GetFacilityType());
+            bool canHire = Gamemanager.Instance.IdleCash >= price;
+            HireButton.interactable = canHire;
+
+            if (HirePriceText != null)
+            {
+                HirePriceText.color = canHire ? Color.white : Color.red;
+            }
+        }
+    }
+
+    public void OpenModal(Facility facility)
+    {
+        Debug.Log($"Bắt đầu OpenModal cho: {facility.gameObject.name}");
+        currentFacility = facility;
         gameObject.SetActive(true);
 
         if (ShaftTitleText != null)
         {
-            ShaftTitleText.text = $"Quản lý {shaft.gameObject.name}";
+            ShaftTitleText.text = $"Quản lý {facility.gameObject.name}";
         }
         else
         {
@@ -124,24 +139,24 @@ public class ManagerModalUI : MonoBehaviour
             {
                 Debug.Log("Tắt gameObject sau khi chạy xong animation.");
                 gameObject.SetActive(false);
-                currentShaft = null;
+                currentFacility = null;
             });
         }
         else
         {
             Debug.Log("Tắt gameObject ngay lập tức (không có ModalPanel).");
             gameObject.SetActive(false);
-            currentShaft = null;
+            currentFacility = null;
         }
     }
 
     private void RefreshTopPanel()
     {
-        if (currentShaft.currentManager != null)
+        if (currentFacility.currentManager != null)
         {
             AssignedManagerPanel.SetActive(true);
 
-            ManagerData md = currentShaft.currentManager;
+            ManagerData md = currentFacility.currentManager;
             TopNameText.text = md.Name;
 
             if (Config != null)
@@ -165,13 +180,17 @@ public class ManagerModalUI : MonoBehaviour
             {
                 case ManagerRarity.Junior: TopRarityText.text = "Trẻ tuổi"; break;
                 case ManagerRarity.Director: TopRarityText.text = "Giám đốc"; break;
-                case ManagerRarity.Senior: TopRarityText.text = $"Cấp cao_{md.SupportType}"; break;
+                case ManagerRarity.Senior: 
+                    TopRarityText.text = $"Cấp cao ({md.AssignedFacilityType}) - {md.SpecialFeature}"; 
+                    break;
             }
 
             string buffDesc = "";
             switch (md.BuffType)
             {
-                case ManagerBuffType.MiningSpeed: buffDesc = $"Tăng tốc đào: +{md.BuffValue:F1}%"; break;
+                case ManagerBuffType.MiningSpeed: 
+                    buffDesc = md.AssignedFacilityType == FacilityType.MineShaft ? $"Tăng tốc đào: +{md.BuffValue:F1}%" : $"Tốc độ chất hàng: +{md.BuffValue:F1}%";
+                    break;
                 case ManagerBuffType.MoveSpeed: buffDesc = $"Tốc di chuyển: +{md.BuffValue:F1}%"; break;
                 case ManagerBuffType.ReduceCost: buffDesc = $"Giảm chi phí: {md.BuffValue:F1}%"; break;
             }
@@ -187,24 +206,20 @@ public class ManagerModalUI : MonoBehaviour
 
     private void RefreshBottomPanel()
     {
-        if (ManagerController.Instance != null)
+        if (ManagerController.Instance != null && currentFacility != null)
         {
-            double price = ManagerController.Instance.GetCurrentHireCost();
+            double price = ManagerController.Instance.GetCurrentHireCost(currentFacility.GetFacilityType());
             HirePriceText.text = "Thuê: " + CurrencyFormatter.FormatMoney(price);
-            
-            // Có thể làm mờ nút thuê nếu không đủ tiền
-            if (Gamemanager.Instance != null)
-            {
-                HireButton.interactable = Gamemanager.Instance.IdleCash >= price;
-            }
         }
     }
 
     private void RefreshPityText()
     {
-        if (PityCountdownText != null && ManagerController.Instance != null)
+        if (PityCountdownText != null && ManagerController.Instance != null && currentFacility != null)
         {
-            PityCountdownText.text = $"Quay {ManagerController.Instance.HiresUntilPity} lần nữa chắc chắn nhận Cấp Cao!";
+            int pity = ManagerController.Instance.HiresUntilPitys.ContainsKey(currentFacility.GetFacilityType()) 
+                ? ManagerController.Instance.HiresUntilPitys[currentFacility.GetFacilityType()] : 10;
+            PityCountdownText.text = $"Quay {pity} lần nữa chắc chắn nhận Cấp Cao!";
         }
     }
 
@@ -223,11 +238,9 @@ public class ManagerModalUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        if (ManagerController.Instance == null) return;
+        if (ManagerController.Instance == null || currentFacility == null) return;
 
-        List<ManagerData> managers = currentFilter.HasValue 
-            ? ManagerController.Instance.GetManagersByFilter(currentFilter.Value) 
-            : ManagerController.Instance.OwnedManagers;
+        List<ManagerData> managers = ManagerController.Instance.GetManagersByFilter(currentFacility.GetFacilityType(), currentFilter);
 
         foreach (var md in managers)
         {
@@ -240,7 +253,16 @@ public class ManagerModalUI : MonoBehaviour
 
     private void SetFilter(ManagerBuffType? filterType)
     {
-        currentFilter = filterType;
+        // Nếu bấm lại vào chính filter đang chọn -> Tắt filter (hiện toàn bộ)
+        if (currentFilter == filterType && filterType != null)
+        {
+            currentFilter = null;
+        }
+        else
+        {
+            currentFilter = filterType;
+        }
+
         UpdateFilterButtonVisuals();
         RefreshInventory();
     }
@@ -279,19 +301,18 @@ public class ManagerModalUI : MonoBehaviour
 
     public void OnAssignManager(ManagerData manager)
     {
-        if (currentShaft != null)
+        if (currentFacility != null)
         {
             // Nếu hầm đang có quản lý thì phải tháo ra trước
-            if (currentShaft.currentManager != null)
+            if (currentFacility.currentManager != null)
             {
-                currentShaft.currentManager.IsAssigned = false;
-                currentShaft.RemoveManager();
+                currentFacility.currentManager.IsAssigned = false;
+                currentFacility.RemoveManager();
             }
 
             // Gán quản lý mới
             manager.IsAssigned = true;
-            // TODO: Gán AssignedShaftId nếu MineShaft có ID
-            currentShaft.AssignManager(manager);
+            currentFacility.AssignManager(manager);
 
             RefreshTopPanel();
             RefreshInventory(); // Cập nhật lại nút Gán bị mờ
@@ -300,10 +321,10 @@ public class ManagerModalUI : MonoBehaviour
 
     public void OnUnassignClicked()
     {
-        if (currentShaft != null && currentShaft.currentManager != null)
+        if (currentFacility != null && currentFacility.currentManager != null)
         {
-            currentShaft.currentManager.IsAssigned = false;
-            currentShaft.RemoveManager();
+            currentFacility.currentManager.IsAssigned = false;
+            currentFacility.RemoveManager();
             
             RefreshTopPanel();
             RefreshInventory();
@@ -327,7 +348,7 @@ public class ManagerModalUI : MonoBehaviour
     {
         Debug.Log($"ExecuteSellManager called for {manager.Name}");
         // Nếu quản lý này đang được gán ở hầm hiện tại, phải tháo ra
-        if (currentShaft != null && currentShaft.currentManager == manager)
+        if (currentFacility != null && currentFacility.currentManager == manager)
         {
             OnUnassignClicked();
         }
@@ -340,7 +361,9 @@ public class ManagerModalUI : MonoBehaviour
 
     private void OnHireButtonClicked()
     {
-        if (ManagerController.Instance.HireManager())
+        if (currentFacility == null) return;
+        
+        if (ManagerController.Instance.HireManager(currentFacility.GetFacilityType()))
         {
             RefreshBottomPanel(); // Cập nhật giá thuê mới
         }

@@ -18,11 +18,10 @@ public enum ManagerBuffType
 }
 
 [Serializable]
-public enum SeniorSupportType
+public enum SeniorSpecialFeature
 {
-    None,       // Không có cơ chế hỗ trợ hầm
-    Oxygen,     // Cơ chế hỗ trợ oxi
-    Maintenance // Cơ chế hỗ trợ bảo trì
+    None,           // Không có tính năng đặc biệt
+    SpecialFeature  // Có tính năng đặc biệt riêng biệt tùy theo Facility (Ví dụ: Oxi ở Hầm, Bảo trì ở Thang máy, v.v.)
 }
 
 [Serializable]
@@ -33,9 +32,10 @@ public class ManagerData
     public string CharacterID; // Dùng để tra cứu hình ảnh/animation trong SO
     public ManagerRarity Rarity;
     public ManagerBuffType BuffType;
+    public FacilityType AssignedFacilityType;
     
-    [Tooltip("Dành cho quản lý cấp cao (Senior): Cơ chế hỗ trợ hầm")]
-    public SeniorSupportType SupportType;
+    [Tooltip("Dành cho quản lý cấp cao (Senior): Có tính năng đặc biệt hay không?")]
+    public SeniorSpecialFeature SpecialFeature;
     
     [Tooltip("Chỉ số phần trăm được cộng. Ví dụ: 5 nghĩa là +5%")]
     public float BuffValue; 

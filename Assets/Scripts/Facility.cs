@@ -1,5 +1,14 @@
 using UnityEngine;
 using TMPro; // Khai báo sử dụng TextMeshPro
+using UnityEngine.UI;
+using DG.Tweening;
+
+public enum FacilityType
+{
+    MineShaft,
+    Elevator,
+    Warehouse
+}
 
 // Lớp cha trừu tượng (Abstract) quản lý mọi thông số chung cho việc Nâng cấp
 public abstract class Facility : MonoBehaviour
@@ -16,6 +25,25 @@ public abstract class Facility : MonoBehaviour
     [Header("Manager Buffs")]
     public float UpgradeCostDiscount = 1f;
 
+    public abstract FacilityType GetFacilityType();
+
+    [Header("Manager Settings")]
+    public ManagerData currentManager;
+    public SimpleSpriteAnimator WorldManagerAnimator; 
+    public Transform EmptyManagerLine; 
+    
+    [Header("Manager Skill State")]
+    public bool IsSkillActive = false;
+    public float SkillTimer = 0f;
+    public float CooldownTimer = 0f;
+
+    [Header("World Space Manager UI")]
+    public Button worldSkillButton;
+    public TextMeshProUGUI worldSkillTimerText;
+    public Image worldSkillIconImage;
+
+    protected Sprite defaultManagerSprite;
+
     // Tự động tính toán chi phí hiện tại bằng cách gọi sang MathHelper
     public double CurrentUpgradeCost => Config == null ? 0 : MathHelper.CalculateUpgradeCost(Config.BaseCost, Config.CostMultiplier, Level) * UpgradeCostDiscount;
 
@@ -23,6 +51,64 @@ public abstract class Facility : MonoBehaviour
     protected virtual void Start()
     {
         UpdateUpgradeUI();
+        
+        currentManager = null; 
+
+        if (WorldManagerAnimator != null)
+        {
+            var img = WorldManagerAnimator.GetComponent<Image>();
+            if (img != null) defaultManagerSprite = img.sprite;
+            else
+            {
+                var sr = WorldManagerAnimator.GetComponent<SpriteRenderer>();
+                if (sr != null) defaultManagerSprite = sr.sprite;
+            }
+        }
+
+        if (worldSkillButton != null)
+        {
+            worldSkillButton.onClick.AddListener(ActivateManagerSkill);
+            UpdateWorldSkillUI();
+        }
+
+        SpawnManagerVisual();
+        
+        if (worldSkillIconImage == null)
+        {
+            Debug.LogWarning($"Chú ý: {gameObject.name} chưa được kéo Ảnh Icon Kỹ Năng vào ô 'World Skill Icon Image' trong Inspector!");
+        }
+    }
+
+    protected virtual void Update()
+    {
+        if (currentManager == null) 
+        {
+            if (worldSkillButton != null && worldSkillButton.gameObject.activeSelf)
+                worldSkillButton.gameObject.SetActive(false); 
+            return;
+        }
+        else
+        {
+            if (worldSkillButton != null && !worldSkillButton.gameObject.activeSelf)
+                worldSkillButton.gameObject.SetActive(true); 
+        }
+
+        if (IsSkillActive)
+        {
+            SkillTimer -= Time.deltaTime;
+            if (SkillTimer <= 0)
+            {
+                IsSkillActive = false;
+                CooldownTimer = currentManager.CooldownDuration;
+                RemoveManagerBuff();
+            }
+            UpdateWorldSkillUI();
+        }
+        else if (CooldownTimer > 0)
+        {
+            CooldownTimer -= Time.deltaTime;
+            UpdateWorldSkillUI();
+        }
     }
 
     // Gọi hàm này khi người chơi bấm nút "Nâng cấp" trên bản đồ game
@@ -120,5 +206,162 @@ public abstract class Facility : MonoBehaviour
         }
 
         return (curVal, nextVal);
+    }
+
+    public virtual void AssignManager(ManagerData manager)
+    {
+        currentManager = manager;
+        IsSkillActive = false;
+        SkillTimer = 0f;
+        CooldownTimer = 0f;
+        
+        SpawnManagerVisual();
+        
+        RemoveManagerBuff();
+        UpdateWorldSkillUI();
+    }
+
+    public virtual void RemoveManager()
+    {
+        currentManager = null;
+        IsSkillActive = false;
+        SkillTimer = 0f;
+        CooldownTimer = 0f;
+        
+        SpawnManagerVisual(); 
+        
+        RemoveManagerBuff();
+        UpdateWorldSkillUI();
+    }
+
+    protected virtual void SpawnManagerVisual()
+    {
+        if (ManagerController.Instance == null || ManagerController.Instance.Config == null) return;
+
+        if (currentManager != null)
+        {
+            if (WorldManagerAnimator != null)
+            {
+                WorldManagerAnimator.gameObject.SetActive(true);
+                var charVis = ManagerController.Instance.Config.GetCharacterVisual(currentManager.CharacterID);
+                if (charVis != null && charVis.AnimationFrames != null && charVis.AnimationFrames.Length > 0)
+                {
+                    WorldManagerAnimator.enabled = true; 
+                    WorldManagerAnimator.frames = charVis.AnimationFrames;
+                    
+                    var sr = WorldManagerAnimator.GetComponent<SpriteRenderer>();
+                    if (sr != null) sr.sprite = charVis.AnimationFrames[0];
+                    var img = WorldManagerAnimator.GetComponent<Image>();
+                    if (img != null) img.sprite = charVis.AnimationFrames[0];
+                }
+                
+                WorldManagerAnimator.transform.DOKill();
+                WorldManagerAnimator.transform.localScale = Vector3.one;
+            }
+            
+            if (worldSkillIconImage != null)
+            {
+                worldSkillIconImage.sprite = ManagerController.Instance.Config.GetSkillIcon(currentManager.BuffType);
+            }
+        }
+        else
+        {
+            if (WorldManagerAnimator != null)
+            {
+                WorldManagerAnimator.gameObject.SetActive(true); 
+                WorldManagerAnimator.enabled = false; 
+
+                var sr = WorldManagerAnimator.GetComponent<SpriteRenderer>();
+                if (sr != null && defaultManagerSprite != null) sr.sprite = defaultManagerSprite;
+                var img = WorldManagerAnimator.GetComponent<Image>();
+                if (img != null && defaultManagerSprite != null) img.sprite = defaultManagerSprite;
+
+                WorldManagerAnimator.transform.DOKill();
+                WorldManagerAnimator.transform.localScale = Vector3.one;
+                WorldManagerAnimator.transform.DOScale(1.1f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+            }
+        }
+    }
+
+    public virtual void ActivateManagerSkill()
+    {
+        if (currentManager != null && !IsSkillActive && CooldownTimer <= 0)
+        {
+            IsSkillActive = true;
+            SkillTimer = currentManager.BuffDuration;
+            ApplyManagerBuff();
+            UpdateWorldSkillUI();
+        }
+    }
+
+    protected virtual void ApplyManagerBuff()
+    {
+        if (currentManager == null) return;
+        
+        float costDiscount = 1f - (currentManager.BuffValue / 100f);
+
+        switch (currentManager.BuffType)
+        {
+            case ManagerBuffType.ReduceCost:
+                UpgradeCostDiscount = Mathf.Max(0.1f, costDiscount); 
+                UpdateUpgradeUI(); 
+                break;
+        }
+    }
+
+    protected virtual void RemoveManagerBuff()
+    {
+        UpgradeCostDiscount = 1f;
+        UpdateUpgradeUI();
+    }
+
+    protected virtual void UpdateWorldSkillUI()
+    {
+        if (worldSkillButton == null || worldSkillTimerText == null) return;
+
+        if (currentManager == null)
+        {
+            worldSkillTimerText.gameObject.SetActive(false);
+            return;
+        }
+
+        if (IsSkillActive)
+        {
+            worldSkillButton.interactable = false;
+            worldSkillTimerText.gameObject.SetActive(true);
+            worldSkillTimerText.text = $"{Mathf.CeilToInt(SkillTimer)}s";
+        }
+        else if (CooldownTimer > 0)
+        {
+            worldSkillButton.interactable = false;
+            worldSkillTimerText.gameObject.SetActive(true);
+            worldSkillTimerText.text = $"{Mathf.CeilToInt(CooldownTimer)}s";
+        }
+        else
+        {
+            worldSkillButton.interactable = true;
+            worldSkillTimerText.gameObject.SetActive(false); 
+        }
+    }
+
+    public void OpenManagerModal()
+    {
+        Debug.Log("Đang gọi lệnh mở Modal Quản lý...");
+        ManagerModalUI modal = ManagerModalUI.Instance;
+        if (modal == null)
+        {
+            modal = FindObjectOfType<ManagerModalUI>(true);
+        }
+
+        if (modal != null)
+        {
+            modal.gameObject.SetActive(true); 
+            modal.OpenModal(this);
+            Debug.Log("Đã bật Modal Quản lý thành công.");
+        }
+        else
+        {
+            Debug.LogError("Chưa kéo ManagerModalUI vào scene hoặc đã bị xóa!");
+        }
     }
 }

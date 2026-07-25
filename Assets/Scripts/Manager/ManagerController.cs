@@ -13,8 +13,8 @@ public class ManagerController : MonoBehaviour
     public float HireMultiplier = 1.5f;
     
     [Header("Data")]
-    public int TotalHiredCount = 0; // Số lần đã thuê trong lịch sử (dùng để tính tiền và đếm mốc)
-    public int HiresUntilPity = 10;
+    public Dictionary<FacilityType, int> TotalHiredCounts = new Dictionary<FacilityType, int>();
+    public Dictionary<FacilityType, int> HiresUntilPitys = new Dictionary<FacilityType, int>();
     public List<ManagerData> OwnedManagers = new List<ManagerData>();
 
     public Action OnManagerListUpdated; // Sự kiện khi danh sách thay đổi
@@ -32,26 +32,32 @@ public class ManagerController : MonoBehaviour
     {
         if (Config != null)
         {
-            HiresUntilPity = Config.PityThreshold;
+            foreach (FacilityType type in Enum.GetValues(typeof(FacilityType)))
+            {
+                if (!TotalHiredCounts.ContainsKey(type)) TotalHiredCounts[type] = 0;
+                if (!HiresUntilPitys.ContainsKey(type)) HiresUntilPitys[type] = Config.PityThreshold;
+            }
         }
     }
 
-    public double GetCurrentHireCost()
+    public double GetCurrentHireCost(FacilityType type)
     {
-        return BaseHireCost * Math.Pow(HireMultiplier, TotalHiredCount);
+        int count = TotalHiredCounts.ContainsKey(type) ? TotalHiredCounts[type] : 0;
+        return BaseHireCost * Math.Pow(HireMultiplier, count);
     }
 
-    public bool CanUnlockSenior()
+    public bool CanUnlockSenior(FacilityType type)
     {
         // Yêu cầu: Đã mua 10 lần VÀ Level người chơi >= 6
-        bool hasEnoughHires = TotalHiredCount >= 10;
+        int count = TotalHiredCounts.ContainsKey(type) ? TotalHiredCounts[type] : 0;
+        bool hasEnoughHires = count >= 10;
         bool hasEnoughLevel = Gamemanager.Instance != null && Gamemanager.Instance.PlayerLevel >= 6;
         return hasEnoughHires && hasEnoughLevel;
     }
 
-    public bool HireManager()
+    public bool HireManager(FacilityType type)
     {
-        double cost = GetCurrentHireCost();
+        double cost = GetCurrentHireCost(type);
 
         if (Gamemanager.Instance == null || !Gamemanager.Instance.DeductCash(cost))
         {
@@ -59,16 +65,19 @@ public class ManagerController : MonoBehaviour
             return false;
         }
 
+        if (!TotalHiredCounts.ContainsKey(type)) TotalHiredCounts[type] = 0;
+        if (!HiresUntilPitys.ContainsKey(type)) HiresUntilPitys[type] = Config != null ? Config.PityThreshold : 10;
+
         // Tạo quản lý mới
-        ManagerData newManager = GenerateRandomManager(cost);
+        ManagerData newManager = GenerateRandomManager(cost, type);
         OwnedManagers.Add(newManager);
         
-        TotalHiredCount++;
-        HiresUntilPity--;
+        TotalHiredCounts[type]++;
+        HiresUntilPitys[type]--;
 
-        if (HiresUntilPity <= 0)
+        if (HiresUntilPitys[type] <= 0)
         {
-            HiresUntilPity = Config != null ? Config.PityThreshold : 10;
+            HiresUntilPitys[type] = Config != null ? Config.PityThreshold : 10;
         }
         
         OnManagerListUpdated?.Invoke();
@@ -76,10 +85,11 @@ public class ManagerController : MonoBehaviour
         return true;
     }
 
-    private ManagerData GenerateRandomManager(double hirePrice)
+    private ManagerData GenerateRandomManager(double hirePrice, FacilityType facilityType)
     {
         ManagerData md = new ManagerData();
         md.OriginalHirePrice = hirePrice;
+        md.AssignedFacilityType = facilityType;
         
         if (Config == null || Config.RaritySettings == null || Config.RaritySettings.Count == 0)
         {
@@ -88,7 +98,8 @@ public class ManagerController : MonoBehaviour
         }
 
         // Xác định độ hiếm (có xét bảo hiểm)
-        if (HiresUntilPity <= 1)
+        int pity = HiresUntilPitys.ContainsKey(facilityType) ? HiresUntilPitys[facilityType] : 10;
+        if (pity <= 1)
         {
             md.Rarity = ManagerRarity.Senior; // Bảo hiểm 100% ra Senior
         }
@@ -115,14 +126,22 @@ public class ManagerController : MonoBehaviour
         // Nếu quay trúng Senior sớm hơn bảo hiểm, reset bảo hiểm luôn!
         if (md.Rarity == ManagerRarity.Senior)
         {
-            HiresUntilPity = 1; // Sẽ bị trừ về 0 sau khi hàm này chạy xong và reset về Threshold
+            HiresUntilPitys[facilityType] = 1; // Sẽ bị trừ về 0 sau khi hàm này chạy xong và reset về Threshold
         }
 
         // Random Buff Type
         md.BuffType = (ManagerBuffType)Random.Range(0, 3); // 0: Mining, 1: Move, 2: Cost
 
-        // Mặc định mua ra đều là None
-        md.SupportType = SeniorSupportType.None;
+        // Mặc định mua ra
+        if (md.Rarity == ManagerRarity.Senior)
+        {
+            // Nếu là quản lý cấp cao, random 50% có tính năng đặc biệt (có thể chỉnh lại sau)
+            md.SpecialFeature = Random.value > 0.5f ? SeniorSpecialFeature.SpecialFeature : SeniorSpecialFeature.None;
+        }
+        else
+        {
+            md.SpecialFeature = SeniorSpecialFeature.None;
+        }
 
         // Gán chỉ số từ SO
         var setting = Config.GetRaritySetting(md.Rarity);
@@ -162,8 +181,12 @@ public class ManagerController : MonoBehaviour
     }
 
     // Tiện ích lấy danh sách theo loại để Filter UI
-    public List<ManagerData> GetManagersByFilter(ManagerBuffType buffType)
+    public List<ManagerData> GetManagersByFilter(FacilityType facilityType, ManagerBuffType? buffType = null)
     {
-        return OwnedManagers.FindAll(m => m.BuffType == buffType);
+        if (buffType.HasValue)
+        {
+            return OwnedManagers.FindAll(m => m.AssignedFacilityType == facilityType && m.BuffType == buffType.Value);
+        }
+        return OwnedManagers.FindAll(m => m.AssignedFacilityType == facilityType);
     }
 }

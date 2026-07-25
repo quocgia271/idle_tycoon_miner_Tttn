@@ -1,0 +1,247 @@
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using System.Collections.Generic;
+using DG.Tweening; // Thêm DOTween cho animation
+
+public class MoraleModalUI : MonoBehaviour
+{
+    public static MoraleModalUI Instance;
+
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+    }
+
+    [Header("Animation")]
+    public RectTransform modalPanel; // Kéo Panel con (chứa nền bảng) vào đây để làm hiệu ứng bung ra
+
+    [Header("UI References")]
+    public TextMeshProUGUI shaftTitleText;
+    public Transform contentParent;
+    public GameObject moraleItemPrefab;
+    
+    [Header("Buttons")]
+    public Button btnAdd25;
+    public Button btnMaxOne;
+    public Button btnMaxAll;
+    
+    [Header("Button Visuals")]
+    public Sprite normalBtnSprite; 
+    public Sprite selectedBtnSprite;
+    
+    [Header("Payment")]
+    public TextMeshProUGUI costText;
+    public Button btnPay;
+    
+    private MineShaft currentShaft;
+    private Miner selectedMiner;
+    private int selectedOption = 0; // 0: +25, 1: Max 1, 2: Max All
+    private double currentCost = 0;
+    
+    private List<MoraleItemUI> spawnedItems = new List<MoraleItemUI>();
+
+    private void Start()
+    {
+        if (btnAdd25 != null) btnAdd25.onClick.AddListener(() => SelectOption(0));
+        if (btnMaxOne != null) btnMaxOne.onClick.AddListener(() => SelectOption(1));
+        if (btnMaxAll != null) btnMaxAll.onClick.AddListener(() => SelectOption(2));
+        if (btnPay != null) btnPay.onClick.AddListener(OnPayClicked);
+        
+        // Xóa dòng gameObject.SetActive(false) ở đây để không bị lỗi click 2 lần nữa
+    }
+
+    public void ShowModal(MineShaft shaft)
+    {
+        currentShaft = shaft;
+        selectedMiner = null;
+        
+        if (shaft.activeMiners != null && shaft.activeMiners.Count > 0)
+        {
+            selectedMiner = shaft.activeMiners[0];
+        }
+        
+        if (shaftTitleText != null)
+        {
+            shaftTitleText.text = $"Quản lý tinh thần hầm số {shaft.Level}"; // You can modify this format as needed
+        }
+        
+        gameObject.SetActive(true);
+        SelectOption(0); // Default to +25
+        RefreshList();
+
+        // Animation bung ra
+        if (modalPanel != null)
+        {
+            modalPanel.DOKill();
+            modalPanel.localScale = Vector3.zero;
+            modalPanel.DOScale(Vector3.one, 0.25f).SetEase(Ease.OutBack).SetUpdate(true);
+        }
+    }
+    
+    public void CloseModal()
+    {
+        if (modalPanel != null)
+        {
+            modalPanel.DOKill();
+            modalPanel.DOScale(Vector3.zero, 0.15f).SetEase(Ease.InBack).SetUpdate(true).OnComplete(() => 
+            {
+                gameObject.SetActive(false);
+            });
+        }
+        else
+        {
+            gameObject.SetActive(false);
+        }
+    }
+    
+    public void OnItemSelected(Miner miner)
+    {
+        selectedMiner = miner;
+        RefreshList();
+        CalculateCost();
+    }
+    
+    public void RefreshList()
+    {
+        if (currentShaft == null || currentShaft.activeMiners == null) return;
+        
+        // Spawn items
+        while(spawnedItems.Count < currentShaft.activeMiners.Count)
+        {
+            GameObject go = Instantiate(moraleItemPrefab, contentParent);
+            spawnedItems.Add(go.GetComponent<MoraleItemUI>());
+        }
+        
+        // Setup data
+        for (int i = 0; i < spawnedItems.Count; i++)
+        {
+            if (i < currentShaft.activeMiners.Count)
+            {
+                spawnedItems[i].gameObject.SetActive(true);
+                Miner miner = currentShaft.activeMiners[i];
+                bool isSelected = (miner == selectedMiner);
+                spawnedItems[i].Setup(i + 1, miner, this, isSelected);
+            }
+            else
+            {
+                spawnedItems[i].gameObject.SetActive(false);
+            }
+        }
+    }
+    
+    public void SelectOption(int optionIndex)
+    {
+        selectedOption = optionIndex;
+        
+        // Đổi hình ảnh nút đang chọn
+        SetButtonVisual(btnAdd25, optionIndex == 0);
+        SetButtonVisual(btnMaxOne, optionIndex == 1);
+        SetButtonVisual(btnMaxAll, optionIndex == 2);
+        
+        CalculateCost();
+    }
+    
+    private void SetButtonVisual(Button btn, bool isSelected)
+    {
+        if (btn == null || btn.image == null) return;
+        
+        if (isSelected)
+        {
+            if (selectedBtnSprite != null) btn.image.sprite = selectedBtnSprite;
+            btn.image.color = Color.white;
+        }
+        else
+        {
+            if (normalBtnSprite != null) 
+            {
+                btn.image.sprite = normalBtnSprite;
+                btn.image.color = Color.white;
+            }
+            else 
+            {
+                // Tắt tàng hình nếu không dùng ảnh viền cho nút bình thường
+                btn.image.color = new Color(1f, 1f, 1f, 0f); 
+            }
+        }
+    }
+    
+    private void CalculateCost()
+    {
+        currentCost = 0;
+        
+        if (selectedOption == 0) // +25 for selected
+        {
+            if (selectedMiner != null && selectedMiner.morale < selectedMiner.maxMorale)
+            {
+                // Placeholder cost formula: 1 morale = 100
+                float amount = Mathf.Min(25f, selectedMiner.maxMorale - selectedMiner.morale);
+                currentCost = amount * 100;
+            }
+        }
+        else if (selectedOption == 1) // Max for selected
+        {
+            if (selectedMiner != null)
+            {
+                float missingMorale = selectedMiner.maxMorale - selectedMiner.morale;
+                currentCost = missingMorale * 100;
+            }
+        }
+        else if (selectedOption == 2) // Max for all
+        {
+            if (currentShaft != null && currentShaft.activeMiners != null)
+            {
+                foreach(var miner in currentShaft.activeMiners)
+                {
+                    float missing = miner.maxMorale - miner.morale;
+                    currentCost += missing * 100;
+                }
+            }
+        }
+        
+        if (costText != null)
+        {
+            costText.text = CurrencyFormatter.FormatMoney(currentCost);
+            
+            bool canAfford = Gamemanager.Instance != null && Gamemanager.Instance.IdleCash >= currentCost;
+            costText.color = canAfford && currentCost > 0 ? Color.white : Color.red;
+            
+            if (btnPay != null) btnPay.interactable = canAfford && currentCost > 0;
+        }
+    }
+    
+    public void OnPayClicked()
+    {
+        if (currentCost <= 0) return;
+        
+        if (Gamemanager.Instance != null && Gamemanager.Instance.IdleCash >= currentCost)
+        {
+            Gamemanager.Instance.IdleCash -= currentCost;
+            
+            if (selectedOption == 0) // +25
+            {
+                if (selectedMiner != null) selectedMiner.AddMorale(25f);
+            }
+            else if (selectedOption == 1) // Max 1
+            {
+                if (selectedMiner != null) selectedMiner.AddMorale(selectedMiner.maxMorale);
+            }
+            else if (selectedOption == 2) // Max all
+            {
+                if (currentShaft != null && currentShaft.activeMiners != null)
+                {
+                    foreach (var miner in currentShaft.activeMiners)
+                    {
+                        miner.AddMorale(miner.maxMorale);
+                    }
+                }
+            }
+            
+            RefreshList();
+            CalculateCost();
+            
+            // Cap nhat UI tong the game neu can (vi du tien bi tru)
+            // Gamemanager.Instance.UpdateTopUI() etc.
+        }
+    }
+}

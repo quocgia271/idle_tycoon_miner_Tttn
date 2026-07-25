@@ -206,6 +206,23 @@ public class UpgradeModalUI : MonoBehaviour
 
     public void OnConfirmUpgradeClicked()
     {
+        // ĐIỀU KIỆN MỚI: Chặn nâng cấp nếu hầm mỏ đang có nhân viên bị chết (chưa hồi sinh)
+        if (currentFacility is MineShaft shaft)
+        {
+            int aliveCount = 0;
+            foreach(var miner in shaft.activeMiners)
+            {
+                if (miner.healthState != Miner.HealthState.Dead) aliveCount++;
+            }
+
+            if (aliveCount < shaft.GetMinersCount(shaft.Level))
+            {
+                Debug.LogWarning("Không thể nâng cấp! Bạn phải mua lại (hồi sinh) thợ mỏ bị mất trước.");
+                TriggerShakeEffect();
+                return;
+            }
+        }
+
         if (Gamemanager.Instance != null && Gamemanager.Instance.IdleCash >= currentTotalCost)
         {
             // Đủ tiền -> Mua
@@ -217,17 +234,49 @@ public class UpgradeModalUI : MonoBehaviour
         }
         else
         {
-            // Không đủ tiền -> Lắc cái Panel bên trong (không lắc nền đen)
-            if (ModalPanel != null)
+            // Không đủ tiền -> Lắc panel
+            TriggerShakeEffect();
+        }
+    }
+
+    private void TriggerShakeEffect()
+    {
+        if (ModalPanel != null)
+        {
+            ModalPanel.DOComplete(); 
+            ModalPanel.DOShakePosition(0.3f, new Vector3(15, 0, 0), 10, 0, false, true);
+        }
+        else
+        {
+            transform.DOComplete();
+            transform.DOShakePosition(0.3f, new Vector3(15, 0, 0), 10, 0, false, true);
+        }
+    }
+
+    public void OpenMoraleModal()
+    {
+        if (currentFacility is MineShaft shaft)
+        {
+            MoraleModalUI modal = MoraleModalUI.Instance;
+            if (modal == null)
             {
-                ModalPanel.DOComplete(); // Dừng các hiệu ứng lắc trước đó nếu có
-                ModalPanel.DOShakePosition(0.3f, new Vector3(15, 0, 0), 10, 0, false, true);
+                // Tìm kiếm kể cả khi object đang bị tắt (Inactive)
+                modal = FindObjectOfType<MoraleModalUI>(true);
+            }
+
+            if (modal != null)
+            {
+                modal.gameObject.SetActive(true); // Bật lên trước khi gọi ShowModal
+                modal.ShowModal(shaft);
             }
             else
             {
-                transform.DOComplete();
-                transform.DOShakePosition(0.3f, new Vector3(15, 0, 0), 10, 0, false, true);
+                Debug.LogWarning("Chưa tìm thấy MoraleModalUI trong Scene. Hãy chắc chắn bạn đã kéo Prefab/Panel này vào Canvas.");
             }
+        }
+        else
+        {
+            Debug.LogWarning("Current facility is not a MineShaft, cannot open Morale Modal.");
         }
     }
 }

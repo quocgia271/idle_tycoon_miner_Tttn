@@ -48,13 +48,17 @@ public class ManagerItemUI : MonoBehaviour
         {
             case ManagerRarity.Junior: RarityText.text = "Trẻ tuổi"; break;
             case ManagerRarity.Director: RarityText.text = "Giám đốc"; break;
-            case ManagerRarity.Senior: RarityText.text = $"Cấp cao_{data.SupportType}"; break;
+            case ManagerRarity.Senior: 
+                RarityText.text = $"Cấp cao ({data.AssignedFacilityType}) - {data.SpecialFeature}"; 
+                break;
         }
 
         string buffDesc = "";
         switch (data.BuffType)
         {
-            case ManagerBuffType.MiningSpeed: buffDesc = $"Tăng tốc đào: +{data.BuffValue:F1}%"; break;
+            case ManagerBuffType.MiningSpeed: 
+                buffDesc = data.AssignedFacilityType == FacilityType.MineShaft ? $"Tăng tốc đào: +{data.BuffValue:F1}%" : $"Tốc độ chất hàng: +{data.BuffValue:F1}%";
+                break;
             case ManagerBuffType.MoveSpeed: buffDesc = $"Tốc độ di chuyển: +{data.BuffValue:F1}%"; break;
             case ManagerBuffType.ReduceCost: buffDesc = $"Giảm chi phí: {data.BuffValue:F1}%"; break;
         }

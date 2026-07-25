@@ -47,8 +47,8 @@ public class WarehouseWorker : MonoBehaviour
         switch (currentState)
         {
             case WorkerState.Idle:
-                // CHỈ đi lấy tiền khi thang máy thực sự có tiền
-                if (warehouse.elevator != null && warehouse.elevator.DroppedResource > 0)
+                // CHỈ đi lấy tiền khi thang máy thực sự có tiền VÀ có quản lý
+                if (warehouse.currentManager != null && warehouse.elevator != null && warehouse.elevator.DroppedResource > 0)
                 {
                     ChangeState(WorkerState.WalkingToElevator);
                 }
@@ -66,6 +66,27 @@ public class WarehouseWorker : MonoBehaviour
             case WorkerState.Depositing:
                 HandleDepositing();
                 break;
+        }
+    }
+
+    public void ManualStart()
+    {
+        if (currentState == WorkerState.Idle)
+        {
+            ChangeState(WorkerState.WalkingToElevator);
+        }
+    }
+
+    private void OnMouseDown()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
+        if (warehouse != null && warehouse.elevator != null && warehouse.elevator.DroppedResource > 0)
+        {
+            ManualStart();
         }
     }
 

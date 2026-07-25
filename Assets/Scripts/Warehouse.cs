@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 public class Warehouse : Facility
 {
+    public override FacilityType GetFacilityType() => FacilityType.Warehouse;
+
     [Header("Positions")]
     public Transform elevatorPos; // Điểm lấy tiền
     public Transform depositPos;  // Điểm nạp tiền vào kho
@@ -19,9 +21,12 @@ public class Warehouse : Facility
     public WarehouseWorker workerPrefab;
     public float spawnOffsetX = 0.5f;
 
+    public float WorkerMoveSpeedBuff = 1f;
+    public float WorkerLoadSpeedBuff = 1f;
+
     public double Capacity => GetWorkerCapacity(Level);
-    public float moveSpeed => GetWorkerMoveSpeed(Level);
-    public float loadTime => GetWorkerLoadTime(Level);
+    public float moveSpeed => GetWorkerMoveSpeed(Level) * WorkerMoveSpeedBuff;
+    public float loadTime => GetWorkerLoadTime(Level) / WorkerLoadSpeedBuff;
 
     public int GetWorkersCount(int targetLevel)
     {
@@ -174,5 +179,30 @@ public class Warehouse : Facility
         }
 
         return (curVal, nextVal);
+    }
+
+    protected override void ApplyManagerBuff()
+    {
+        base.ApplyManagerBuff();
+        if (currentManager == null) return;
+
+        float buffMultiplier = 1f + (currentManager.BuffValue / 100f);
+        
+        switch (currentManager.BuffType)
+        {
+            case ManagerBuffType.MoveSpeed:
+                WorkerMoveSpeedBuff = buffMultiplier;
+                break;
+            case ManagerBuffType.MiningSpeed:
+                WorkerLoadSpeedBuff = buffMultiplier;
+                break;
+        }
+    }
+
+    protected override void RemoveManagerBuff()
+    {
+        base.RemoveManagerBuff();
+        WorkerMoveSpeedBuff = 1f;
+        WorkerLoadSpeedBuff = 1f;
     }
 }

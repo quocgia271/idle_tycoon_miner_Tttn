@@ -6,6 +6,8 @@ using TMPro;
 
 public class Elevator : Facility
 {
+    public override FacilityType GetFacilityType() => FacilityType.Elevator;
+
     public enum ElevatorState
     {
         Idle,
@@ -41,6 +43,9 @@ public class Elevator : Facility
     private int currentShaftIndex = 0;
     private float currentTimer = 0f;
     private MineShaft targetShaft = null; // Hầm mục tiêu tiếp theo
+
+    public float ElevatorMoveSpeedBuff = 1f;
+    public float ElevatorLoadSpeedBuff = 1f;
 
     protected override void Start()
     {
@@ -88,16 +93,18 @@ public class Elevator : Facility
         Debug.Log($"Thang máy tự động nhận diện {shafts.Count} hầm.");
     }
 
-    private void Update()
+    protected override void Update()
     {
+        base.Update();
+        
         switch (currentState)
         {
             case ElevatorState.Idle:
-                // Thang máy thông minh: Chỉ bắt đầu đi làm khi có ít nhất 1 hầm có tiền
-                if (HasAnyMoneyInShafts())
+                // Thang máy thông minh: Chỉ bắt đầu đi làm khi có ít nhất 1 hầm có tiền VÀ có quản lý
+                if (currentManager != null && HasAnyMoneyInShafts())
                 {
                     currentShaftIndex = 0;
-                    FindNextTargetShaft(); // Bắt đầu tìm hầm có tiền để đi tới
+                    FindNextTargetShaft(); 
                 }
                 break;
 
@@ -165,7 +172,7 @@ public class Elevator : Facility
         }
 
         Vector3 targetPos = new Vector3(transform.position.x, targetShaft.transform.position.y, transform.position.z);
-        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
+        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * ElevatorMoveSpeedBuff * Time.deltaTime);
 
         // Tới hầm mục tiêu
         if (Vector3.Distance(transform.position, targetPos) < 0.01f)
@@ -176,7 +183,7 @@ public class Elevator : Facility
 
     private void HandleLoading()
     {
-        currentTimer += Time.deltaTime;
+        currentTimer += Time.deltaTime * ElevatorLoadSpeedBuff;
         
         if (currentTimer >= loadTime)
         {
@@ -210,7 +217,7 @@ public class Elevator : Facility
 
         // Đi về vị trí StartPos
         Vector3 targetPos = new Vector3(transform.position.x, startPos.position.y, transform.position.z);
-        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
+        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * ElevatorMoveSpeedBuff * Time.deltaTime);
 
         if (Vector3.Distance(transform.position, targetPos) < 0.01f)
         {
@@ -229,7 +236,7 @@ public class Elevator : Facility
 
     private void HandleUnloading()
     {
-        currentTimer += Time.deltaTime;
+        currentTimer += Time.deltaTime * ElevatorLoadSpeedBuff;
         
         if (currentTimer >= unloadTime)
         {
@@ -248,11 +255,11 @@ public class Elevator : Facility
 
         if (newState == ElevatorState.Loading && progressBar != null)
         {
-            progressBar.StartLoading(loadTime);
+            progressBar.StartLoading(loadTime / ElevatorLoadSpeedBuff);
         }
         else if (newState == ElevatorState.Unloading && progressBar != null)
         {
-            progressBar.StartLoading(unloadTime);
+            progressBar.StartLoading(unloadTime / ElevatorLoadSpeedBuff);
         }
     }
 
@@ -277,5 +284,44 @@ public class Elevator : Facility
     protected override void OnUpgraded()
     {
         moveSpeed += 0.2f;
+    }
+
+    private void OnMouseDown()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
+        if (currentState == ElevatorState.Idle && HasAnyMoneyInShafts())
+        {
+            currentShaftIndex = 0;
+            FindNextTargetShaft();
+        }
+    }
+
+    protected override void ApplyManagerBuff()
+    {
+        base.ApplyManagerBuff();
+        if (currentManager == null) return;
+
+        float buffMultiplier = 1f + (currentManager.BuffValue / 100f);
+        
+        switch (currentManager.BuffType)
+        {
+            case ManagerBuffType.MoveSpeed:
+                ElevatorMoveSpeedBuff = buffMultiplier;
+                break;
+            case ManagerBuffType.MiningSpeed:
+                ElevatorLoadSpeedBuff = buffMultiplier;
+                break;
+        }
+    }
+
+    protected override void RemoveManagerBuff()
+    {
+        base.RemoveManagerBuff();
+        ElevatorMoveSpeedBuff = 1f;
+        ElevatorLoadSpeedBuff = 1f;
     }
 }
