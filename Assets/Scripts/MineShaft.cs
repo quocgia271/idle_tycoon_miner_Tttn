@@ -250,4 +250,67 @@ public class MineShaft : Facility
 
         return (curVal, nextVal);
     }
+
+    // ==========================================
+    // LOGIC BỊ ĐỐT CHÁY BỞI RỒNG
+    // ==========================================
+    [Header("VFX Hầm")]
+    public GameObject normalBurnVFX; // Lửa nhỏ cho đạn thường
+    public GameObject bigBurnVFX;    // Lửa to cho đạn bự
+
+    private float normalBurnTimer = 0f;
+    private float bigBurnTimer = 0f;
+    private Coroutine burnCoroutine;
+
+    public void TriggerBurnVFX(float duration, bool isBig)
+    {
+        if (isBig)
+        {
+            // Trúng đạn to: Tắt ngay lửa nhỏ, cộng dồn thời gian lửa to
+            normalBurnTimer = 0f; 
+            if (normalBurnVFX != null) normalBurnVFX.SetActive(false);
+            bigBurnTimer += duration;
+        }
+        else
+        {
+            // Trúng đạn nhỏ: Cộng dồn thời gian lửa nhỏ (nếu bị trúng liên tục)
+            normalBurnTimer += duration;
+        }
+
+        // Bật hệ thống đếm ngược nếu nó chưa chạy
+        if (burnCoroutine == null)
+        {
+            burnCoroutine = StartCoroutine(BurnTimerRoutine());
+        }
+    }
+
+    private System.Collections.IEnumerator BurnTimerRoutine()
+    {
+        while (normalBurnTimer > 0 || bigBurnTimer > 0)
+        {
+            // Xử lý lửa to
+            if (bigBurnTimer > 0)
+            {
+                if (bigBurnVFX != null && !bigBurnVFX.activeSelf) bigBurnVFX.SetActive(true);
+                bigBurnTimer -= Time.deltaTime;
+                
+                if (bigBurnTimer <= 0 && bigBurnVFX != null) 
+                    bigBurnVFX.SetActive(false);
+            }
+
+            // Xử lý lửa nhỏ
+            if (normalBurnTimer > 0)
+            {
+                if (normalBurnVFX != null && !normalBurnVFX.activeSelf) normalBurnVFX.SetActive(true);
+                normalBurnTimer -= Time.deltaTime;
+                
+                if (normalBurnTimer <= 0 && normalBurnVFX != null) 
+                    normalBurnVFX.SetActive(false);
+            }
+
+            yield return null; // Chờ frame tiếp theo
+        }
+        
+        burnCoroutine = null; // Khi cả 2 lửa đều tắt, reset coroutine
+    }
 }

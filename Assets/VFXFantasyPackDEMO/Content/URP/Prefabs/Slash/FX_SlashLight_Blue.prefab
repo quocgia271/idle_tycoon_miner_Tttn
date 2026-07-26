@@ -9,6 +9,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 473331923431787507, guid: 756f993d39a91a34289cb22b2d287f30, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.b
+      value: 0.058490515
+      objectReference: {fileID: 0}
+    - target: {fileID: 473331923431787507, guid: 756f993d39a91a34289cb22b2d287f30, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0.058490515
+      objectReference: {fileID: 0}
+    - target: {fileID: 473331923431787507, guid: 756f993d39a91a34289cb22b2d287f30, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 473331923431787507, guid: 756f993d39a91a34289cb22b2d287f30, type: 3}
       propertyPath: ColorModule.gradient.maxGradient.ctime1
       value: 20624
       objectReference: {fileID: 0}
