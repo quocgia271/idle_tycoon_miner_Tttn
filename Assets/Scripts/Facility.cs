@@ -47,12 +47,17 @@ public abstract class Facility : MonoBehaviour
     // Tự động tính toán chi phí hiện tại bằng cách gọi sang MathHelper
     public double CurrentUpgradeCost => Config == null ? 0 : MathHelper.CalculateUpgradeCost(Config.BaseCost, Config.CostMultiplier, Level) * UpgradeCostDiscount;
 
+    protected virtual void Awake()
+    {
+        // Fix lỗi Unity tự động khởi tạo biến [Serializable] trước khi game chạy
+        // Gán null ngay từ lúc Awake để các script khác như Miner không bị nhầm lẫn
+        currentManager = null; 
+    }
+
     // Chạy lần đầu tiên khi mở game để cập nhật số Level 1 lên nút bấm
     protected virtual void Start()
     {
         UpdateUpgradeUI();
-        
-        currentManager = null; 
 
         if (WorldManagerAnimator != null)
         {
@@ -115,6 +120,12 @@ public abstract class Facility : MonoBehaviour
     // Nó sẽ bật cái bảng UI Modal to đùng lên thay vì trừ tiền ngay
     public void OpenUpgradeModal()
     {
+        if (this is MineShaft shaft && shaft.isBroken)
+        {
+            Debug.LogWarning("Hầm đang bị vỡ, phải sửa chữa mới được nâng cấp!");
+            return;
+        }
+
         // Khắc phục lỗi Modal bị tắt (Deactivated) từ đầu khiến Awake không chạy
         if (UpgradeModalUI.Instance == null)
         {

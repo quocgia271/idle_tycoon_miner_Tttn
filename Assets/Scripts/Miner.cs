@@ -93,11 +93,29 @@ public class Miner : MonoBehaviour
     {
         HandleHauntDOT();
 
+        // LOGIC BẮT CLICK KIỂU MỚI (Xuyên qua các Collider cản đường)
+        if (Input.GetMouseButtonDown(0))
+        {
+            Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Collider2D col = GetComponent<Collider2D>();
+            
+            if (col != null && col.OverlapPoint(mouseWorldPos))
+            {
+                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+
+                Debug.Log("Miner clicked via OverlapPoint! Current state: " + currentState);
+                if (currentState == MinerState.Idle && currentShaft != null && !currentShaft.isBroken)
+                {
+                    ChangeState(MinerState.WalkingToDig);
+                }
+            }
+        }
+
         // NẾU ĐÃ CHẾT THÌ KHÔNG LÀM GÌ NỮA CẢ (tránh đè lên logic bay lượn DOTween)
         if (healthState == HealthState.Dead) return;
 
-        // Tự động di chuyển nếu hầm có người quản lý
-        if (currentState == MinerState.Idle && currentShaft != null && currentShaft.currentManager != null && healthState != HealthState.Injured)
+        // Tự động di chuyển nếu hầm có người quản lý và hầm không bị vỡ
+        if (currentState == MinerState.Idle && currentShaft != null && currentShaft.currentManager != null && healthState != HealthState.Injured && !currentShaft.isBroken)
         {
             ChangeState(MinerState.WalkingToDig);
         }
@@ -115,23 +133,6 @@ public class Miner : MonoBehaviour
             case MinerState.WalkingBack:
                 MoveTowards(startPos.position, MinerState.Idle);
                 break;
-        }
-    }
-
-    private void OnMouseDown()
-    {
-        // Kiểm tra xem ngón tay/con trỏ chuột có đang nằm trên UI nào không
-        // Nếu có thì return luôn, không xử lý click vật lý của Hầm mỏ nữa
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-        {
-            return;
-        }
-
-        Debug.Log("Miner clicked! Current state: " + currentState);
-        // Chỉ cho phép click bắt đầu đi khi đang đứng chơi (Idle)
-        if (currentState == MinerState.Idle)
-        {
-            ChangeState(MinerState.WalkingToDig);
         }
     }
 

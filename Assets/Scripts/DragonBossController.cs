@@ -170,6 +170,10 @@ public class DragonBossController : MonoBehaviour
     // ==========================================
     private IEnumerator FlyOffScreenRoutine()
     {
+        // 0. Tắt Collider để người chơi không thể click chém rồng lúc nó đang cất cánh bay
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = false;
+
         PlayAnim(climbAnimName);
 
         // 1. Bay ra khỏi mép màn hình bên phải
@@ -196,6 +200,9 @@ public class DragonBossController : MonoBehaviour
 
         // Reset bộ đếm để bắt đầu vòng tuần hoàn mới
         waveCount = 0;
+
+        // 5. Đã đáp xuống an toàn -> Bật lại Collider cho người chơi chém tiếp
+        if (col != null) col.enabled = true;
 
         PlayAnim(idleAnimName);
         isBusy = false;

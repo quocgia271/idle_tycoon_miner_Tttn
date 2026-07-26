@@ -81,6 +81,19 @@ public class WarehouseWorker : MonoBehaviour
     {
         if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
         {
+            // CODE DEBUG: Bắn tia Raycast UI để xem cái UI nào đang cản trở click chuột
+            var pointerEventData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current)
+            {
+                position = Input.mousePosition
+            };
+            var raycastResults = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+            UnityEngine.EventSystems.EventSystem.current.RaycastAll(pointerEventData, raycastResults);
+            if (raycastResults.Count > 0)
+            {
+                Canvas parentCanvas = raycastResults[0].gameObject.GetComponentInParent<Canvas>();
+                string canvasName = parentCanvas != null ? parentCanvas.name : "Unknown Canvas";
+                Debug.LogError($"[TÌM THẤY THỦ PHẠM CHẶN CLICK] Bạn vừa click trúng cái UI có tên là: '{raycastResults[0].gameObject.name}' (nằm trong Canvas '{canvasName}'). Hãy tìm cái này trong Hierarchy và TẮT dấu tick 'Raycast Target' của nó đi nhé!");
+            }
             return;
         }
 
@@ -90,10 +103,12 @@ public class WarehouseWorker : MonoBehaviour
         }
     }
 
+    public float currentSpeedMultiplier = 1f;
+
     private void MoveTowards(Vector3 targetPos, WorkerState nextState)
     {
         Vector3 targetPosXOnly = new Vector3(targetPos.x, transform.position.y, transform.position.z);
-        transform.position = Vector3.MoveTowards(transform.position, targetPosXOnly, warehouse.moveSpeed * Time.deltaTime);
+        transform.position = Vector3.MoveTowards(transform.position, targetPosXOnly, warehouse.moveSpeed * currentSpeedMultiplier * Time.deltaTime);
 
         if (Vector3.Distance(transform.position, targetPosXOnly) < 0.01f)
         {

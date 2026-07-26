@@ -59,6 +59,151 @@ public class MineShaft : Facility
         return (BaseResourcePerSecond * targetLevel) * ProductivityBuff;
     }
 
+    [Header("Endurance Settings")]
+    public float maxEndurance = 100f;
+    public float currentEndurance = 100f;
+    public UnityEngine.UI.Slider enduranceSlider;
+
+    [Header("Broken State")]
+    public bool isBroken = false;
+    public GameObject explosionVFX; // VFX phát nổ chớp nhoáng lúc vừa sập
+    public float fallbackExplosionDuration = 1.5f; // Dự phòng nếu VFX không có ParticleSystem
+    public GameObject damagedStateVFX; // VFX khói lửa duy trì suốt lúc hỏng
+    public double repairCost = 5000;
+
+    public void AddEndurance(float amount)
+    {
+        if (isBroken && amount < 0) return; // Nếu đang vỡ thì không nhận thêm damage
+
+        currentEndurance = Mathf.Clamp(currentEndurance + amount, 0, maxEndurance);
+        UpdateEnduranceUI();
+
+        if (currentEndurance <= 0f && !isBroken)
+        {
+            BreakShaft();
+        }
+    }
+
+    private void BreakShaft()
+    {
+        isBroken = true;
+        
+        // Tắt hết lửa nhỏ, lửa to một cách mượt mà (chờ các hạt tàn lụi)
+        normalBurnTimer = 0f;
+        bigBurnTimer = 0f;
+        StopVFXSmoothly(normalBurnVFX);
+        StopVFXSmoothly(bigBurnVFX);
+
+        // Bật VFX phát nổ và tự động tính toán thời gian của VFX
+        float waitTime = fallbackExplosionDuration;
+        if (explosionVFX != null) 
+        {
+            explosionVFX.SetActive(true);
+            
+            // Tìm tất cả ParticleSystem trong VFX nổ để lấy thời gian dài nhất
+            ParticleSystem[] pSystems = explosionVFX.GetComponentsInChildren<ParticleSystem>();
+            if (pSystems.Length > 0)
+            {
+                float maxDuration = 0f;
+                foreach (var ps in pSystems)
+                {
+                    // Tổng thời gian = Thời lượng phát + Thời gian sống của hạt
+                    float duration = ps.main.duration + ps.main.startLifetime.constantMax;
+                    if (duration > maxDuration) maxDuration = duration;
+                }
+                if (maxDuration > 0) waitTime = maxDuration;
+            }
+        }
+
+        // Bắt đầu khóa hầm sớm hơn (chỉ chờ 1 nửa thời gian nổ) để không phải chờ quá lâu
+        StartCoroutine(LockShaftRoutine(waitTime * 0.5f));
+    }
+
+    private System.Collections.IEnumerator LockShaftRoutine(float waitTime)
+    {
+        yield return new WaitForSeconds(waitTime);
+
+        // Tắt VFX nổ
+        if (explosionVFX != null) explosionVFX.SetActive(false);
+
+        // Bật VFX trạng thái hư hỏng tàn tạ
+        if (damagedStateVFX != null) damagedStateVFX.SetActive(true);
+
+        // Hiện bảng báo sửa chữa (ShaftUnlocker)
+        ShaftUnlocker unlocker = GetComponentInChildren<ShaftUnlocker>(true);
+        if (unlocker != null)
+        {
+            unlocker.TriggerRepairMode(repairCost);
+        }
+    }
+
+    public void RepairShaft()
+    {
+        isBroken = false;
+        currentEndurance = maxEndurance; // Hồi đầy máu
+        UpdateEnduranceUI();
+        
+        if (damagedStateVFX != null) 
+        {
+            StopVFXSmoothly(damagedStateVFX); // Tắt mượt mà thay vì tắt rụp
+        }
+        if (explosionVFX != null) explosionVFX.SetActive(false);
+    }
+
+    private void StopVFXSmoothly(GameObject vfxObject)
+    {
+        if (vfxObject == null || !vfxObject.activeSelf) return;
+        StartCoroutine(StopVFXRoutine(vfxObject));
+    }
+
+    private System.Collections.IEnumerator StopVFXRoutine(GameObject vfxObject)
+    {
+        ParticleSystem[] pSystems = vfxObject.GetComponentsInChildren<ParticleSystem>();
+        float maxLifetime = 0f;
+        
+        if (pSystems.Length > 0)
+        {
+            foreach (var ps in pSystems)
+            {
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                if (ps.main.startLifetime.constantMax > maxLifetime)
+                {
+                    maxLifetime = ps.main.startLifetime.constantMax;
+                }
+            }
+            // Chờ cho các hạt rơi/bay nốt rồi mới tắt hẳn object
+            yield return new WaitForSeconds(maxLifetime);
+        }
+        
+        if (vfxObject != null)
+        {
+            vfxObject.SetActive(false);
+        }
+    }
+
+    public void PlayVFXSmoothly(GameObject vfxObject)
+    {
+        if (vfxObject == null) return;
+        vfxObject.SetActive(true);
+        ParticleSystem[] pSystems = vfxObject.GetComponentsInChildren<ParticleSystem>();
+        foreach (var ps in pSystems)
+        {
+            // Ép bật lại hệ thống hạt nếu nó đang bị Stop() lưng chừng
+            if (!ps.isPlaying || !ps.emission.enabled)
+            {
+                ps.Play(true);
+            }
+        }
+    }
+
+    public void UpdateEnduranceUI()
+    {
+        if (enduranceSlider != null)
+        {
+            enduranceSlider.value = currentEndurance / maxEndurance;
+        }
+    }
+
     public double GetTotalExtractionPerSecond(int targetLevel)
     {
         // Tổng lượng đào = Năng suất 1 thợ * Số lượng thợ
@@ -71,9 +216,6 @@ public class MineShaft : Facility
     protected override void Start()
     {
         base.Start(); // Gọi hàm Start của lớp cha (Facility) để update text Level
-        
-        // Sửa lỗi: Unity tự động khởi tạo class [Serializable] làm hầm bị kẹt một quản lý "ảo" từ đầu
-        currentManager = null; 
 
         // Tìm thợ mỏ có sẵn trong cảnh (con của hầm) và thêm vào danh sách nếu chưa có
         Miner[] existingMiners = GetComponentsInChildren<Miner>();
@@ -87,6 +229,7 @@ public class MineShaft : Facility
         }
 
         UpdateUI();
+        UpdateEnduranceUI();
     }
 
     protected override void ApplyManagerBuff()
@@ -258,23 +401,31 @@ public class MineShaft : Facility
     public GameObject normalBurnVFX; // Lửa nhỏ cho đạn thường
     public GameObject bigBurnVFX;    // Lửa to cho đạn bự
 
+    [Header("Burn Damage Settings")]
+    public float normalBurnDamagePerSec = 2f; // Sát thương lửa nhỏ mỗi giây
+    public float bigBurnDamagePerSec = 5f;    // Sát thương lửa to mỗi giây
+
     private float normalBurnTimer = 0f;
     private float bigBurnTimer = 0f;
     private Coroutine burnCoroutine;
 
     public void TriggerBurnVFX(float duration, bool isBig)
     {
+        if (isBroken) return; // Nếu hầm đã vỡ thì không nhận thêm hiệu ứng cháy
+
         if (isBig)
         {
-            // Trúng đạn to: Tắt ngay lửa nhỏ, cộng dồn thời gian lửa to
+            // Trúng đạn to: Tắt mượt mà lửa nhỏ, cộng dồn thời gian lửa to
             normalBurnTimer = 0f; 
-            if (normalBurnVFX != null) normalBurnVFX.SetActive(false);
+            StopVFXSmoothly(normalBurnVFX);
             bigBurnTimer += duration;
+            PlayVFXSmoothly(bigBurnVFX);
         }
         else
         {
             // Trúng đạn nhỏ: Cộng dồn thời gian lửa nhỏ (nếu bị trúng liên tục)
             normalBurnTimer += duration;
+            PlayVFXSmoothly(normalBurnVFX);
         }
 
         // Bật hệ thống đếm ngược nếu nó chưa chạy
@@ -291,21 +442,21 @@ public class MineShaft : Facility
             // Xử lý lửa to
             if (bigBurnTimer > 0)
             {
-                if (bigBurnVFX != null && !bigBurnVFX.activeSelf) bigBurnVFX.SetActive(true);
                 bigBurnTimer -= Time.deltaTime;
+                AddEndurance(-bigBurnDamagePerSec * Time.deltaTime); // Trừ độ bền theo thời gian
                 
-                if (bigBurnTimer <= 0 && bigBurnVFX != null) 
-                    bigBurnVFX.SetActive(false);
+                if (bigBurnTimer <= 0) 
+                    StopVFXSmoothly(bigBurnVFX);
             }
 
             // Xử lý lửa nhỏ
             if (normalBurnTimer > 0)
             {
-                if (normalBurnVFX != null && !normalBurnVFX.activeSelf) normalBurnVFX.SetActive(true);
                 normalBurnTimer -= Time.deltaTime;
+                AddEndurance(-normalBurnDamagePerSec * Time.deltaTime); // Trừ độ bền theo thời gian
                 
-                if (normalBurnTimer <= 0 && normalBurnVFX != null) 
-                    normalBurnVFX.SetActive(false);
+                if (normalBurnTimer <= 0) 
+                    StopVFXSmoothly(normalBurnVFX);
             }
 
             yield return null; // Chờ frame tiếp theo

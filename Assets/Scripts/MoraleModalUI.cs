@@ -39,6 +39,23 @@ public class MoraleModalUI : MonoBehaviour
     private int selectedOption = 0; // 0: +25, 1: Max 1, 2: Max All
     private double currentCost = 0;
     
+    [Header("Endurance UI")]
+    public TextMeshProUGUI enduranceText;
+    public Image enduranceFillImage;
+    
+    [Header("Endurance Purchase UI")]
+    public TextMeshProUGUI enduranceCostText;
+    public Button btnEnduranceAdd25;
+    public Button btnEnduranceMax;
+    public Button btnEndurancePay;
+
+    [Header("Endurance Button Visuals")]
+    public Sprite normalEnduranceBtnSprite;
+    public Sprite selectedEnduranceBtnSprite;
+
+    private int selectedEnduranceOption = 0; // 0: +25, 1: Max
+    private double currentEnduranceCost = 0;
+
     private List<MoraleItemUI> spawnedItems = new List<MoraleItemUI>();
 
     private void Start()
@@ -48,6 +65,9 @@ public class MoraleModalUI : MonoBehaviour
         if (btnMaxAll != null) btnMaxAll.onClick.AddListener(() => SelectOption(2));
         if (btnPay != null) btnPay.onClick.AddListener(OnPayClicked);
         
+        if (btnEnduranceAdd25 != null) btnEnduranceAdd25.onClick.AddListener(() => SelectEnduranceOption(0));
+        if (btnEnduranceMax != null) btnEnduranceMax.onClick.AddListener(() => SelectEnduranceOption(1));
+        if (btnEndurancePay != null) btnEndurancePay.onClick.AddListener(OnEndurancePayClicked);
         // Xóa dòng gameObject.SetActive(false) ở đây để không bị lỗi click 2 lần nữa
     }
 
@@ -68,7 +88,9 @@ public class MoraleModalUI : MonoBehaviour
         
         gameObject.SetActive(true);
         SelectOption(0); // Default to +25
+        SelectEnduranceOption(0); // Default to +25 for endurance
         RefreshList();
+        RefreshEnduranceUI();
 
         // Animation bung ra
         if (modalPanel != null)
@@ -242,6 +264,102 @@ public class MoraleModalUI : MonoBehaviour
             
             // Cap nhat UI tong the game neu can (vi du tien bi tru)
             // Gamemanager.Instance.UpdateTopUI() etc.
+        }
+    }
+
+    public void SelectEnduranceOption(int optionIndex)
+    {
+        selectedEnduranceOption = optionIndex;
+        SetEnduranceButtonVisual(btnEnduranceAdd25, optionIndex == 0);
+        SetEnduranceButtonVisual(btnEnduranceMax, optionIndex == 1);
+        CalculateEnduranceCost();
+    }
+
+    private void SetEnduranceButtonVisual(Button btn, bool isSelected)
+    {
+        if (btn == null || btn.image == null) return;
+        
+        if (isSelected)
+        {
+            if (selectedEnduranceBtnSprite != null) btn.image.sprite = selectedEnduranceBtnSprite;
+            btn.image.color = Color.white;
+        }
+        else
+        {
+            if (normalEnduranceBtnSprite != null) 
+            {
+                btn.image.sprite = normalEnduranceBtnSprite;
+                btn.image.color = Color.white;
+            }
+            else 
+            {
+                btn.image.color = new Color(1f, 1f, 1f, 0f); 
+            }
+        }
+    }
+
+    public void RefreshEnduranceUI()
+    {
+        if (currentShaft == null) return;
+        
+        if (enduranceText != null)
+        {
+            enduranceText.text = $"Endurance: {Mathf.RoundToInt(currentShaft.currentEndurance)}/{Mathf.RoundToInt(currentShaft.maxEndurance)}";
+        }
+        
+        if (enduranceFillImage != null)
+        {
+            enduranceFillImage.fillAmount = currentShaft.currentEndurance / currentShaft.maxEndurance;
+        }
+        
+        CalculateEnduranceCost();
+    }
+
+    private void CalculateEnduranceCost()
+    {
+        currentEnduranceCost = 0;
+        if (currentShaft == null) return;
+
+        float missingEndurance = currentShaft.maxEndurance - currentShaft.currentEndurance;
+
+        if (selectedEnduranceOption == 0) // +25
+        {
+            float amount = Mathf.Min(25f, missingEndurance);
+            currentEnduranceCost = amount * 100; // Placeholder formula: 1 endurance = 100 cash
+        }
+        else if (selectedEnduranceOption == 1) // Max
+        {
+            currentEnduranceCost = missingEndurance * 100;
+        }
+
+        if (enduranceCostText != null)
+        {
+            enduranceCostText.text = CurrencyFormatter.FormatMoney(currentEnduranceCost);
+            bool canAfford = Gamemanager.Instance != null && Gamemanager.Instance.IdleCash >= currentEnduranceCost;
+            enduranceCostText.color = canAfford && currentEnduranceCost > 0 ? Color.white : Color.red;
+
+            if (btnEndurancePay != null) btnEndurancePay.interactable = canAfford && currentEnduranceCost > 0;
+        }
+    }
+
+    public void OnEndurancePayClicked()
+    {
+        if (currentEnduranceCost <= 0 || currentShaft == null) return;
+
+        if (Gamemanager.Instance != null && Gamemanager.Instance.IdleCash >= currentEnduranceCost)
+        {
+            Gamemanager.Instance.IdleCash -= currentEnduranceCost;
+
+            if (selectedEnduranceOption == 0) // +25
+            {
+                currentShaft.AddEndurance(25f);
+            }
+            else if (selectedEnduranceOption == 1) // Max
+            {
+                currentShaft.AddEndurance(currentShaft.maxEndurance); 
+            }
+
+            RefreshEnduranceUI();
         }
     }
 }

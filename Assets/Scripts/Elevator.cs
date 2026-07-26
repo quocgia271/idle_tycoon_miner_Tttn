@@ -47,6 +47,9 @@ public class Elevator : Facility
     public float ElevatorMoveSpeedBuff = 1f;
     public float ElevatorLoadSpeedBuff = 1f;
 
+    [Header("Boss VFX")]
+    public GameObject slowVFX; // Kéo thả VFX dư âm làm chậm vào đây
+
     protected override void Start()
     {
         base.Start(); 
