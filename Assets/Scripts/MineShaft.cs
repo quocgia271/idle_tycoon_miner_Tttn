@@ -64,6 +64,11 @@ public class MineShaft : Facility
     public float currentEndurance = 100f;
     public UnityEngine.UI.Slider enduranceSlider;
 
+    [Header("Damage Popup")]
+    public DamagePopup damagePopupPrefab;
+    [Tooltip("Vị trí sinh ra số sát thương. Nếu để trống sẽ lấy tâm của hầm.")]
+    public Transform popupSpawnPoint;
+
     [Header("Broken State")]
     public bool isBroken = false;
     public GameObject explosionVFX; // VFX phát nổ chớp nhoáng lúc vừa sập
@@ -78,9 +83,36 @@ public class MineShaft : Facility
         currentEndurance = Mathf.Clamp(currentEndurance + amount, 0, maxEndurance);
         UpdateEnduranceUI();
 
+        if (amount < 0)
+        {
+            // Vì Lửa và Độc đã được sửa lại để giật sát thương 1 giây 1 lần
+            // Nên ta có thể yên tâm cho bung số lên mỗi khi bị trừ máu
+            SpawnDamagePopup(-amount);
+        }
+
         if (currentEndurance <= 0f && !isBroken)
         {
             BreakShaft();
+        }
+    }
+
+    private void SpawnDamagePopup(float amount)
+    {
+        if (damagePopupPrefab != null)
+        {
+            DamagePopup popup;
+            if (popupSpawnPoint != null)
+            {
+                // Sử dụng Object Pool để sinh chữ
+                popup = DamagePopup.Create(damagePopupPrefab, popupSpawnPoint.position, popupSpawnPoint);
+            }
+            else
+            {
+                popup = DamagePopup.Create(damagePopupPrefab, transform.position, null);
+            }
+            // Truyền tham số 0.1f (scaleFactor) để chữ ở hầm bay lên cực kỳ ngắn (bằng 1/10 của Boss)
+            // Khoảng cách tản ra (scatter) siêu hẹp, bám sát Hầm
+            popup.Setup(amount, 0.1f);
         }
     }
 
@@ -93,6 +125,9 @@ public class MineShaft : Facility
         bigBurnTimer = 0f;
         StopVFXSmoothly(normalBurnVFX);
         StopVFXSmoothly(bigBurnVFX);
+        
+        // Tắt Skill 3 nếu đang chạy
+        ForceStopSkill3();
 
         // Bật VFX phát nổ và tự động tính toán thời gian của VFX
         float waitTime = fallbackExplosionDuration;
@@ -230,6 +265,11 @@ public class MineShaft : Facility
 
         UpdateUI();
         UpdateEnduranceUI();
+    }
+
+    protected override void Update()
+    {
+        base.Update();
     }
 
     protected override void ApplyManagerBuff()
@@ -400,6 +440,12 @@ public class MineShaft : Facility
     [Header("VFX Hầm")]
     public GameObject normalBurnVFX; // Lửa nhỏ cho đạn thường
     public GameObject bigBurnVFX;    // Lửa to cho đạn bự
+    
+    [Header("Skill 3 Settings")]
+    public List<GameObject> skill3VFXs;
+    private Coroutine skill3Coroutine;
+    private GameObject activeSkill3VFX;
+    public bool IsSkill3Active => skill3Coroutine != null;
 
     [Header("Burn Damage Settings")]
     public float normalBurnDamagePerSec = 2f; // Sát thương lửa nhỏ mỗi giây
@@ -437,13 +483,16 @@ public class MineShaft : Facility
 
     private System.Collections.IEnumerator BurnTimerRoutine()
     {
+        float tickTimer = 1f;
         while (normalBurnTimer > 0 || bigBurnTimer > 0)
         {
+            tickTimer -= Time.deltaTime;
+
             // Xử lý lửa to
             if (bigBurnTimer > 0)
             {
                 bigBurnTimer -= Time.deltaTime;
-                AddEndurance(-bigBurnDamagePerSec * Time.deltaTime); // Trừ độ bền theo thời gian
+                if (tickTimer <= 0f) AddEndurance(-bigBurnDamagePerSec);
                 
                 if (bigBurnTimer <= 0) 
                     StopVFXSmoothly(bigBurnVFX);
@@ -453,15 +502,132 @@ public class MineShaft : Facility
             if (normalBurnTimer > 0)
             {
                 normalBurnTimer -= Time.deltaTime;
-                AddEndurance(-normalBurnDamagePerSec * Time.deltaTime); // Trừ độ bền theo thời gian
+                if (tickTimer <= 0f) AddEndurance(-normalBurnDamagePerSec);
                 
                 if (normalBurnTimer <= 0) 
                     StopVFXSmoothly(normalBurnVFX);
             }
 
+            if (tickTimer <= 0f) tickTimer = 1f;
+
             yield return null; // Chờ frame tiếp theo
         }
         
         burnCoroutine = null; // Khi cả 2 lửa đều tắt, reset coroutine
+    }
+
+    // ==========================================
+    // SKILL 3: ĐỘC/SÁT THƯƠNG NGẪU NHIÊN LÊN HẦM
+    // ==========================================
+    public void TriggerSkill3VFX(float duration, float dps)
+    {
+        if (isBroken || skill3VFXs == null || skill3VFXs.Count == 0) return;
+        
+        if (skill3Coroutine != null) StopCoroutine(skill3Coroutine);
+        skill3Coroutine = StartCoroutine(Skill3Routine(duration, dps));
+    }
+
+    private void ForceStopSkill3()
+    {
+        if (skill3Coroutine != null) StopCoroutine(skill3Coroutine);
+        skill3Coroutine = null;
+
+        if (activeSkill3VFX != null)
+        {
+            StartCoroutine(FadeOutSkill3Routine(activeSkill3VFX));
+            activeSkill3VFX = null;
+        }
+    }
+
+    private System.Collections.IEnumerator FadeOutSkill3Routine(GameObject vfxObject)
+    {
+        SpriteRenderer[] sprites = vfxObject.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in sprites)
+        {
+            sr.DOFade(0f, 0.5f);
+        }
+
+        ParticleSystem[] pSystems = vfxObject.GetComponentsInChildren<ParticleSystem>();
+        float maxLifetime = 0f;
+        foreach (var ps in pSystems)
+        {
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            if (ps.main.startLifetime.constantMax > maxLifetime)
+            {
+                maxLifetime = ps.main.startLifetime.constantMax;
+            }
+        }
+
+        float waitTime = Mathf.Max(0.5f, maxLifetime);
+        yield return new WaitForSeconds(waitTime);
+
+        vfxObject.SetActive(false);
+    }
+
+    private System.Collections.IEnumerator Skill3Routine(float duration, float dps)
+    {
+        activeSkill3VFX = skill3VFXs[Random.Range(0, skill3VFXs.Count)];
+        if (activeSkill3VFX == null) yield break;
+
+        activeSkill3VFX.SetActive(true);
+
+        // Fade in
+        SpriteRenderer[] sprites = activeSkill3VFX.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in sprites)
+        {
+            Color c = sr.color;
+            c.a = 0f;
+            sr.color = c;
+            sr.DOFade(1f, 0.5f);
+        }
+
+        ParticleSystem[] pSystems = activeSkill3VFX.GetComponentsInChildren<ParticleSystem>();
+        foreach (var ps in pSystems)
+        {
+            ps.Play(true);
+        }
+
+        float timer = duration;
+        float tickTimer = 1f;
+        while (timer > 0)
+        {
+            timer -= Time.deltaTime;
+            tickTimer -= Time.deltaTime;
+
+            if (tickTimer <= 0f)
+            {
+                AddEndurance(-dps);
+                tickTimer = 1f;
+            }
+
+            yield return null;
+        }
+
+        // Fade out
+        foreach (var sr in sprites)
+        {
+            sr.DOFade(0f, 0.5f);
+        }
+
+        float maxLifetime = 0f;
+        foreach (var ps in pSystems)
+        {
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            if (ps.main.startLifetime.constantMax > maxLifetime)
+            {
+                maxLifetime = ps.main.startLifetime.constantMax;
+            }
+        }
+
+        // Chờ fade out xong
+        float waitTime = Mathf.Max(0.5f, maxLifetime);
+        yield return new WaitForSeconds(waitTime);
+
+        if (activeSkill3VFX != null)
+        {
+            activeSkill3VFX.SetActive(false);
+            activeSkill3VFX = null;
+        }
+        skill3Coroutine = null;
     }
 }

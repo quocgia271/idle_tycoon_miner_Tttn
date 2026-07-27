@@ -6,11 +6,18 @@ public class EnemyClickReceiver : MonoBehaviour
 {
     [Header("Click Attack Settings")]
     public float clickDamage = 10f;
-    public List<GameObject> clickVFXPrefabs; 
-    public float clickVFXRandomRadius = 0.5f; 
+    
+    [Header("Damage Popup")]
+    public DamagePopup damagePopupPrefab;
+    [Tooltip("Vị trí sinh ra số sát thương. Nếu để trống sẽ lấy tâm của vật.")]
+    public Transform popupSpawnPoint;
 
     private IDamageable damageableTarget;
     private Vector3 originalScale;
+
+    [Header("Hit Feedback Settings")]
+    public float punchCooldown = 0.15f; // Thời gian giãn cách giữa các lần giật hình (tránh kẹt Boss)
+    private float lastPunchTime = 0f;
 
     private void Awake()
     {
@@ -60,12 +67,13 @@ public class EnemyClickReceiver : MonoBehaviour
     {
         if (damageableTarget != null && damageableTarget.IsInvincible) return;
 
-        // 0. Hiệu ứng bị đẩy lùi (Hit Feedback)
-        // Lệnh DOKill(true) sẽ ép hiệu ứng trước đó phải nhảy về ngay trạng thái kết thúc (không bị lệch tọa độ khi bấm quá nhanh)
-        transform.DOKill(true); 
-        
-        // DOPunchPosition: Bị đẩy lùi nhẹ về phía sau (trục X) 0.05 đơn vị rồi lập tức nảy về chỗ cũ trong 0.15s
-        transform.DOPunchPosition(new Vector3(0.05f, 0, 0), 0.15f, 1, 0f);
+        // 0. Hiệu ứng bị đẩy lùi (Hit Feedback) - Có Cooldown để tránh kẹt hình Boss khi spam click
+        if (Time.time - lastPunchTime > punchCooldown)
+        {
+            lastPunchTime = Time.time;
+            transform.DOKill(true); 
+            transform.DOPunchPosition(new Vector3(0.05f, 0, 0), 0.15f, 1, 0f);
+        }
 
         // 1. Gửi lệnh Trừ máu cho script chính (Không cần quan tâm nó là Minion hay Rồng hay Boss)
         if (damageableTarget != null)
@@ -73,23 +81,19 @@ public class EnemyClickReceiver : MonoBehaviour
             damageableTarget.TakeDamage(clickDamage);
         }
 
-        // 2. Chọn ngẫu nhiên 1 VFX và sinh ra tại vị trí chuột + độ lệch nhỏ
-        if (clickVFXPrefabs != null && clickVFXPrefabs.Count > 0)
+        // 2. Tạo Floating Text từ Object Pool để tránh giật lag máy
+        if (damagePopupPrefab != null)
         {
-            GameObject chosenVFX = clickVFXPrefabs[Random.Range(0, clickVFXPrefabs.Count)];
-            
-            if (chosenVFX != null)
+            DamagePopup popup;
+            if (popupSpawnPoint != null)
             {
-                Vector3 touchPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                touchPos.z = transform.position.z; 
-                
-                Vector2 randomOffset = Random.insideUnitCircle * clickVFXRandomRadius;
-                touchPos.x += randomOffset.x;
-                touchPos.y += randomOffset.y;
-                
-                GameObject vfx = Instantiate(chosenVFX, touchPos, Quaternion.identity);
-                Destroy(vfx, 2f);
+                popup = DamagePopup.Create(damagePopupPrefab, popupSpawnPoint.position, popupSpawnPoint);
             }
+            else
+            {
+                popup = DamagePopup.Create(damagePopupPrefab, transform.position, null);
+            }
+            popup.Setup(clickDamage);
         }
     }
 }

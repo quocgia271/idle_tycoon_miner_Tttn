@@ -4,7 +4,9 @@ using System.Collections.Generic;
 public enum BossPhase3Skill
 {
     SummonMinion,
-    Barrier
+    Barrier,
+    Skill3_ShaftDoT,
+    Skill4_GlobalDoT
 }
 
 [System.Serializable]
@@ -32,6 +34,16 @@ public class BossPhase3Controller : MonoBehaviour
     public GameObject elevatorBarrier;
     public GameObject warehouseBarrier;
     private bool nextBarrierIsWarehouse = false; // Luân phiên giữa 2 màn chắn
+
+    [Header("Skill 3 Settings")]
+    public float skill3Duration = 5f;
+    public float skill3DamagePerSec = 10f;
+
+    [Header("Skill 4 Settings")]
+    public List<GameObject> skill4CameraVFXs;
+    public float skill4Duration = 5f;
+    public float skill4DamagePerSec = 5f;
+    private Coroutine skill4Coroutine;
 
     private float attackTimer;
 
@@ -132,6 +144,14 @@ public class BossPhase3Controller : MonoBehaviour
                 return GetActiveShafts().Count > 0; 
             }
         }
+        else if (skill == BossPhase3Skill.Skill3_ShaftDoT)
+        {
+            return GetValidShaftsForSkill3().Count > 0;
+        }
+        else if (skill == BossPhase3Skill.Skill4_GlobalDoT)
+        {
+            return skill4Coroutine == null && GetActiveShafts().Count > 0;
+        }
         return true;
     }
 
@@ -144,6 +164,12 @@ public class BossPhase3Controller : MonoBehaviour
                 break;
             case BossPhase3Skill.Barrier:
                 ExecuteBarrier();
+                break;
+            case BossPhase3Skill.Skill3_ShaftDoT:
+                ExecuteSkill3();
+                break;
+            case BossPhase3Skill.Skill4_GlobalDoT:
+                ExecuteSkill4();
                 break;
         }
     }
@@ -229,6 +255,52 @@ public class BossPhase3Controller : MonoBehaviour
         return validShafts;
     }
 
+    private List<MineShaft> GetValidShaftsForSkill3()
+    {
+        List<MineShaft> validShafts = new List<MineShaft>();
+        List<MineShaft> activeShafts = GetActiveShafts();
+
+        foreach (var shaft in activeShafts)
+        {
+            if (!shaft.IsSkill3Active)
+            {
+                validShafts.Add(shaft);
+            }
+        }
+        return validShafts;
+    }
+
+    private MineShaft ChooseShaftWithPriority(List<MineShaft> validShafts)
+    {
+        if (validShafts.Count == 0) return null;
+
+        float totalWeight = 0;
+        List<float> cumulativeWeights = new List<float>();
+
+        for (int i = 0; i < validShafts.Count; i++)
+        {
+            float baseScore = validShafts.Count - i; 
+            float weight = Mathf.Pow(baseScore, 1.5f); 
+            
+            totalWeight += weight;
+            cumulativeWeights.Add(totalWeight);
+        }
+
+        float randomVal = Random.Range(0, totalWeight);
+        MineShaft chosenShaft = validShafts[0];
+
+        for (int i = 0; i < validShafts.Count; i++)
+        {
+            if (randomVal <= cumulativeWeights[i])
+            {
+                chosenShaft = validShafts[i];
+                break;
+            }
+        }
+
+        return chosenShaft;
+    }
+
     private void ExecuteBarrier()
     {
         if (nextBarrierIsWarehouse)
@@ -264,32 +336,9 @@ public class BossPhase3Controller : MonoBehaviour
     private void ExecuteSummonMinion()
     {
         List<MineShaft> validShafts = GetValidShaftsForSummon();
-
         if (validShafts.Count == 0 || minionPrefabs == null || minionPrefabs.Length == 0) return;
 
-        float totalWeight = 0;
-        List<float> cumulativeWeights = new List<float>();
-
-        for (int i = 0; i < validShafts.Count; i++)
-        {
-            float baseScore = validShafts.Count - i; 
-            float weight = Mathf.Pow(baseScore, 1.5f); 
-            
-            totalWeight += weight;
-            cumulativeWeights.Add(totalWeight);
-        }
-
-        float randomVal = Random.Range(0, totalWeight);
-        MineShaft chosenShaft = validShafts[0];
-
-        for (int i = 0; i < validShafts.Count; i++)
-        {
-            if (randomVal <= cumulativeWeights[i])
-            {
-                chosenShaft = validShafts[i];
-                break;
-            }
-        }
+        MineShaft chosenShaft = ChooseShaftWithPriority(validShafts);
 
         GameObject randomPrefab = minionPrefabs[Random.Range(0, minionPrefabs.Length)];
         GameObject newMinionObj = Instantiate(randomPrefab, chosenShaft.transform);
@@ -299,5 +348,90 @@ public class BossPhase3Controller : MonoBehaviour
         {
             chosenMinion.targetShaft = chosenShaft; 
         }
+    }
+
+    private void ExecuteSkill3()
+    {
+        List<MineShaft> validShafts = GetValidShaftsForSkill3();
+        if (validShafts.Count > 0)
+        {
+            MineShaft targetShaft = ChooseShaftWithPriority(validShafts);
+            if (targetShaft != null)
+            {
+                targetShaft.TriggerSkill3VFX(skill3Duration, skill3DamagePerSec);
+            }
+        }
+    }
+
+    private void ExecuteSkill4()
+    {
+        if (skill4Coroutine != null) StopCoroutine(skill4Coroutine);
+        skill4Coroutine = StartCoroutine(Skill4Routine());
+    }
+
+    private System.Collections.IEnumerator Skill4Routine()
+    {
+        GameObject chosenVFX = null;
+
+        if (skill4CameraVFXs != null && skill4CameraVFXs.Count > 0)
+        {
+            chosenVFX = skill4CameraVFXs[Random.Range(0, skill4CameraVFXs.Count)];
+            if (chosenVFX != null)
+            {
+                chosenVFX.SetActive(true);
+                
+                // Nếu có ParticleSystem thì Play nó
+                ParticleSystem[] pss = chosenVFX.GetComponentsInChildren<ParticleSystem>();
+                foreach (var ps in pss)
+                {
+                    ps.Play(true);
+                }
+            }
+        }
+
+        float timer = skill4Duration;
+        float tickTimer = 1f;
+        while (timer > 0)
+        {
+            timer -= Time.deltaTime;
+            tickTimer -= Time.deltaTime;
+            
+            if (tickTimer <= 0f)
+            {
+                // Gây sát thương toàn bộ hầm 1 lần mỗi giây
+                List<MineShaft> activeShafts = GetActiveShafts();
+                foreach (var shaft in activeShafts)
+                {
+                    shaft.AddEndurance(-skill4DamagePerSec);
+                }
+                tickTimer = 1f;
+            }
+
+            yield return null;
+        }
+
+        if (chosenVFX != null)
+        {
+            float maxLifetime = 0f;
+            
+            // Tắt VFX mượt mà nếu là ParticleSystem
+            ParticleSystem[] pss = chosenVFX.GetComponentsInChildren<ParticleSystem>();
+            foreach (var ps in pss)
+            {
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                if (ps.main.startLifetime.constantMax > maxLifetime)
+                {
+                    maxLifetime = ps.main.startLifetime.constantMax;
+                }
+            }
+            
+            if (maxLifetime > 0)
+            {
+                yield return new WaitForSeconds(maxLifetime);
+            }
+            
+            chosenVFX.SetActive(false);
+        }
+        skill4Coroutine = null;
     }
 }
