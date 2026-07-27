@@ -31,10 +31,13 @@ public class ShaftUnlocker : MonoBehaviour
 
     private void Start()
     {
-        // Khởi tạo UI
-        if (costText != null) costText.text = CurrencyFormatter.FormatMoney(requiredGold);
-        if (timeText != null) timeText.text = FormatTime(buildTimeSeconds);
-        if (levelText != null) levelText.text = $"Level: {requiredLevel}";
+        // Khởi tạo UI (Chỉ khi không phải chế độ sửa chữa)
+        if (!isRepairMode)
+        {
+            if (costText != null) costText.text = CurrencyFormatter.FormatMoney(requiredGold);
+            if (timeText != null) timeText.text = FormatTime(buildTimeSeconds);
+            if (levelText != null) levelText.text = $"Level: {requiredLevel}";
+        }
 
         if (lockButton != null)
         {
@@ -46,8 +49,8 @@ public class ShaftUnlocker : MonoBehaviour
             originalPos = shaftRoot.localPosition;
         }
 
-        // CHỈ BẬT LÚC HƯ HỎNG: Lúc hầm chưa mua thì tắt VFX đi cho đỡ rối mắt
-        if (indicatorVFX != null) indicatorVFX.SetActive(false);
+        // Bật VFX nếu đang ở chế độ sửa chữa (vì có thể Start chạy sau khi TriggerRepairMode gọi SetActive(true))
+        if (indicatorVFX != null) indicatorVFX.SetActive(isRepairMode);
 
         // Lắng nghe sự kiện đổi tiền/level để cập nhật màu chữ
         if (Gamemanager.Instance != null)

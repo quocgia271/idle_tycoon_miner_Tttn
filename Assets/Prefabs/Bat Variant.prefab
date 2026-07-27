@@ -216,6 +216,30 @@ PrefabInstance:
       propertyPath: specialAttackVFX
       value: 
       objectReference: {fileID: 6924806416063842828}
+    - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: normalDamageColor.b
+      value: 0.50095403
+      objectReference: {fileID: 0}
+    - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: normalDamageColor.g
+      value: 0.50095403
+      objectReference: {fileID: 0}
+    - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: normalDamageColor.r
+      value: 0.5320754
+      objectReference: {fileID: 0}
+    - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: specialDamageColor.b
+      value: 0.30868635
+      objectReference: {fileID: 0}
+    - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: specialDamageColor.g
+      value: 0.5281671
+      objectReference: {fileID: 0}
+    - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: specialDamageColor.r
+      value: 0.5471698
+      objectReference: {fileID: 0}
     - target: {fileID: 7810640658210061516, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
       propertyPath: popupSpawnPoint
       value: 
@@ -516,11 +540,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1146530133384023993, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_fontSize
-      value: 0.5
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 1146530133384023993, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_fontSizeBase
-      value: 0.5
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1146530133384023993, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
+      propertyPath: m_enableWordWrapping
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5288558961426154877, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_Pivot.x
@@ -548,7 +576,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5288558961426154877, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 20
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5288558961426154877, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_SizeDelta.y
@@ -584,11 +612,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5288558961426154877, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.143
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5288558961426154877, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.529
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5288558961426154877, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

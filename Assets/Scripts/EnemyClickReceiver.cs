@@ -93,7 +93,7 @@ public class EnemyClickReceiver : MonoBehaviour
             {
                 popup = DamagePopup.Create(damagePopupPrefab, transform.position, null);
             }
-            popup.Setup(clickDamage);
+            popup.Setup(clickDamage, 1f, Color.red);
         }
     }
 }

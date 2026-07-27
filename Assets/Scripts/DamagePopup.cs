@@ -7,6 +7,7 @@ public class DamagePopup : MonoBehaviour
 {
     public TMP_Text textMesh;
     public float floatDistance = 1.5f; // Khoảng cách bay lên
+    public float sizeMultiplier = 1.2f; // Hệ số phóng to/thu nhỏ chữ
     
     // Object Pool tĩnh để dùng chung cho mọi nguồn (Boss, Hầm) nhằm tránh giật lag khi sinh chữ liên tục
     private static Queue<DamagePopup> pool = new Queue<DamagePopup>();
@@ -21,15 +22,22 @@ public class DamagePopup : MonoBehaviour
 
         if (popup != null)
         {
-            popup.transform.SetParent(parent);
+            // Để đảm bảo kích thước luôn chuẩn xác như Prefab gốc bất kể đưa vào Canvas có scale bao nhiêu:
+            // 1. Tạm thời tách khỏi parent cũ
+            popup.transform.SetParent(null);
+            // 2. Phục hồi đúng kích thước gốc của Prefab rồi nhân với hệ số phóng to
+            popup.transform.localScale = prefab.transform.localScale * prefab.sizeMultiplier;
+            popup.transform.localRotation = prefab.transform.localRotation;
+            // 3. Gắn vào parent mới, Unity sẽ tự động tính toán lại localScale cho phù hợp để giữ nguyên size
+            popup.transform.SetParent(parent, true);
             popup.transform.position = position;
-            popup.transform.localScale = Vector3.one; // Quan trọng: Reset scale khi lấy ra khỏi pool
-            popup.transform.localRotation = Quaternion.identity;
             popup.gameObject.SetActive(true);
         }
         else
         {
             popup = Instantiate(prefab, position, Quaternion.identity, parent);
+            // Phóng to ngay từ lần sinh ra đầu tiên
+            popup.transform.localScale = prefab.transform.localScale * prefab.sizeMultiplier;
         }
         return popup;
     }
@@ -52,7 +60,7 @@ public class DamagePopup : MonoBehaviour
         }
     }
 
-    public void Setup(float damageAmount, float scaleFactor = 1f)
+    public void Setup(float damageAmount, float scaleFactor, Color textColor)
     {
         // Dừng các hiệu ứng cũ nếu được lấy ra từ Pool
         transform.DOKill();
@@ -63,8 +71,7 @@ public class DamagePopup : MonoBehaviour
         {
             textMesh.text = "-" + damageAmount.ToString("F0");
 
-            // Đặt mặc định text hiển thị rõ
-            Color textColor = textMesh.color;
+            // Ép Alpha = 1 phòng trường hợp User quên kéo thanh Alpha trong Inspector của Color
             textColor.a = 1f;
             textMesh.color = textColor;
 
@@ -73,8 +80,10 @@ public class DamagePopup : MonoBehaviour
         }
 
         // Tỷ lệ khoảng cách để hầm không bị bay quá xa (scaleFactor)
-        float scatterX = Random.Range(-0.3f, 0.3f) * scaleFactor;
-        float scatterY = Random.Range(-0.2f, 0.2f) * scaleFactor;
+        // Nâng mức tản tối thiểu lên 0.8 để các chữ tách nhau ra rõ hơn
+        float scatterMultiplier = Mathf.Max(scaleFactor, 0.8f);
+        float scatterX = Random.Range(-0.3f, 0.3f) * scatterMultiplier;
+        float scatterY = Random.Range(-0.2f, 0.2f) * scatterMultiplier;
         transform.position += new Vector3(scatterX, scatterY, 0);
 
         float distanceToFloat = floatDistance * scaleFactor;

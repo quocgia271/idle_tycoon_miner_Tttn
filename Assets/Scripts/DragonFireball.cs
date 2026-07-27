@@ -55,8 +55,8 @@ public class DragonFireball : MonoBehaviour
             }
 
             // 4. TRỪ MÁU TRỰC TIẾP VÀ BẬT HIỆU ỨNG CHÁY HẦM:
-            // Trừ độ bền của hầm bằng sát thương viên đạn
-            shaft.AddEndurance(-damage);
+            // Sát thương từ đạn của Rồng luôn luôn màu Đỏ
+            shaft.AddEndurance(-damage, Color.red);
 
             // Đạn bự hay nhỏ đều kích hoạt cháy hầm, thời gian cháy lấy từ biến burnDuration
             shaft.TriggerBurnVFX(burnDuration, isBigFireball);

@@ -507,7 +507,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 888444077320411739, guid: 0c2509361b13505428ce788b7f846686, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 888444077320411742, guid: 0c2509361b13505428ce788b7f846686, type: 3}
       propertyPath: m_LocalScale.x
@@ -8198,16 +8198,24 @@ PrefabInstance:
     m_TransformParent: {fileID: 519420032}
     m_Modifications:
     - target: {fileID: 1397337502211612305, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
+      propertyPath: lengthInSec
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1397337502211612305, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
       propertyPath: InitialModule.maxNumParticles
       value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 1397337502211612305, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
       propertyPath: InitialModule.startSize.scalar
-      value: 0.3
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1397337502211612305, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1397337502211612305, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
       propertyPath: InitialModule.startSize.minScalar
-      value: 0.2
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 1397337502211612305, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
       propertyPath: EmissionModule.rateOverTime.scalar
@@ -8236,6 +8244,22 @@ PrefabInstance:
     - target: {fileID: 7305185502956871417, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8269236832927794952, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
+      propertyPath: lengthInSec
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8269236832927794952, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
+      propertyPath: InitialModule.startSize.scalar
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8269236832927794952, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8269236832927794952, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 8373965720183865277, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
       propertyPath: m_SortingLayer
@@ -11946,6 +11970,18 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2028564895}
     - target: {fileID: 5157342627512690289, guid: 332b21a684312b34798ace98affe4eed, type: 3}
+      propertyPath: skill4DamageColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5157342627512690289, guid: 332b21a684312b34798ace98affe4eed, type: 3}
+      propertyPath: skill4DamageColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5157342627512690289, guid: 332b21a684312b34798ace98affe4eed, type: 3}
+      propertyPath: skill4DamageColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5157342627512690289, guid: 332b21a684312b34798ace98affe4eed, type: 3}
       propertyPath: allShafts.Array.size
       value: 10
       objectReference: {fileID: 0}
@@ -12059,15 +12095,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5157342627512690289, guid: 332b21a684312b34798ace98affe4eed, type: 3}
       propertyPath: skillWeights.Array.data[1].weight
-      value: 0
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 5157342627512690289, guid: 332b21a684312b34798ace98affe4eed, type: 3}
       propertyPath: skillWeights.Array.data[2].weight
-      value: 0
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 5157342627512690289, guid: 332b21a684312b34798ace98affe4eed, type: 3}
       propertyPath: skillWeights.Array.data[3].weight
-      value: 50
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 5157342627512690289, guid: 332b21a684312b34798ace98affe4eed, type: 3}
       propertyPath: skillWeights.Array.data[0].cooldownDelay
@@ -14089,23 +14125,23 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1106768634367155780, guid: ed7afb02a2246614da8d0e93b155ef48, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1106768634367155780, guid: ed7afb02a2246614da8d0e93b155ef48, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1106768634367155780, guid: ed7afb02a2246614da8d0e93b155ef48, type: 3}
       propertyPath: m_AnchorMin.x
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3937025515861589744, guid: ed7afb02a2246614da8d0e93b155ef48, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3937025515861589744, guid: ed7afb02a2246614da8d0e93b155ef48, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5650423630096164300, guid: ed7afb02a2246614da8d0e93b155ef48, type: 3}
       propertyPath: m_LocalPosition.x
@@ -14153,7 +14189,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5650423630096164307, guid: ed7afb02a2246614da8d0e93b155ef48, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5839794064827580435, guid: ed7afb02a2246614da8d0e93b155ef48, type: 3}
       propertyPath: timeBetweenAttacks
@@ -17730,7 +17766,15 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3492863750394444133, guid: bda0cfa9986e3c140b0c53a97bd90f39, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3492863750394444133, guid: bda0cfa9986e3c140b0c53a97bd90f39, type: 3}
       propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3492863750394444133, guid: bda0cfa9986e3c140b0c53a97bd90f39, type: 3}
+      propertyPath: m_AnchorMin.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3734595773485260869, guid: bda0cfa9986e3c140b0c53a97bd90f39, type: 3}
@@ -17824,6 +17868,10 @@ PrefabInstance:
     - target: {fileID: 9017769452106845334, guid: bda0cfa9986e3c140b0c53a97bd90f39, type: 3}
       propertyPath: m_Name
       value: Mine (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 9017769452106845334, guid: bda0cfa9986e3c140b0c53a97bd90f39, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

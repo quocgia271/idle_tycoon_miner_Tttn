@@ -43,6 +43,7 @@ public class BossPhase3Controller : MonoBehaviour
     public List<GameObject> skill4CameraVFXs;
     public float skill4Duration = 5f;
     public float skill4DamagePerSec = 5f;
+    public Color skill4DamageColor = Color.magenta;
     private Coroutine skill4Coroutine;
 
     private float attackTimer;
@@ -402,7 +403,7 @@ public class BossPhase3Controller : MonoBehaviour
                 List<MineShaft> activeShafts = GetActiveShafts();
                 foreach (var shaft in activeShafts)
                 {
-                    shaft.AddEndurance(-skill4DamagePerSec);
+                    shaft.AddEndurance(-skill4DamagePerSec, skill4DamageColor);
                 }
                 tickTimer = 1f;
             }

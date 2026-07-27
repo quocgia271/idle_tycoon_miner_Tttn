@@ -28,6 +28,10 @@ public class MinionController : MonoBehaviour, IDamageable
     public float destroyDelayAfterDeath = 2f;
     public float fadeInDuration = 0.5f; // Thời gian Fade in
 
+    [Header("Damage Colors")]
+    public Color normalDamageColor = Color.white;
+    public Color specialDamageColor = Color.yellow;
+
     private float currentHealth;
     private float attackTimer;
     private int attackCount = 0;
@@ -152,7 +156,7 @@ public class MinionController : MonoBehaviour, IDamageable
             }
         }
 
-        targetShaft.AddEndurance(-normalDamage);
+        targetShaft.AddEndurance(-normalDamage, normalDamageColor);
     }
 
     public void OnSpecialAttackHit()
@@ -172,7 +176,7 @@ public class MinionController : MonoBehaviour, IDamageable
             }
         }
 
-        targetShaft.AddEndurance(-specialDamage);
+        targetShaft.AddEndurance(-specialDamage, specialDamageColor);
     }
 
     // ==========================================

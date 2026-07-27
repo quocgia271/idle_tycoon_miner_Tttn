@@ -78,6 +78,11 @@ public class MineShaft : Facility
 
     public void AddEndurance(float amount)
     {
+        AddEndurance(amount, Color.white);
+    }
+
+    public void AddEndurance(float amount, Color damageColor)
+    {
         if (isBroken && amount < 0) return; // Nếu đang vỡ thì không nhận thêm damage
 
         currentEndurance = Mathf.Clamp(currentEndurance + amount, 0, maxEndurance);
@@ -87,7 +92,7 @@ public class MineShaft : Facility
         {
             // Vì Lửa và Độc đã được sửa lại để giật sát thương 1 giây 1 lần
             // Nên ta có thể yên tâm cho bung số lên mỗi khi bị trừ máu
-            SpawnDamagePopup(-amount);
+            SpawnDamagePopup(-amount, damageColor);
         }
 
         if (currentEndurance <= 0f && !isBroken)
@@ -96,7 +101,7 @@ public class MineShaft : Facility
         }
     }
 
-    private void SpawnDamagePopup(float amount)
+    private void SpawnDamagePopup(float amount, Color damageColor)
     {
         if (damagePopupPrefab != null)
         {
@@ -112,7 +117,7 @@ public class MineShaft : Facility
             }
             // Truyền tham số 0.1f (scaleFactor) để chữ ở hầm bay lên cực kỳ ngắn (bằng 1/10 của Boss)
             // Khoảng cách tản ra (scatter) siêu hẹp, bám sát Hầm
-            popup.Setup(amount, 0.1f);
+            popup.Setup(amount, 0.1f, damageColor);
         }
     }
 
@@ -288,7 +293,6 @@ public class MineShaft : Facility
             case ManagerBuffType.MiningSpeed:
                 MinerDigSpeedBuff = buffMultiplier;
                 break;
-                break;
         }
     }
 
@@ -443,6 +447,7 @@ public class MineShaft : Facility
     
     [Header("Skill 3 Settings")]
     public List<GameObject> skill3VFXs;
+    public List<Color> skill3DamageColors;
     private Coroutine skill3Coroutine;
     private GameObject activeSkill3VFX;
     public bool IsSkill3Active => skill3Coroutine != null;
@@ -492,7 +497,7 @@ public class MineShaft : Facility
             if (bigBurnTimer > 0)
             {
                 bigBurnTimer -= Time.deltaTime;
-                if (tickTimer <= 0f) AddEndurance(-bigBurnDamagePerSec);
+                if (tickTimer <= 0f) AddEndurance(-bigBurnDamagePerSec, Color.red);
                 
                 if (bigBurnTimer <= 0) 
                     StopVFXSmoothly(bigBurnVFX);
@@ -502,7 +507,7 @@ public class MineShaft : Facility
             if (normalBurnTimer > 0)
             {
                 normalBurnTimer -= Time.deltaTime;
-                if (tickTimer <= 0f) AddEndurance(-normalBurnDamagePerSec);
+                if (tickTimer <= 0f) AddEndurance(-normalBurnDamagePerSec, Color.red);
                 
                 if (normalBurnTimer <= 0) 
                     StopVFXSmoothly(normalBurnVFX);
@@ -519,6 +524,8 @@ public class MineShaft : Facility
     // ==========================================
     // SKILL 3: ĐỘC/SÁT THƯƠNG NGẪU NHIÊN LÊN HẦM
     // ==========================================
+    private Color currentSkill3Color = Color.white;
+
     public void TriggerSkill3VFX(float duration, float dps)
     {
         if (isBroken || skill3VFXs == null || skill3VFXs.Count == 0) return;
@@ -566,7 +573,18 @@ public class MineShaft : Facility
 
     private System.Collections.IEnumerator Skill3Routine(float duration, float dps)
     {
-        activeSkill3VFX = skill3VFXs[Random.Range(0, skill3VFXs.Count)];
+        int rndIndex = Random.Range(0, skill3VFXs.Count);
+        activeSkill3VFX = skill3VFXs[rndIndex];
+        
+        if (skill3DamageColors != null && rndIndex < skill3DamageColors.Count)
+        {
+            currentSkill3Color = skill3DamageColors[rndIndex];
+        }
+        else
+        {
+            currentSkill3Color = Color.white;
+        }
+
         if (activeSkill3VFX == null) yield break;
 
         activeSkill3VFX.SetActive(true);
@@ -596,7 +614,7 @@ public class MineShaft : Facility
 
             if (tickTimer <= 0f)
             {
-                AddEndurance(-dps);
+                AddEndurance(-dps, currentSkill3Color);
                 tickTimer = 1f;
             }
 
