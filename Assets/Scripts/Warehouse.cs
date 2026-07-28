@@ -9,6 +9,18 @@ public class Warehouse : Facility
     public Transform elevatorPos; // Điểm lấy tiền
     public Transform depositPos;  // Điểm nạp tiền vào kho
     
+    [Header("Special Feature")]
+    public float ProjectileDamage = 50f;
+    [Tooltip("Chỉnh vị trí đạn cắm vào Boss đi bộ (vd y=1 để trúng ngực thay vì chân)")]
+    public Vector3 groundBossTargetOffset = new Vector3(0, 1f, 0);
+    [Tooltip("Chỉnh vị trí đạn cắm vào Rồng bay")]
+    public Vector3 flyingDragonTargetOffset = new Vector3(0, 0f, 0);
+    public Transform turretPos;
+    public GameObject projectilePrefab;
+    public GameObject shootVFX; // Hiệu ứng nòng súng (muzzle flash)
+    public float shootInterval = 1.5f;
+    private float shootTimer = 0f;
+    
     [Header("Warehouse Settings")]
     public double BaseCapacity = 40;
     
@@ -89,6 +101,84 @@ public class Warehouse : Facility
         if (loadingVFX != null)
         {
             loadingVFX.Stop();
+        }
+    }
+
+    protected override void Update()
+    {
+        base.Update();
+        
+        if (IsSkillActive && currentManager != null && currentManager.SpecialFeature == SeniorSpecialFeature.SpecialFeature)
+        {
+            shootTimer -= Time.deltaTime;
+            if (shootTimer <= 0)
+            {
+                shootTimer = shootInterval;
+                ShootProjectile();
+            }
+        }
+    }
+
+    private void ShootProjectile()
+    {
+        if (turretPos == null || projectilePrefab == null) return;
+        
+        Transform target = null;
+        
+        DragonBossController dragon = FindObjectOfType<DragonBossController>();
+        if (dragon != null && dragon.gameObject.activeInHierarchy && dragon.GetComponent<Collider2D>().enabled)
+        {
+            target = dragon.transform;
+        }
+        else
+        {
+            BossPhase2Controller boss2 = FindObjectOfType<BossPhase2Controller>();
+            if (boss2 != null && boss2.gameObject.activeInHierarchy) target = boss2.transform;
+            else
+            {
+                BossPhase3Controller boss3 = FindObjectOfType<BossPhase3Controller>();
+                if (boss3 != null && boss3.gameObject.activeInHierarchy) target = boss3.transform;
+            }
+        }
+
+        if (target != null)
+        {
+            // Bắn với góc khác nhau: Lắc nòng súng ngẫu nhiên lên xuống một chút (ví dụ -20 đến 20 độ)
+            float randomAngle = UnityEngine.Random.Range(-20f, 20f);
+            turretPos.localRotation = Quaternion.Euler(0f, 0f, randomAngle);
+
+            // Bật hiệu ứng nòng súng (Muzzle Flash)
+            if (shootVFX != null)
+            {
+                ParticleSystem[] pss = shootVFX.GetComponentsInChildren<ParticleSystem>();
+                if (pss.Length > 0)
+                {
+                    // Nếu dùng Particle System, chỉ gọi Play() để tránh lỗi nháy đúp do SetActive
+                    foreach (var ps in pss)
+                    {
+                        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                        ps.Play(true);
+                    }
+                }
+                else
+                {
+                    // Nếu dùng Animation/Sprite thường, bật tắt để reset
+                    shootVFX.SetActive(false);
+                    shootVFX.SetActive(true);
+                }
+            }
+
+            GameObject proj = Instantiate(projectilePrefab, turretPos.position, Quaternion.identity);
+            // Lựa chọn offset bắn trúng đích tùy theo loại quái
+            Vector3 offsetToUse = groundBossTargetOffset;
+            if (target.GetComponent<DragonBossController>() != null || target.GetComponentInChildren<DragonBossController>() != null)
+            {
+                offsetToUse = flyingDragonTargetOffset;
+            }
+
+            WarehouseProjectile wp = proj.GetComponent<WarehouseProjectile>();
+            if (wp == null) wp = proj.AddComponent<WarehouseProjectile>();
+            wp.Setup(target, ProjectileDamage, offsetToUse);
         }
     }
 

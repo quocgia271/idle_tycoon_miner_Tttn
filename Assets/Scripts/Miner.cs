@@ -115,7 +115,7 @@ public class Miner : MonoBehaviour
         if (healthState == HealthState.Dead) return;
 
         // Tự động di chuyển nếu hầm có người quản lý và hầm không bị vỡ
-        if (currentState == MinerState.Idle && currentShaft != null && currentShaft.currentManager != null && healthState != HealthState.Injured && !currentShaft.isBroken)
+        if (currentState == MinerState.Idle && currentShaft != null && currentShaft.currentManager != null && !currentShaft.isBroken)
         {
             ChangeState(MinerState.WalkingToDig);
         }
@@ -175,28 +175,22 @@ public class Miner : MonoBehaviour
         switch (currentState)
         {
             case MinerState.Idle:
-                // Trở về tới startPos
                 if (anim != null) anim.SetTrigger("idle"); 
                 
-                // Hướng mặt về bên phải (x = dương)
-                currentScale.x = Mathf.Abs(initialScale.x);
-                transform.localScale = currentScale;
+                // Hướng mặt về bên phải (góc xoay Y = 0)
+                transform.rotation = Quaternion.Euler(0, 0, 0);
                 
-                // Cộng tài nguyên vào hầm
                 if (currentShaft != null)
                 {
-                    // Lượng tài nguyên = ResourcePerSecond * thời gian đào
                     double resourceGathered = currentShaft.ResourcePerSecond * digTime;
                     currentShaft.AddResource(resourceGathered);
-                    Debug.Log($"Đã cộng {resourceGathered} vào hầm.");
                 }
                 break;
 
             case MinerState.WalkingToDig:
                 if (anim != null) anim.SetTrigger("walk");
-                // Hướng mặt về bên phải (đi tới mỏ) (x = dương)
-                currentScale.x = Mathf.Abs(initialScale.x);
-                transform.localScale = currentScale;
+                // Hướng mặt về bên phải (góc xoay Y = 0)
+                transform.rotation = Quaternion.Euler(0, 0, 0);
                 break;
 
             case MinerState.Digging:
@@ -209,10 +203,26 @@ public class Miner : MonoBehaviour
 
             case MinerState.WalkingBack:
                 if (anim != null) anim.SetTrigger("walk");
-                // Lật ngược hình ảnh để đi về (x = âm)
-                currentScale.x = -Mathf.Abs(initialScale.x);
-                transform.localScale = currentScale;
+                // Lật ngược hình ảnh bằng cách xoay 180 độ trục Y
+                transform.rotation = Quaternion.Euler(0, 180, 0);
                 break;
+        }
+
+        // CHỐNG LỖI UI BỊ KÉO DÀI VÔ TẬN:
+        // Vì ta dùng Rotation Y 180 độ để lật Miner thay vì Scale âm,
+        // Scale sẽ luôn dương -> Không bao giờ bị lỗi nháy UI!
+        // Giờ chỉ cần xoay Canvas UI ngược lại 180 độ để chữ/thanh máu không bị ngược chiều
+        
+        bool isFlipped = transform.rotation.eulerAngles.y > 90f;
+        
+        if (moraleBar != null)
+        {
+            moraleBar.transform.localRotation = Quaternion.Euler(0, isFlipped ? 180f : 0f, 0);
+        }
+        
+        if (progressBar != null)
+        {
+            progressBar.transform.localRotation = Quaternion.Euler(0, isFlipped ? 180f : 0f, 0);
         }
     }
 
@@ -294,6 +304,7 @@ public class Miner : MonoBehaviour
 
             // 1. Hiệu ứng Scale 3D: Phóng to ra một chút (cảm giác bay lại gần màn hình) rồi mới teo lại về 0
             Sequence scaleSeq = DOTween.Sequence();
+            scaleSeq.SetTarget(transform); // <--- Quan trọng: Gắn target để lúc Revive gọi DOKill() nó sẽ chết
             // Dùng InOutSine cho cả hai nhịp để chuyển giao scale cực kỳ mềm mại không bị khựng
             scaleSeq.Append(transform.DOScale(initialScale * 1.3f, 0.9f).SetEase(Ease.InOutSine)); 
             scaleSeq.Append(transform.DOScale(Vector3.zero, 0.9f).SetEase(Ease.InOutSine)); 
@@ -344,20 +355,14 @@ public class Miner : MonoBehaviour
 
     public void Revive()
     {
+        // Tránh gọi lặp lại nếu đã khỏe mạnh
+        if (healthState == HealthState.Normal && morale >= maxMorale) return;
+
+        bool wasDead = (healthState == HealthState.Dead);
+        
         healthState = HealthState.Normal;
         morale = maxMorale;
         UpdateMoraleUI();
-        
-        Collider2D col = GetComponent<Collider2D>();
-        if (col != null) col.enabled = true;
-        
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.enabled = true;
-            spriteRenderer.color = Color.white;
-        }
-        
-        if (anim != null) anim.enabled = true;
         
         // Tắt hết VFX
         if (hurtVFXList != null)
@@ -368,22 +373,130 @@ public class Miner : MonoBehaviour
         if (deathVFX != null) 
         {
             deathVFX.SetActive(false);
-            // Gắn lại VFX làm con của Miner và đưa về vị trí ban đầu
             deathVFX.transform.SetParent(this.transform, false);
             deathVFX.transform.localPosition = originalDeathVFXPos;
             deathVFX.transform.localScale = originalDeathVFXScale;
         }
         
         transform.DOKill();
+        if (spriteRenderer != null) spriteRenderer.DOKill();
         
-        // Gắn lại thợ mỏ vào hầm
+        StartCoroutine(ReviveAnimationRoutine(wasDead));
+    }
+
+    // Thanh tẩy mượt mà: Giải độc và hồi một lượng nhỏ tinh thần (VD: 25)
+    public void Cleanse()
+    {
+        if (healthState != HealthState.Injured) return; // Chỉ thanh tẩy người đang bị thương
+        
+        healthState = HealthState.Normal;
+        
+        // Hồi lại một chút tinh thần cho thợ mỏ (25)
+        AddMorale(25f);
+        SpawnHealPopup(25f);
+        
+        // Fade out mượt mà các VFX độc
+        if (hurtVFXList != null)
+        {
+            foreach (var vfx in hurtVFXList)
+            {
+                if (vfx != null && vfx.activeInHierarchy)
+                {
+                    StartCoroutine(FadeOutVFXSmoothly(vfx));
+                }
+            }
+        }
+        
+        // Từ từ trả lại màu gốc (hết nháy đỏ/tím)
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.DOKill();
+            spriteRenderer.DOColor(Color.white, 0.5f);
+        }
+    }
+
+    private void SpawnHealPopup(float amount)
+    {
+        if (currentShaft != null && currentShaft.damagePopupPrefab != null)
+        {
+            // Spawn popup trên đầu thợ mỏ một chút
+            DamagePopup popup = DamagePopup.Create(currentShaft.damagePopupPrefab, transform.position + Vector3.up * 0.8f, transform, DamagePopup.PopupSourceType.Mineshaft);
+            popup.Setup(amount, 0.1f, Color.yellow, true);
+        }
+    }
+
+    private System.Collections.IEnumerator FadeOutVFXSmoothly(GameObject vfxObject)
+    {
+        SpriteRenderer[] srs = vfxObject.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in srs)
+        {
+            sr.DOFade(0f, 0.5f);
+        }
+
+        ParticleSystem[] pSystems = vfxObject.GetComponentsInChildren<ParticleSystem>();
+        foreach (var ps in pSystems)
+        {
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+
+        yield return new WaitForSeconds(1f);
+        
+        foreach (var sr in srs)
+        {
+            Color c = sr.color;
+            c.a = 1f;
+            sr.color = c;
+        }
+        vfxObject.SetActive(false);
+    }
+
+    private System.Collections.IEnumerator ReviveAnimationRoutine(bool wasDead)
+    {
+        currentState = MinerState.Idle; // Tạm dừng mọi hoạt động
+        if (anim != null) anim.SetTrigger("idle");
+        
+        // Nếu đang bay lơ lửng, làm mờ đi ngay tại chỗ nó đang bay
+        if (wasDead && spriteRenderer != null)
+        {
+            yield return spriteRenderer.DOFade(0f, 0.4f).WaitForCompletion();
+        }
+
+        // Bật lại vật lý và animation
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = true;
+        if (anim != null) anim.enabled = true;
+        
+        // Đưa về Hầm (set parent, position, scale)
         if (currentShaft != null) transform.SetParent(currentShaft.transform, true);
-        
         transform.localScale = initialScale;
         transform.position = startPos.position;
-        transform.rotation = Quaternion.identity; // Reset góc xoay
+        transform.rotation = Quaternion.identity;
         
-        // Cập nhật lại UI Morale nếu đang mở
+        // Hiệu ứng Fade In và Nảy lên mừng rỡ
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.enabled = true;
+            Color c = Color.white;
+            c.a = 0f;
+            spriteRenderer.color = c;
+            
+            spriteRenderer.DOFade(1f, 0.5f);
+        }
+
+        // Animation nhảy tưng tưng + lộn vòng
+        Sequence bounceSeq = DOTween.Sequence();
+        bounceSeq.SetTarget(transform);
+        bounceSeq.Append(transform.DOMoveY(startPos.position.y + 1f, 0.25f).SetEase(Ease.OutQuad));
+        bounceSeq.Append(transform.DOMoveY(startPos.position.y, 0.25f).SetEase(Ease.InQuad));
+        bounceSeq.Append(transform.DOMoveY(startPos.position.y + 0.5f, 0.2f).SetEase(Ease.OutQuad));
+        bounceSeq.Append(transform.DOMoveY(startPos.position.y, 0.2f).SetEase(Ease.InQuad));
+        
+        transform.DORotate(new Vector3(0, 0, 360), 0.9f, RotateMode.FastBeyond360).SetEase(Ease.OutBack);
+
+        yield return bounceSeq.WaitForCompletion();
+        
+        // Reset lại vòng lặp làm việc bình thường (Vì đang là Idle nên Update sẽ cho tự đi làm)
+        
         if (MoraleModalUI.Instance != null && MoraleModalUI.Instance.gameObject.activeInHierarchy)
         {
             MoraleModalUI.Instance.RefreshList();

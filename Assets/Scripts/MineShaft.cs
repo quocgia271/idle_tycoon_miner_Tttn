@@ -24,6 +24,17 @@ public class MineShaft : Facility
     public float spawnOffsetX = 0.5f;
     public List<Miner> activeMiners = new List<Miner>();
 
+    [Header("Elevator Special Birds")]
+    public GameObject attackBirdVFX;
+    public GameObject healBirdVFX;
+    public GameObject birdAttackProjectilePrefab;
+    [Tooltip("Chỉnh vị trí nòng đạn của chim (ví dụ y=1 để đạn bắn từ miệng thay vì dưới chân)")]
+    public Vector3 birdProjectileSpawnOffset = new Vector3(0, 0f, 0);
+
+    [Header("Mineshaft Invincibility")]
+    public bool isInvincible = false;
+    public GameObject invincibilityVFX;
+
     [Header("Manager Settings")]
     // Các buff này sẽ nằm chung dưới thẻ Manager Buffs của lớp cha Facility
     public float MinerMoveSpeedBuff = 1f;
@@ -83,6 +94,7 @@ public class MineShaft : Facility
 
     public void AddEndurance(float amount, Color damageColor)
     {
+        if (isInvincible && amount < 0) return; // Miễn nhiễm sát thương khi có shield
         if (isBroken && amount < 0) return; // Nếu đang vỡ thì không nhận thêm damage
 
         currentEndurance = Mathf.Clamp(currentEndurance + amount, 0, maxEndurance);
@@ -92,7 +104,11 @@ public class MineShaft : Facility
         {
             // Vì Lửa và Độc đã được sửa lại để giật sát thương 1 giây 1 lần
             // Nên ta có thể yên tâm cho bung số lên mỗi khi bị trừ máu
-            SpawnDamagePopup(-amount, damageColor);
+            SpawnDamagePopup(-amount, damageColor, false);
+        }
+        else if (amount > 0)
+        {
+            SpawnDamagePopup(amount, damageColor, true); // true = heal popup
         }
 
         if (currentEndurance <= 0f && !isBroken)
@@ -101,23 +117,23 @@ public class MineShaft : Facility
         }
     }
 
-    private void SpawnDamagePopup(float amount, Color damageColor)
+    public void SpawnDamagePopup(float amount, Color color, bool isHeal = false)
     {
         if (damagePopupPrefab != null)
         {
             DamagePopup popup;
             if (popupSpawnPoint != null)
             {
-                // Sử dụng Object Pool để sinh chữ
-                popup = DamagePopup.Create(damagePopupPrefab, popupSpawnPoint.position, popupSpawnPoint);
+                // Sử dụng Object Pool riêng biệt cho Mineshaft
+                popup = DamagePopup.Create(damagePopupPrefab, popupSpawnPoint.position, popupSpawnPoint, DamagePopup.PopupSourceType.Mineshaft);
             }
             else
             {
-                popup = DamagePopup.Create(damagePopupPrefab, transform.position, null);
+                popup = DamagePopup.Create(damagePopupPrefab, transform.position, null, DamagePopup.PopupSourceType.Mineshaft);
             }
             // Truyền tham số 0.1f (scaleFactor) để chữ ở hầm bay lên cực kỳ ngắn (bằng 1/10 của Boss)
             // Khoảng cách tản ra (scatter) siêu hẹp, bám sát Hầm
-            popup.Setup(amount, 0.1f, damageColor);
+            popup.Setup(amount, 0.1f, color, isHeal);
         }
     }
 
@@ -193,7 +209,11 @@ public class MineShaft : Facility
     private void StopVFXSmoothly(GameObject vfxObject)
     {
         if (vfxObject == null || !vfxObject.activeSelf) return;
-        StartCoroutine(StopVFXRoutine(vfxObject));
+        if (stopVFXCoroutines.ContainsKey(vfxObject) && stopVFXCoroutines[vfxObject] != null)
+        {
+            StopCoroutine(stopVFXCoroutines[vfxObject]);
+        }
+        stopVFXCoroutines[vfxObject] = StartCoroutine(StopVFXRoutine(vfxObject));
     }
 
     private System.Collections.IEnumerator StopVFXRoutine(GameObject vfxObject)
@@ -218,21 +238,29 @@ public class MineShaft : Facility
         if (vfxObject != null)
         {
             vfxObject.SetActive(false);
+            if (stopVFXCoroutines.ContainsKey(vfxObject)) stopVFXCoroutines[vfxObject] = null;
         }
     }
+
+    private Dictionary<GameObject, Coroutine> stopVFXCoroutines = new Dictionary<GameObject, Coroutine>();
 
     public void PlayVFXSmoothly(GameObject vfxObject)
     {
         if (vfxObject == null) return;
+        
+        if (stopVFXCoroutines.ContainsKey(vfxObject) && stopVFXCoroutines[vfxObject] != null)
+        {
+            StopCoroutine(stopVFXCoroutines[vfxObject]);
+            stopVFXCoroutines[vfxObject] = null;
+        }
+
         vfxObject.SetActive(true);
         ParticleSystem[] pSystems = vfxObject.GetComponentsInChildren<ParticleSystem>();
         foreach (var ps in pSystems)
         {
-            // Ép bật lại hệ thống hạt nếu nó đang bị Stop() lưng chừng
-            if (!ps.isPlaying || !ps.emission.enabled)
-            {
-                ps.Play(true);
-            }
+            // Reset hoàn toàn hạt cũ trước khi Play lại để tránh bị kẹt trạng thái Stop
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ps.Play(true);
         }
     }
 
@@ -240,7 +268,8 @@ public class MineShaft : Facility
     {
         if (enduranceSlider != null)
         {
-            enduranceSlider.value = currentEndurance / maxEndurance;
+            enduranceSlider.DOKill();
+            enduranceSlider.DOValue(currentEndurance / maxEndurance, 0.5f).SetEase(Ease.OutCubic);
         }
     }
 
@@ -277,10 +306,61 @@ public class MineShaft : Facility
         base.Update();
     }
 
+    public override void ActivateManagerSkill()
+    {
+        // Khóa không cho bật kỹ năng (kể cả bất tử) nếu hầm đang trong trạng thái bị vỡ/hỏng
+        if (isBroken) return;
+        
+        base.ActivateManagerSkill();
+    }
+
     protected override void ApplyManagerBuff()
     {
         base.ApplyManagerBuff();
         if (currentManager == null) return;
+        
+        // --- SENIOR SPECIAL FEATURE (Invincibility) ---
+        if (currentManager.SpecialFeature == SeniorSpecialFeature.SpecialFeature)
+        {
+            isInvincible = true;
+            if (invincibilityVFX != null) invincibilityVFX.SetActive(true);
+            
+            // Hồi đầy máu ngay lập tức
+            currentEndurance = maxEndurance;
+            UpdateEnduranceUI();
+            SpawnDamagePopup(100f, Color.yellow, true);
+            
+            // Xóa hiệu ứng lửa của Rồng
+            normalBurnTimer = 0f;
+            bigBurnTimer = 0f;
+            StopVFXSmoothly(normalBurnVFX);
+            StopVFXSmoothly(bigBurnVFX);
+            
+            // Hồi sinh và giải độc toàn bộ thợ mỏ trong hầm
+            if (activeMiners != null)
+            {
+                foreach (var miner in activeMiners)
+                {
+                    if (miner != null)
+                    {
+                        miner.Revive();
+                    }
+                }
+            }
+            
+            // Xóa DOT skill 3 của Boss
+            ForceStopSkill3();
+
+            // Tiêu diệt Minion đang có trong hầm
+            MinionController[] minions = GetComponentsInChildren<MinionController>(true);
+            foreach (var minion in minions)
+            {
+                if (minion.gameObject.activeInHierarchy)
+                {
+                    minion.TakeDamage(9999f); // Tiêu diệt minion
+                }
+            }
+        }
         
         float buffMultiplier = 1f + (currentManager.BuffValue / 100f);
         float costDiscount = 1f - (currentManager.BuffValue / 100f);
@@ -299,6 +379,9 @@ public class MineShaft : Facility
     protected override void RemoveManagerBuff()
     {
         base.RemoveManagerBuff();
+        isInvincible = false;
+        if (invincibilityVFX != null) invincibilityVFX.SetActive(false);
+
         MinerMoveSpeedBuff = 1f;
         MinerDigSpeedBuff = 1f;
         UpgradeCostDiscount = 1f;
@@ -462,7 +545,7 @@ public class MineShaft : Facility
 
     public void TriggerBurnVFX(float duration, bool isBig)
     {
-        if (isBroken) return; // Nếu hầm đã vỡ thì không nhận thêm hiệu ứng cháy
+        if (isBroken || isInvincible) return; // Không dính hiệu ứng cháy nếu đang vỡ hoặc có khiên bất tử
 
         if (isBig)
         {
@@ -528,7 +611,7 @@ public class MineShaft : Facility
 
     public void TriggerSkill3VFX(float duration, float dps)
     {
-        if (isBroken || skill3VFXs == null || skill3VFXs.Count == 0) return;
+        if (isBroken || isInvincible || skill3VFXs == null || skill3VFXs.Count == 0) return;
         
         if (skill3Coroutine != null) StopCoroutine(skill3Coroutine);
         skill3Coroutine = StartCoroutine(Skill3Routine(duration, dps));
@@ -647,5 +730,106 @@ public class MineShaft : Facility
             activeSkill3VFX = null;
         }
         skill3Coroutine = null;
+    }
+
+    // ==========================================
+    // BIRD LOGIC (Gọi từ Elevator)
+    // ==========================================
+    [Header("Cleanse VFX")]
+    public GameObject cleanseVFX; // Hiệu ứng thanh tẩy lan tỏa
+
+    public void TriggerHealBird()
+    {
+        if (healBirdVFX == null) return;
+        StartCoroutine(HealBirdRoutine());
+    }
+
+    private System.Collections.IEnumerator HealBirdRoutine()
+    {
+        healBirdVFX.SetActive(true);
+        if (cleanseVFX != null) cleanseVFX.SetActive(true);
+
+        yield return new WaitForSeconds(2f);
+        
+        // Thanh tẩy
+        ForceStopSkill3();
+        
+        // Hồi 1 lượng sức bền nhỏ (25)
+        AddEndurance(25f, Color.yellow);
+        
+        foreach (var miner in activeMiners)
+        {
+            if (miner != null && miner.healthState == Miner.HealthState.Injured)
+            {
+                miner.Cleanse(); // CHỈ thanh tẩy (giải độc), KHÔNG buff lại tinh thần và KHÔNG cứu người chết
+            }
+        }
+        
+        // Tắt con chim từ từ
+        SpriteRenderer[] srs = healBirdVFX.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in srs) sr.DOFade(0f, 0.5f);
+        
+        yield return new WaitForSeconds(0.5f);
+        healBirdVFX.SetActive(false);
+        foreach (var sr in srs) { Color c = sr.color; c.a = 1f; sr.color = c; }
+        
+        // Giữ VFX thanh tẩy thêm một lúc cho đẹp rồi mới tắt
+        yield return new WaitForSeconds(2f);
+        if (cleanseVFX != null) cleanseVFX.SetActive(false);
+    }
+
+    private Coroutine attackBirdCoroutine = null;
+
+    public void TriggerAttackBird(MinionController targetMinion)
+    {
+        if (attackBirdVFX == null || birdAttackProjectilePrefab == null || targetMinion == null || targetMinion.IsDead) return;
+        
+        if (attackBirdCoroutine != null) StopCoroutine(attackBirdCoroutine);
+        attackBirdCoroutine = StartCoroutine(AttackBirdRoutine(targetMinion));
+    }
+
+    private System.Collections.IEnumerator AttackBirdRoutine(MinionController targetMinion)
+    {
+        attackBirdVFX.SetActive(true);
+        
+        // Khôi phục Alpha ngay lập tức trong trường hợp chim đang mờ dần (Fade out) ở lượt gọi trước
+        SpriteRenderer[] srs = attackBirdVFX.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in srs)
+        {
+            sr.DOKill(); // Dừng hiệu ứng DOFade cũ
+            Color c = sr.color;
+            c.a = 1f;
+            sr.color = c;
+        }
+        
+        yield return new WaitForSeconds(0.5f); // Đợi chim hiện ra
+
+        if (targetMinion != null && targetMinion.gameObject.activeInHierarchy && !targetMinion.IsDead)
+        {
+            // Tính toán vị trí nòng đạn dựa trên offset
+            Vector3 spawnPos = attackBirdVFX.transform.position + birdProjectileSpawnOffset;
+            
+            // Bắn đạn: Spawn làm child của con chim để lấy đúng tỷ lệ (Scale) của chim
+            GameObject proj = Instantiate(birdAttackProjectilePrefab, spawnPos, Quaternion.identity, attackBirdVFX.transform);
+            
+            // Sau khi nhận scale, lập tức nhả parent ra để đạn bay độc lập
+            // (Nếu không nhả parent, khi chim biến mất đạn sẽ bị biến mất theo)
+            proj.transform.SetParent(null, true);
+            
+            BirdProjectile bp = proj.GetComponent<BirdProjectile>();
+            if (bp == null) bp = proj.AddComponent<BirdProjectile>();
+            bp.Setup(targetMinion.transform, targetMinion);
+        }
+
+        yield return new WaitForSeconds(1f); // Đợi đạn bay
+        
+        SpriteRenderer[] fadeSrs = attackBirdVFX.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in fadeSrs) sr.DOFade(0f, 0.5f);
+        
+        yield return new WaitForSeconds(0.5f);
+        attackBirdVFX.SetActive(false);
+        foreach (var sr in fadeSrs) { Color c = sr.color; c.a = 1f; sr.color = c; }
+        
+        attackBirdCoroutine = null;
     }
 }

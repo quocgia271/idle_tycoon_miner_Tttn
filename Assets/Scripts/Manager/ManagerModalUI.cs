@@ -92,6 +92,28 @@ public class ManagerModalUI : MonoBehaviour
                 HirePriceText.color = canHire ? Color.white : Color.red;
             }
         }
+
+        // --- Cập nhật Top Panel Timer ---
+        if (currentFacility != null && currentFacility.currentManager != null && TopDurationText != null)
+        {
+            ManagerData md = currentFacility.currentManager;
+            if (md.IsSkillActive())
+            {
+                TopDurationText.text = $"Skill: {Mathf.CeilToInt(md.GetRemainingSkillTime())}s";
+                TopDurationText.color = Color.green;
+            }
+            else if (md.IsOnCooldown())
+            {
+                TopDurationText.text = $"Hồi: {Mathf.CeilToInt(md.GetRemainingCooldownTime())}s";
+                TopDurationText.color = Color.red;
+            }
+            else
+            {
+                string durationStr = md.BuffDuration >= 60 ? (md.BuffDuration / 60f).ToString("0.##") + " phút" : md.BuffDuration + "s";
+                TopDurationText.text = durationStr;
+                TopDurationText.color = Color.white;
+            }
+        }
     }
 
     public void OpenModal(Facility facility)

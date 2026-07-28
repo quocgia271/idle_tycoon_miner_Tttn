@@ -210,6 +210,9 @@ MonoBehaviour:
   clickDamage: 10
   damagePopupPrefab: {fileID: 1688279847524927748}
   popupSpawnPoint: {fileID: 8676468278605946722}
+  popupSourceType: 2
+  customTextScale: 1
+  punchCooldown: 0.15
 --- !u!61 &4124896598572312794
 BoxCollider2D:
   m_ObjectHideFlags: 0

@@ -36,6 +36,7 @@ public class MinionController : MonoBehaviour, IDamageable
     private float attackTimer;
     private int attackCount = 0;
     private bool isDead = false;
+    public bool IsDead => isDead;
 
     private void OnEnable()
     {

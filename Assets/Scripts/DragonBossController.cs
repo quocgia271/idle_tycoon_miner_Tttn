@@ -43,6 +43,27 @@ public class DragonBossController : MonoBehaviour
 
         PlayAnim(idleAnimName); 
         if (chargeVFX != null) chargeVFX.SetActive(false);
+
+        // Nếu bắt đầu game mà chưa có hầm nào mở, rồng sẽ bay đi trốn luôn
+        if (!HasAnyUnlockedMineshaft())
+        {
+            StartCoroutine(FlyOffScreenRoutine(true));
+        }
+    }
+
+    private bool HasAnyUnlockedMineshaft()
+    {
+        MineShaft[] allShafts = FindObjectsOfType<MineShaft>();
+        foreach (var shaft in allShafts)
+        {
+            ShaftUnlocker unlocker = shaft.GetComponentInChildren<ShaftUnlocker>(true);
+            // Nếu không có unlocker hoặc unlocker bị ẩn (tức là đã mở khóa xong)
+            if (unlocker == null || !unlocker.gameObject.activeInHierarchy)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void PlayAnim(string stateName)
@@ -120,7 +141,7 @@ public class DragonBossController : MonoBehaviour
 
         // Bắn xong chiêu cuối, đợi 2 giây để hả hê rồi bay khỏi màn hình
         yield return new WaitForSeconds(2f);
-        StartCoroutine(FlyOffScreenRoutine());
+        StartCoroutine(FlyOffScreenRoutine(false));
     }
 
     public void ShootFireballEvent()
@@ -168,8 +189,9 @@ public class DragonBossController : MonoBehaviour
     // ==========================================
     // LOGIC BAY
     // ==========================================
-    private IEnumerator FlyOffScreenRoutine()
+    private IEnumerator FlyOffScreenRoutine(bool isFleeing = false)
     {
+        isBusy = true;
         // 0. Tắt Collider để người chơi không thể click chém rồng lúc nó đang cất cánh bay
         Collider2D col = GetComponent<Collider2D>();
         if (col != null) col.enabled = false;
@@ -189,7 +211,16 @@ public class DragonBossController : MonoBehaviour
         transform.position = leftOffScreen;
 
         // 3. Đợi một khoảng thời gian (Off Screen)
-        yield return new WaitForSeconds(timeOffScreen);
+        if (!isFleeing)
+        {
+            yield return new WaitForSeconds(timeOffScreen);
+        }
+
+        // Chờ đến khi có ít nhất 1 hầm được mở khóa thì mới bay về
+        while (!HasAnyUnlockedMineshaft())
+        {
+            yield return new WaitForSeconds(1f);
+        }
 
         // 4. Từ từ bay về lại đúng vị trí chiến đấu ban đầu
         while (Vector3.Distance(transform.position, originalPos) > 0.1f)
@@ -205,6 +236,7 @@ public class DragonBossController : MonoBehaviour
         if (col != null) col.enabled = true;
 
         PlayAnim(idleAnimName);
+        attackTimer = timeBetweenAttacks; // Tránh việc vừa bay về đã khạc lửa luôn
         isBusy = false;
     }
 }

@@ -164,23 +164,20 @@ public class WarehouseWorker : MonoBehaviour
     private void ChangeState(WorkerState newState)
     {
         currentState = newState;
-        Vector3 currentScale = transform.localScale;
 
         switch (currentState)
         {
             case WorkerState.Idle:
                 if (anim != null) anim.SetTrigger("idle");
-                // Khi nạp xong đứng chờ, tự động quay mặt về phía thang máy để "ngóng" (scale x = -1)
-                currentScale.x = -Mathf.Abs(initialScale.x);
-                transform.localScale = currentScale;
+                // Khi nạp xong đứng chờ, ngóng thang máy (quay trái) -> Y = 0
+                transform.rotation = Quaternion.Euler(0, 0, 0);
                 FlipUIIfNeeded();
                 break;
 
             case WorkerState.WalkingToElevator:
                 if (anim != null) anim.SetTrigger("push");
-                // Hướng mặt về bên trái (đi tới thang máy) (scale x = -1)
-                currentScale.x = -Mathf.Abs(initialScale.x);
-                transform.localScale = currentScale;
+                // Hướng mặt về bên trái (đi tới thang máy) -> Y = 0
+                transform.rotation = Quaternion.Euler(0, 0, 0);
                 FlipUIIfNeeded();
                 
                 // Ẩn text nếu đang đi lấy tiền
@@ -200,9 +197,8 @@ public class WarehouseWorker : MonoBehaviour
 
             case WorkerState.WalkingToDeposit:
                 if (anim != null) anim.SetTrigger("push");
-                // Hướng mặt về bên phải (đi nạp tiền) (scale x = 1)
-                currentScale.x = Mathf.Abs(initialScale.x);
-                transform.localScale = currentScale;
+                // Hướng mặt về bên phải (đi nạp tiền) -> Y = 180
+                transform.rotation = Quaternion.Euler(0, 180, 0);
                 FlipUIIfNeeded();
                 
                 // Show text số tiền đang giữ khi đi về kho
@@ -233,29 +229,24 @@ public class WarehouseWorker : MonoBehaviour
 
     private void FlipUIIfNeeded()
     {
+        bool isFlipped = transform.rotation.eulerAngles.y > 90f; // Đi về bên phải (Y = 180)
+
         if (moneyText != null)
         {
             Vector3 tScale = moneyText.transform.localScale;
-            // Logic cũ: Giữ nguyên cách lật của Text
-            if (transform.localScale.x > 0) tScale.x = -Mathf.Abs(tScale.x);
-            else tScale.x = Mathf.Abs(tScale.x);
+            tScale.x = Mathf.Abs(tScale.x); // LUÔN DƯƠNG
             moneyText.transform.localScale = tScale;
+            
+            moneyText.transform.localRotation = Quaternion.Euler(0, isFlipped ? 180f : 0f, 0);
         }
 
         if (progressBar != null)
         {
             Vector3 pScale = progressBar.transform.localScale;
-            // Vì bản gốc Prefab của bạn được setup hiển thị đúng lúc nhân viên quay mặt sang trái (Scale -1)
-            // Nên khi nhân viên quay sang phải (Scale 1), ta phải lật (-) cái Progress Bar lại thì nó mới đúng chiều.
-            if (transform.localScale.x > 0)
-            {
-                pScale.x = -Mathf.Abs(pScale.x); // Ép ngược lại
-            }
-            else
-            {
-                pScale.x = Mathf.Abs(pScale.x); // Giữ nguyên dương
-            }
+            pScale.x = Mathf.Abs(pScale.x); // LUÔN DƯƠNG TRÁNH LỖI UI NHÁY
             progressBar.transform.localScale = pScale;
+            
+            progressBar.transform.localRotation = Quaternion.Euler(0, isFlipped ? 180f : 0f, 0);
         }
     }
 

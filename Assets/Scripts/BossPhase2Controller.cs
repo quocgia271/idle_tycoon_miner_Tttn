@@ -46,6 +46,8 @@ public class BossPhase2Controller : MonoBehaviour
             ShaftUnlocker unlocker = shaft.GetComponentInChildren<ShaftUnlocker>(false);
             if (unlocker != null && unlocker.gameObject.activeInHierarchy) continue; // Bị khóa
 
+            if (shaft.isInvincible) continue; // Bỏ qua hầm đang có khiên bất tử
+
             bool hasLivingMiner = false;
             foreach (var m in shaft.activeMiners)
             {

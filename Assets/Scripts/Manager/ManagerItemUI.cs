@@ -77,4 +77,26 @@ public class ManagerItemUI : MonoBehaviour
         // Disable assign button if already assigned
         AssignButton.interactable = !data.IsAssigned;
     }
+
+    private void Update()
+    {
+        if (_managerData == null || DurationText == null) return;
+
+        if (_managerData.IsSkillActive())
+        {
+            DurationText.text = $"Skill: {Mathf.CeilToInt(_managerData.GetRemainingSkillTime())}s";
+            DurationText.color = Color.green;
+        }
+        else if (_managerData.IsOnCooldown())
+        {
+            DurationText.text = $"Hồi: {Mathf.CeilToInt(_managerData.GetRemainingCooldownTime())}s";
+            DurationText.color = Color.red;
+        }
+        else
+        {
+            string durationStr = _managerData.BuffDuration >= 60 ? (_managerData.BuffDuration / 60f).ToString("0.##") + " phút" : _managerData.BuffDuration + "s";
+            DurationText.text = durationStr;
+            DurationText.color = Color.white;
+        }
+    }
 }

@@ -148,3 +148,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   textMesh: {fileID: 1146530133384023993}
+  floatDistance: 1.5
+  sizeMultiplier: 1.2
+  popupSourceType: 0

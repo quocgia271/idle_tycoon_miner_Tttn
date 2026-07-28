@@ -222,6 +222,8 @@ public class BossPhase3Controller : MonoBehaviour
         {
             if (shaft != null && shaft.gameObject.activeInHierarchy && !shaft.isBroken)
             {
+                if (shaft.isInvincible) continue; // Bỏ qua hầm đang có khiên bất tử
+                
                 ShaftUnlocker unlocker = shaft.GetComponentInChildren<ShaftUnlocker>(true);
                 if (unlocker == null || !unlocker.gameObject.activeInHierarchy)
                 {

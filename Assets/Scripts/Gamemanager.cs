@@ -10,6 +10,16 @@ public class Gamemanager : MonoBehaviour
     public Action<double> OnCashChanged;
     public Action<int> OnLevelChanged; // Event khi level thay đổi
 
+    [Header("Admin / Testing")]
+    public double TestCashAmount = 1000000;
+
+    [ContextMenu("Add Test Cash")]
+    public void AddTestCash()
+    {
+        AddCash(TestCashAmount);
+        Debug.Log($"[Admin] Added {TestCashAmount} cash. Current cash: {IdleCash}");
+    }
+
     void Awake()
     {
         if (Instance == null) 

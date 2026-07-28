@@ -11,6 +11,13 @@ public class EnemyClickReceiver : MonoBehaviour
     public DamagePopup damagePopupPrefab;
     [Tooltip("Vị trí sinh ra số sát thương. Nếu để trống sẽ lấy tâm của vật.")]
     public Transform popupSpawnPoint;
+    
+    [Header("Pool Type")]
+    [Tooltip("Loại Pool để chứa chữ sát thương này riêng biệt")]
+    public DamagePopup.PopupSourceType popupSourceType = DamagePopup.PopupSourceType.Boss;
+
+    [Tooltip("Điều chỉnh độ lớn của chữ sát thương riêng cho vật này (Ví dụ: Minion set là 1, Boss 1.2)")]
+    public float customTextScale = 1.2f;
 
     private IDamageable damageableTarget;
     private Vector3 originalScale;
@@ -67,13 +74,7 @@ public class EnemyClickReceiver : MonoBehaviour
     {
         if (damageableTarget != null && damageableTarget.IsInvincible) return;
 
-        // 0. Hiệu ứng bị đẩy lùi (Hit Feedback) - Có Cooldown để tránh kẹt hình Boss khi spam click
-        if (Time.time - lastPunchTime > punchCooldown)
-        {
-            lastPunchTime = Time.time;
-            transform.DOKill(true); 
-            transform.DOPunchPosition(new Vector3(0.05f, 0, 0), 0.15f, 1, 0f);
-        }
+        PlayHitFeedback();
 
         // 1. Gửi lệnh Trừ máu cho script chính (Không cần quan tâm nó là Minion hay Rồng hay Boss)
         if (damageableTarget != null)
@@ -81,19 +82,39 @@ public class EnemyClickReceiver : MonoBehaviour
             damageableTarget.TakeDamage(clickDamage);
         }
 
-        // 2. Tạo Floating Text từ Object Pool để tránh giật lag máy
+        SpawnDamagePopup(clickDamage);
+    }
+
+    public void PlayHitFeedback()
+    {
+        if (damageableTarget != null && damageableTarget.IsInvincible) return;
+
+        // Hiệu ứng bị đẩy lùi (Hit Feedback) - Có Cooldown để tránh kẹt hình Boss khi spam click
+        if (Time.time - lastPunchTime > punchCooldown)
+        {
+            lastPunchTime = Time.time;
+            transform.DOKill(true); 
+            transform.DOPunchPosition(new Vector3(0.05f, 0, 0), 0.15f, 1, 0f);
+        }
+    }
+
+    public void SpawnDamagePopup(float damageAmount)
+    {
+        // Tạo Floating Text từ Object Pool để tránh giật lag máy
         if (damagePopupPrefab != null)
         {
             DamagePopup popup;
             if (popupSpawnPoint != null)
             {
-                popup = DamagePopup.Create(damagePopupPrefab, popupSpawnPoint.position, popupSpawnPoint);
+                popup = DamagePopup.Create(damagePopupPrefab, popupSpawnPoint.position, popupSpawnPoint, popupSourceType, customTextScale);
             }
             else
             {
-                popup = DamagePopup.Create(damagePopupPrefab, transform.position, null);
+                popup = DamagePopup.Create(damagePopupPrefab, transform.position, null, popupSourceType, customTextScale);
             }
-            popup.Setup(clickDamage, 1f, Color.red);
+            
+            // scaleFactor truyền vào = 1 (mặc định)
+            popup.Setup(damageAmount, 1f, Color.white);
         }
     }
 }

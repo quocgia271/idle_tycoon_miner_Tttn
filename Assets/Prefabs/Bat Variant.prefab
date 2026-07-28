@@ -205,6 +205,14 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: normalDamage
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: specialDamage
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
       propertyPath: fadeInDuration
       value: 2
       objectReference: {fileID: 0}
@@ -239,6 +247,14 @@ PrefabInstance:
     - target: {fileID: 7382370850393987050, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
       propertyPath: specialDamageColor.r
       value: 0.5471698
+      objectReference: {fileID: 0}
+    - target: {fileID: 7810640658210061516, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: customTextScale
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7810640658210061516, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
+      propertyPath: popupSourceType
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7810640658210061516, guid: 02353630bca7463479ecd5ed88ac77ee, type: 3}
       propertyPath: popupSpawnPoint
@@ -549,6 +565,10 @@ PrefabInstance:
     - target: {fileID: 1146530133384023993, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_enableWordWrapping
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765285095298290459, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
+      propertyPath: floatDistance
+      value: 1.2
       objectReference: {fileID: 0}
     - target: {fileID: 5288558961426154877, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_Pivot.x

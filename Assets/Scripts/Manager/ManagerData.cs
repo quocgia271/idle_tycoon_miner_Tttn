@@ -51,6 +51,31 @@ public class ManagerData
     public bool IsAssigned;
     public int AssignedShaftId = -1; // -1 nghĩa là chưa gán cho hầm nào
 
+    // --- Biến lưu trữ thời gian toàn cầu ---
+    public float SkillEndTime = 0f;
+    public float CooldownEndTime = 0f;
+
+    public bool IsSkillActive()
+    {
+        return Time.time < SkillEndTime;
+    }
+
+    public bool IsOnCooldown()
+    {
+        // Cooldown chỉ được tính nếu kỹ năng không còn active
+        return !IsSkillActive() && Time.time < CooldownEndTime;
+    }
+
+    public float GetRemainingSkillTime()
+    {
+        return Mathf.Max(0, SkillEndTime - Time.time);
+    }
+
+    public float GetRemainingCooldownTime()
+    {
+        return Mathf.Max(0, CooldownEndTime - Time.time);
+    }
+
     public ManagerData()
     {
         Id = Guid.NewGuid().ToString();

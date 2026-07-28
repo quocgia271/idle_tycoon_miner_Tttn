@@ -192,6 +192,11 @@ public class Elevator : Facility
         {
             if (targetShaft != null)
             {
+                if (IsSkillActive && currentManager != null && currentManager.SpecialFeature == SeniorSpecialFeature.SpecialFeature)
+                {
+                    ActivateSpecialBirds(targetShaft);
+                }
+
                 double spaceLeft = Capacity - CurrentLoad;
                 double collected = targetShaft.TakeResource(spaceLeft);
                 CurrentLoad += collected;
@@ -211,6 +216,52 @@ public class Elevator : Facility
                 // Nếu chưa đầy, tiếp tục đi tìm hầm có tiền
                 FindNextTargetShaft();
             }
+        }
+    }
+
+    private void ActivateSpecialBirds(MineShaft shaft)
+    {
+        // Bỏ qua nếu hầm này đang được kích hoạt kỹ năng bởi Quản lý Cấp cao
+        if (shaft.currentManager != null && shaft.currentManager.Rarity == ManagerRarity.Senior && shaft.currentManager.IsSkillActive())
+        {
+            return;
+        }
+
+        // 1. Heal Bird logic (Priority)
+        bool needsHeal = shaft.IsSkill3Active;
+        if (!needsHeal)
+        {
+            foreach (var miner in shaft.activeMiners)
+            {
+                if (miner != null && miner.healthState == Miner.HealthState.Injured)
+                {
+                    needsHeal = true;
+                    break;
+                }
+            }
+        }
+
+        if (needsHeal)
+        {
+            shaft.TriggerHealBird();
+            return; // Only 1 bird at a time
+        }
+
+        // 2. Attack Bird logic
+        MinionController targetMinion = null;
+        MinionController[] minions = shaft.GetComponentsInChildren<MinionController>(true);
+        foreach (var m in minions)
+        {
+            if (m.gameObject.activeInHierarchy && !m.IsDead)
+            {
+                targetMinion = m;
+                break;
+            }
+        }
+
+        if (targetMinion != null)
+        {
+            shaft.TriggerAttackBird(targetMinion);
         }
     }
 

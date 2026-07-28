@@ -44,7 +44,7 @@ MonoBehaviour:
   PityThreshold: 10
   RaritySettings:
   - Rarity: 0
-    Weight: 72
+    Weight: 0
     MinBuffValue: 5
     MaxBuffValue: 7
     MinDuration: 3
@@ -52,7 +52,7 @@ MonoBehaviour:
     MinCooldown: 10
     MaxCooldown: 20
   - Rarity: 1
-    Weight: 35
+    Weight: 0
     MinBuffValue: 2
     MaxBuffValue: 5
     MinDuration: 2
@@ -60,10 +60,10 @@ MonoBehaviour:
     MinCooldown: 10
     MaxCooldown: 40
   - Rarity: 2
-    Weight: 3
+    Weight: 100
     MinBuffValue: 2
     MaxBuffValue: 10
-    MinDuration: 2
-    MaxDuration: 10
+    MinDuration: 50
+    MaxDuration: 100
     MinCooldown: 30
     MaxCooldown: 90

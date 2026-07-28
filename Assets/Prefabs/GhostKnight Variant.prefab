@@ -20,6 +20,14 @@ PrefabInstance:
       propertyPath: m_enableWordWrapping
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2765285095298290459, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
+      propertyPath: floatDistance
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765285095298290459, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
+      propertyPath: sizeMultiplier
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 5288558961426154877, guid: 9084b980a6ff32d439a67df0f7a815cd, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -133,6 +141,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 914153042744904431, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
+      propertyPath: normalDamage
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 914153042744904431, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
+      propertyPath: specialDamage
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 914153042744904431, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
       propertyPath: fadeInDuration
       value: 2
@@ -284,6 +300,14 @@ PrefabInstance:
     - target: {fileID: 6100171714203326404, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
       propertyPath: m_ConstrainProportionsScale
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7051437216782211886, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
+      propertyPath: customTextScale
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7051437216782211886, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
+      propertyPath: popupSourceType
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7051437216782211886, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
       propertyPath: popupSpawnPoint

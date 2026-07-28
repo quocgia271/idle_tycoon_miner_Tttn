@@ -98,22 +98,24 @@ public abstract class Facility : MonoBehaviour
                 worldSkillButton.gameObject.SetActive(true); 
         }
 
-        if (IsSkillActive)
+        if (currentManager.IsSkillActive())
         {
-            SkillTimer -= Time.deltaTime;
-            if (SkillTimer <= 0)
+            if (!IsSkillActive)
+            {
+                IsSkillActive = true;
+                ApplyManagerBuff();
+            }
+        }
+        else
+        {
+            if (IsSkillActive)
             {
                 IsSkillActive = false;
-                CooldownTimer = currentManager.CooldownDuration;
                 RemoveManagerBuff();
             }
-            UpdateWorldSkillUI();
         }
-        else if (CooldownTimer > 0)
-        {
-            CooldownTimer -= Time.deltaTime;
-            UpdateWorldSkillUI();
-        }
+
+        UpdateWorldSkillUI();
     }
 
     // Gọi hàm này khi người chơi bấm nút "Nâng cấp" trên bản đồ game
@@ -222,22 +224,27 @@ public abstract class Facility : MonoBehaviour
     public virtual void AssignManager(ManagerData manager)
     {
         currentManager = manager;
-        IsSkillActive = false;
-        SkillTimer = 0f;
-        CooldownTimer = 0f;
+        IsSkillActive = manager.IsSkillActive();
         
         SpawnManagerVisual();
         
-        RemoveManagerBuff();
+        if (IsSkillActive) ApplyManagerBuff();
+        else RemoveManagerBuff();
+        
         UpdateWorldSkillUI();
     }
 
     public virtual void RemoveManager()
     {
+        if (currentManager != null && currentManager.IsSkillActive())
+        {
+            // Nếu đang bật skill mà bị tháo ra -> Tắt skill lập tức và đưa vào Cooldown
+            currentManager.SkillEndTime = 0f;
+            currentManager.CooldownEndTime = Time.time + currentManager.CooldownDuration;
+        }
+
         currentManager = null;
         IsSkillActive = false;
-        SkillTimer = 0f;
-        CooldownTimer = 0f;
         
         SpawnManagerVisual(); 
         
@@ -296,10 +303,12 @@ public abstract class Facility : MonoBehaviour
 
     public virtual void ActivateManagerSkill()
     {
-        if (currentManager != null && !IsSkillActive && CooldownTimer <= 0)
+        if (currentManager != null && !currentManager.IsSkillActive() && !currentManager.IsOnCooldown())
         {
+            currentManager.SkillEndTime = Time.time + currentManager.BuffDuration;
+            currentManager.CooldownEndTime = currentManager.SkillEndTime + currentManager.CooldownDuration;
+
             IsSkillActive = true;
-            SkillTimer = currentManager.BuffDuration;
             ApplyManagerBuff();
             UpdateWorldSkillUI();
         }
@@ -336,17 +345,19 @@ public abstract class Facility : MonoBehaviour
             return;
         }
 
-        if (IsSkillActive)
+        if (currentManager.IsSkillActive())
         {
             worldSkillButton.interactable = false;
             worldSkillTimerText.gameObject.SetActive(true);
-            worldSkillTimerText.text = $"{Mathf.CeilToInt(SkillTimer)}s";
+            worldSkillTimerText.text = $"{Mathf.CeilToInt(currentManager.GetRemainingSkillTime())}s";
+            worldSkillTimerText.color = Color.green;
         }
-        else if (CooldownTimer > 0)
+        else if (currentManager.IsOnCooldown())
         {
             worldSkillButton.interactable = false;
             worldSkillTimerText.gameObject.SetActive(true);
-            worldSkillTimerText.text = $"{Mathf.CeilToInt(CooldownTimer)}s";
+            worldSkillTimerText.text = $"{Mathf.CeilToInt(currentManager.GetRemainingCooldownTime())}s";
+            worldSkillTimerText.color = Color.red;
         }
         else
         {
