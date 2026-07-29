@@ -22,6 +22,7 @@ public class MinionController : MonoBehaviour, IDamageable
 
     [Header("Settings")]
     public float maxHealth = 100f;
+    public float MaxHealth => maxHealth;
     public float attackInterval = 3f;
     public float normalDamage = 10f;
     public float specialDamage = 30f;

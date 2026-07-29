@@ -26,7 +26,10 @@ public class BossPhase3Controller : MonoBehaviour
     public GameObject[] minionPrefabs;
     
     [Header("Skill Settings")]
-    public float timeBetweenAttacks = 5f;
+    public float phase3A_AttackInterval = 40f;
+    public float phase3B_AttackInterval = 15f;
+    private float timeBetweenAttacks = 40f;
+    private bool isEnraged = false;
     public List<MineShaft> allShafts;
     public List<SkillWeight> skillWeights;
 
@@ -48,8 +51,24 @@ public class BossPhase3Controller : MonoBehaviour
 
     private float attackTimer;
 
-    private void OnEnable()
+    private void Start()
     {
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound != 3)
+        {
+            this.enabled = false; // Tắt script này vì không phải Round 3
+            
+            // Nếu là Round 1 thì ẩn luôn cả hình ảnh Boss đi (vì cả 2 Boss đều chưa xuất hiện)
+            if (Gamemanager.Instance.CurrentRound == 1) 
+            {
+                Debug.Log($"[BossPhase3] Round 1 -> Ẩn Boss GameObject: {gameObject.name}");
+                gameObject.SetActive(false); 
+            }
+            return;
+        }
+
+        Debug.Log($"<color=magenta>[BossPhase3] Round 3 -> BẬT BOSS THÀNH CÔNG! Object: {gameObject.name} đang hiển thị!</color>");
+
+        timeBetweenAttacks = phase3A_AttackInterval;
         attackTimer = timeBetweenAttacks;
         if (bossAnim != null) bossAnim.Play("idle");
     }
@@ -69,6 +88,14 @@ public class BossPhase3Controller : MonoBehaviour
             ChooseAndExecuteSkill();
             attackTimer = timeBetweenAttacks;
         }
+    }
+
+    public void Enrage()
+    {
+        isEnraged = true;
+        timeBetweenAttacks = phase3B_AttackInterval;
+        attackTimer = 0f;
+        Debug.Log("<color=red>[Boss 3] KHIÊN ĐÃ VỠ! BOSS 3 NỔI ĐIÊN!</color>");
     }
 
     private void ChooseAndExecuteSkill()
@@ -126,6 +153,12 @@ public class BossPhase3Controller : MonoBehaviour
     // Hàm kiểm tra xem Skill đó có THỰC SỰ xài được trong tình huống hiện tại không
     private bool IsSkillAvailable(BossPhase3Skill skill)
     {
+        // Phase 3A: Khóa Skill 2 và 4
+        if (!isEnraged && (skill == BossPhase3Skill.Barrier || skill == BossPhase3Skill.Skill4_GlobalDoT))
+        {
+            return false;
+        }
+
         if (skill == BossPhase3Skill.SummonMinion)
         {
             return GetValidShaftsForSummon().Count > 0;
@@ -282,7 +315,8 @@ public class BossPhase3Controller : MonoBehaviour
 
         for (int i = 0; i < validShafts.Count; i++)
         {
-            float baseScore = validShafts.Count - i; 
+            // Ưu tiên các hầm có chỉ số cao (Hầm sâu nhất)
+            float baseScore = i + 1; 
             float weight = Mathf.Pow(baseScore, 1.5f); 
             
             totalWeight += weight;
@@ -361,7 +395,10 @@ public class BossPhase3Controller : MonoBehaviour
             MineShaft targetShaft = ChooseShaftWithPriority(validShafts);
             if (targetShaft != null)
             {
-                targetShaft.TriggerSkill3VFX(skill3Duration, skill3DamagePerSec);
+                // Cân bằng Game: Giảm sát thương từ 20% xuống 10% máu tối đa mỗi giây
+                // Tổng 5 giây = 50% máu, cho người chơi đủ thời gian phản ứng thay vì sập hầm ngay lập tức
+                float scaledDamage = targetShaft.maxEndurance * 0.1f;
+                targetShaft.TriggerSkill3VFX(skill3Duration, scaledDamage);
             }
         }
     }
@@ -405,7 +442,9 @@ public class BossPhase3Controller : MonoBehaviour
                 List<MineShaft> activeShafts = GetActiveShafts();
                 foreach (var shaft in activeShafts)
                 {
-                    shaft.AddEndurance(-skill4DamagePerSec, skill4DamageColor);
+                    // 10% max máu mỗi giây
+                    float scaledDamage = shaft.maxEndurance * 0.1f;
+                    shaft.AddEndurance(-scaledDamage, skill4DamageColor);
                 }
                 tickTimer = 1f;
             }

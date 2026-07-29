@@ -23,9 +23,14 @@ public class ManagerController : MonoBehaviour
     private void Awake()
     {
         if (Instance == null)
+        {
             Instance = this;
+            DontDestroyOnLoad(gameObject); // Giữ nguyên danh sách Manager khi qua Round mới
+        }
         else
+        {
             Destroy(gameObject);
+        }
     }
 
     private void Start()
@@ -43,7 +48,26 @@ public class ManagerController : MonoBehaviour
     public double GetCurrentHireCost(FacilityType type)
     {
         int count = TotalHiredCounts.ContainsKey(type) ? TotalHiredCounts[type] : 0;
-        return BaseHireCost * Math.Pow(HireMultiplier, count);
+        double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+        
+        double baseCost = BaseHireCost; // Mặc định: 100
+        double currentMultiplier; 
+
+        if (type == FacilityType.Elevator || type == FacilityType.Warehouse)
+        {
+            // Thang máy & Nhà kho: Hỗ trợ toàn cục, chống spam mạnh mẽ.
+            currentMultiplier = 5.0f; 
+        }
+        else 
+        {
+            // Hầm mỏ: Tác động cục bộ 1 hầm.
+            currentMultiplier = 4.0f;
+        }
+
+        // CÂN BẰNG TOÁN HỌC CHUẨN IDLE GAME: Giá thuê tăng theo hàm mũ (Multiplier ^ count)
+        // Hệ số vòng được nhân vào để giữ nguyên độ cân bằng qua từng màn chơi.
+        // Khi Prestige, hệ số lạm phát KHÔNG ĐƯỢC nhân vào đây nữa vì quản lý đã bị reset.
+        return baseCost * Math.Pow(currentMultiplier, count) * roundMultiplier;
     }
 
     public bool CanUnlockSenior(FacilityType type)
@@ -53,6 +77,26 @@ public class ManagerController : MonoBehaviour
         bool hasEnoughHires = count >= 10;
         bool hasEnoughLevel = Gamemanager.Instance != null && Gamemanager.Instance.PlayerLevel >= 6;
         return hasEnoughHires && hasEnoughLevel;
+    }
+
+    public void ResetManagers()
+    {
+        OwnedManagers.Clear();
+        TotalHiredCounts.Clear();
+        HiresUntilPitys.Clear();
+
+        if (Config != null)
+        {
+            foreach (FacilityType type in Enum.GetValues(typeof(FacilityType)))
+            {
+                TotalHiredCounts[type] = 0;
+                HiresUntilPitys[type] = Config.PityThreshold;
+            }
+        }
+
+        OnManagerListUpdated?.Invoke();
+        OnPityUpdated?.Invoke();
+        Debug.Log("<color=yellow>Đã xóa toàn bộ Quản lý (Hard Reset) để bắt đầu Vòng mới!</color>");
     }
 
     public bool HireManager(FacilityType type)
@@ -132,24 +176,46 @@ public class ManagerController : MonoBehaviour
         // Random Buff Type
         md.BuffType = (ManagerBuffType)Random.Range(0, 3); // 0: Mining, 1: Move, 2: Cost
 
-        // Mặc định mua ra
-        if (md.Rarity == ManagerRarity.Senior)
+        // Thiết lập chỉ số Buff linh hoạt từ file cấu hình SO
+        ManagerConfigSO.RaritySetting setting = Config.GetRaritySetting(md.Rarity);
+        
+        // Chốt an toàn: Nếu file SO chưa được cấu hình (MaxBuffValue = 0) thì dùng cấu hình dự phòng
+        if (setting != null && setting.MaxBuffValue > 0)
         {
-            // Nếu là quản lý cấp cao, random 50% có tính năng đặc biệt (có thể chỉnh lại sau)
-            md.SpecialFeature = Random.value > 0.5f ? SeniorSpecialFeature.SpecialFeature : SeniorSpecialFeature.None;
-        }
-        else
-        {
-            md.SpecialFeature = SeniorSpecialFeature.None;
-        }
-
-        // Gán chỉ số từ SO
-        var setting = Config.GetRaritySetting(md.Rarity);
-        if (setting != null)
-        {
+            // Lấy ngẫu nhiên sức mạnh và thời gian trong khoảng cho phép của SO
             md.BuffValue = Random.Range(setting.MinBuffValue, setting.MaxBuffValue);
             md.BuffDuration = Random.Range(setting.MinDuration, setting.MaxDuration);
             md.CooldownDuration = Random.Range(setting.MinCooldown, setting.MaxCooldown);
+            
+            // Quản lý cấp cao (Senior) 100% có tính năng đặc biệt
+            md.SpecialFeature = md.Rarity == ManagerRarity.Senior ? SeniorSpecialFeature.SpecialFeature : SeniorSpecialFeature.None;
+        }
+        else
+        {
+            // Dự phòng (Fallback) an toàn nếu file cấu hình bị lỗi
+            switch (md.Rarity)
+            {
+                case ManagerRarity.Junior:
+                    md.BuffValue = 50f; 
+                    md.BuffDuration = 60f; 
+                    md.CooldownDuration = 120f; 
+                    md.SpecialFeature = SeniorSpecialFeature.None;
+                    break;
+                    
+                case ManagerRarity.Director:
+                    md.BuffValue = 70f; 
+                    md.BuffDuration = 120f; 
+                    md.CooldownDuration = 300f; 
+                    md.SpecialFeature = SeniorSpecialFeature.None;
+                    break;
+                    
+                case ManagerRarity.Senior:
+                    md.BuffValue = 85f; 
+                    md.BuffDuration = 300f; 
+                    md.CooldownDuration = 600f; 
+                    md.SpecialFeature = SeniorSpecialFeature.SpecialFeature; 
+                    break;
+            }
         }
 
         // Bốc ngẫu nhiên 1 nhân vật trong danh sách SO

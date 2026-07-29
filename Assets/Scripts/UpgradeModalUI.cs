@@ -146,7 +146,7 @@ public class UpgradeModalUI : MonoBehaviour
         if (currentTabIndex == 3)
         {
             if (Gamemanager.Instance != null)
-                upgradeMultiplier = MathHelper.CalculateMaxLevel(Gamemanager.Instance.IdleCash, currentConfig.BaseCost, currentConfig.CostMultiplier, currentFacility.Level);
+                upgradeMultiplier = MathHelper.CalculateMaxLevel(Gamemanager.Instance.IdleCash, currentFacility.ScaledBaseCost, currentFacility.CostMultiplier, currentFacility.Level);
             else
                 upgradeMultiplier = 1;
         }
@@ -166,7 +166,7 @@ public class UpgradeModalUI : MonoBehaviour
         currentTotalCost = 0;
         for (int i = 0; i < upgradeMultiplier; i++)
         {
-            double costForNextLevel = MathHelper.CalculateUpgradeCost(currentConfig.BaseCost, currentConfig.CostMultiplier, currentLevel + i);
+            double costForNextLevel = MathHelper.CalculateUpgradeCost(currentFacility.ScaledBaseCost, currentFacility.CostMultiplier, currentLevel + i);
             currentTotalCost += costForNextLevel * currentFacility.UpgradeCostDiscount;
         }
         

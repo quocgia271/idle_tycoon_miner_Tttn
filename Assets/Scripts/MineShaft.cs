@@ -8,6 +8,24 @@ public class MineShaft : Facility
 {
     public override FacilityType GetFacilityType() => FacilityType.MineShaft;
 
+    [Header("Shaft Settings")]
+    [Tooltip("Thứ tự của hầm (từ 1 đến 10). Dùng để tính toán Cost/Income theo độ sâu.")]
+    public int ShaftIndex = 1;
+
+    // Ghi đè để áp dụng Toán học độ sâu hầm
+    public override double ScaledBaseCost 
+    {
+        get 
+        {
+            if (Config == null) return 0;
+            double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+            return Config.BaseCost * System.Math.Pow(15, ShaftIndex - 1) * roundMultiplier;
+        }
+    }
+    
+    // Ghi đè hệ số nhân mặc định nếu cần
+    public override double CostMultiplier => 1.14;
+
     public double CurrentResource = 0; 
     
     public double BaseResourcePerSecond = 10; 
@@ -67,7 +85,15 @@ public class MineShaft : Facility
 
     public double GetWorkerProductivity(int targetLevel)
     {
-        return (BaseResourcePerSecond * targetLevel) * ProductivityBuff;
+        // Thu nhập cơ bản tăng theo độ sâu hầm (Gấp 12 lần mỗi hầm)
+        double scaledBaseIncome = BaseResourcePerSecond * System.Math.Pow(12, ShaftIndex - 1); 
+        // 1.07 là hệ số nhân mũ mỗi cấp độ của hầm.
+        double exponentialIncome = scaledBaseIncome * System.Math.Pow(1.07, targetLevel - 1);
+        
+        double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
+        double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+        
+        return exponentialIncome * ProductivityBuff * prestigeMultiplier * roundMultiplier;
     }
 
     [Header("Endurance Settings")]
@@ -140,6 +166,12 @@ public class MineShaft : Facility
     private void BreakShaft()
     {
         isBroken = true;
+        
+        // CÂN BẰNG TOÁN HỌC MỚI (Dynamic Income Taxation):
+        // Boss 3 đánh hỏng hầm mỗi ~120s. Để tạo ra Thuế 25%,
+        // Phí sửa chữa = 120s * 25% = 30 giây tổng thu nhập của Hầm.
+        repairCost = GetTotalExtractionPerSecond(Level) * 30;
+        if (repairCost < 100) repairCost = 100;
         
         // Tắt hết lửa nhỏ, lửa to một cách mượt mà (chờ các hạt tàn lụi)
         normalBurnTimer = 0f;

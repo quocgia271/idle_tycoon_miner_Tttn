@@ -6,7 +6,11 @@ public class DragonBossController : MonoBehaviour
     public Animator dragonAnim;
     
     [Header("Attack Settings")]
-    public float timeBetweenAttacks = 5f;
+    public float phase3A_AttackInterval = 30f;
+    public float phase3B_AttackInterval = 10f;
+    private float timeBetweenAttacks = 30f;
+    private bool isEnraged = false;
+
     public float spreadAngle = 8f; 
     public Transform mouthPosition; 
     
@@ -38,7 +42,14 @@ public class DragonBossController : MonoBehaviour
 
     private void Start()
     {
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound != 3)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
         originalPos = transform.position;
+        timeBetweenAttacks = phase3A_AttackInterval;
         attackTimer = timeBetweenAttacks;
 
         PlayAnim(idleAnimName); 
@@ -85,6 +96,14 @@ public class DragonBossController : MonoBehaviour
             attackTimer = timeBetweenAttacks;
             return;
         }
+    }
+
+    public void Enrage()
+    {
+        isEnraged = true;
+        timeBetweenAttacks = phase3B_AttackInterval;
+        attackTimer = 0f;
+        Debug.Log("<color=red>[Dragon] RAWRRR! RỒNG ĐÃ NỔI ĐIÊN!</color>");
     }
 
     private void DecideNextMajorAction()

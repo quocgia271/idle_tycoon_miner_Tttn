@@ -44,8 +44,20 @@ public abstract class Facility : MonoBehaviour
 
     protected Sprite defaultManagerSprite;
 
+    // Thay vì tính trực tiếp, tạo 2 hàm ảo để lớp con (như MineShaft) có thể ghi đè (override)
+    public virtual double ScaledBaseCost 
+    {
+        get
+        {
+            if (Config == null) return 0;
+            double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+            return Config.BaseCost * roundMultiplier;
+        }
+    }
+    public virtual double CostMultiplier => Config != null ? Config.CostMultiplier : 1.14;
+
     // Tự động tính toán chi phí hiện tại bằng cách gọi sang MathHelper
-    public double CurrentUpgradeCost => Config == null ? 0 : MathHelper.CalculateUpgradeCost(Config.BaseCost, Config.CostMultiplier, Level) * UpgradeCostDiscount;
+    public virtual double CurrentUpgradeCost => MathHelper.CalculateUpgradeCost(ScaledBaseCost, CostMultiplier, Level) * UpgradeCostDiscount;
 
     protected virtual void Awake()
     {
@@ -177,10 +189,12 @@ public abstract class Facility : MonoBehaviour
     // --- CÁC HÀM TÍNH TOÁN CHỈ SỐ THỰC TẾ ĐỂ CHẠY LOGIC GAME VÀ HIỂN THỊ UI ---
 
     // 1. Tính Sức Chứa (Tăng theo hàm mũ)
-    public virtual float GetCapacity(int targetLevel)
+    public virtual double GetCapacity(int targetLevel)
     {
         if (Config == null) return 0;
-        return Config.BaseCapacity * Mathf.Pow(1.1f, targetLevel - 1); // Mỗi cấp tăng 10%
+        double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+        double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
+        return Config.BaseCapacity * System.Math.Pow(1.1f, targetLevel - 1) * roundMultiplier * prestigeMultiplier; // Mỗi cấp tăng 10%
     }
 
     // 2. Tính Tốc Độ (Tăng từ từ tuyến tính để không hỏng animation)
@@ -191,7 +205,7 @@ public abstract class Facility : MonoBehaviour
     }
 
     // 3. Tính Tổng Sản Lượng (Throughput = Sức chứa x Tốc độ)
-    public virtual float GetTotalThroughput(int targetLevel)
+    public virtual double GetTotalThroughput(int targetLevel)
     {
         return GetCapacity(targetLevel) * GetSpeed(targetLevel);
     }
@@ -204,13 +218,13 @@ public abstract class Facility : MonoBehaviour
         
         if (statIndex == 0) // Slot 1: Tổng Sản lượng
         {
-            curVal = GetTotalThroughput(currentLevel).ToString("F1") + "/s";
-            nextVal = GetTotalThroughput(nextLevel).ToString("F1") + "/s";
+            curVal = CurrencyFormatter.FormatMoney(GetTotalThroughput(currentLevel)) + "/s";
+            nextVal = CurrencyFormatter.FormatMoney(GetTotalThroughput(nextLevel)) + "/s";
         }
         else if (statIndex == 1) // Slot 2: Sức chứa
         {
-            curVal = Mathf.FloorToInt(GetCapacity(currentLevel)).ToString();
-            nextVal = Mathf.FloorToInt(GetCapacity(nextLevel)).ToString();
+            curVal = CurrencyFormatter.FormatMoney(GetCapacity(currentLevel));
+            nextVal = CurrencyFormatter.FormatMoney(GetCapacity(nextLevel));
         }
         else if (statIndex == 2) // Slot 3: Tốc độ
         {

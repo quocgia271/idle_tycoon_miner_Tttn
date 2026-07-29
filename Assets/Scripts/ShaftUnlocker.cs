@@ -31,12 +31,34 @@ public class ShaftUnlocker : MonoBehaviour
 
     private void Start()
     {
+        // 1. Tự động tính toán giá tiền mở khóa dựa vào độ sâu của Hầm (Toán học Cân bằng)
+        MineShaft parentShaft = GetComponent<MineShaft>(); 
+        if (parentShaft == null) parentShaft = GetComponentInParent<MineShaft>();
+
+        if (parentShaft != null)
+        {
+            // Công thức: 50 * (15 ^ (Index - 1)). 
+            // Hầm 1: 50 | Hầm 2: 750 | Hầm 3: 11,250 | Hầm 4: 168,750...
+            double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+            requiredGold = 50 * System.Math.Pow(15, parentShaft.ShaftIndex - 1) * roundMultiplier;
+            Debug.Log($"[ShaftUnlocker] Đã cập nhật giá mở hầm {parentShaft.ShaftIndex} thành {requiredGold}");
+            
+            // Có thể tự động chỉnh requiredLevel luôn nếu muốn
+            requiredLevel = parentShaft.ShaftIndex;
+        }
+        else
+        {
+            Debug.LogError("[ShaftUnlocker] LỖI: Không tìm thấy MineShaft! Hãy chắc chắn ShaftUnlocker nằm chung hoặc là con của MineShaft.");
+        }
+
         // Khởi tạo UI (Chỉ khi không phải chế độ sửa chữa)
         if (!isRepairMode)
         {
             if (costText != null) costText.text = CurrencyFormatter.FormatMoney(requiredGold);
             if (timeText != null) timeText.text = FormatTime(buildTimeSeconds);
-            if (levelText != null) levelText.text = $"Level: {requiredLevel}";
+            
+            // Tạm thời ẩn yêu cầu Level theo yêu cầu của Hào
+            if (levelText != null) levelText.gameObject.SetActive(false); 
         }
 
         if (lockButton != null)
@@ -116,13 +138,15 @@ public class ShaftUnlocker : MonoBehaviour
             return;
         }
 
-        // Kiểm tra Level
+        // TẠM THỜI TẮT YÊU CẦU LEVEL THEO YÊU CẦU CỦA USER
+        /*
         if (Gamemanager.Instance.PlayerLevel < requiredLevel)
         {
             Debug.Log($"<color=red>Chưa đủ Level! Yêu cầu Level {requiredLevel}.</color>");
             ShakeEffect();
             return;
         }
+        */
 
         // Kiểm tra và trừ Vàng
         if (Gamemanager.Instance.DeductCash(requiredGold))
@@ -169,6 +193,7 @@ public class ShaftUnlocker : MonoBehaviour
         if (costText != null) 
         {
             costText.text = "Đang xây dựng..."; 
+            costText.color = Color.white; // Ép thành màu trắng
             // Tạo hiệu ứng chớp tắt mờ dần lặp lại liên tục (Loading effect)
             loadingTween = costText.DOFade(0.3f, 0.6f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
         }

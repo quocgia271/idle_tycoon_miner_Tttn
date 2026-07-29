@@ -1,3 +1,4 @@
+// Forced Recompile
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -9,8 +10,7 @@ public class Warehouse : Facility
     public Transform elevatorPos; // Điểm lấy tiền
     public Transform depositPos;  // Điểm nạp tiền vào kho
     
-    [Header("Special Feature")]
-    public float ProjectileDamage = 50f;
+    // Bỏ thuộc tính ProjectileDamage tĩnh vì sát thương sẽ được tính động theo % Máu của Mục Tiêu
     [Tooltip("Chỉnh vị trí đạn cắm vào Boss đi bộ (vd y=1 để trúng ngực thay vì chân)")]
     public Vector3 groundBossTargetOffset = new Vector3(0, 1f, 0);
     [Tooltip("Chỉnh vị trí đạn cắm vào Rồng bay")]
@@ -60,8 +60,13 @@ public class Warehouse : Facility
 
     public double GetWorkerCapacity(int targetLevel)
     {
-        return BaseCapacity * targetLevel;
+        double baseCap = BaseCapacity * System.Math.Pow(1.1f, targetLevel - 1);
+        double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
+        double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+        return baseCap * prestigeMultiplier * roundMultiplier;
     }
+
+    public override double GetCapacity(int targetLevel) => GetWorkerCapacity(targetLevel);
 
     public double GetTotalThroughputDisplay(int targetLevel)
     {
@@ -128,16 +133,26 @@ public class Warehouse : Facility
         DragonBossController dragon = FindObjectOfType<DragonBossController>();
         if (dragon != null && dragon.gameObject.activeInHierarchy && dragon.GetComponent<Collider2D>().enabled)
         {
-            target = dragon.transform;
+            IDamageable d = dragon.GetComponent<IDamageable>();
+            if (d == null || !d.IsInvincible) target = dragon.transform;
         }
-        else
+        
+        if (target == null)
         {
             BossPhase2Controller boss2 = FindObjectOfType<BossPhase2Controller>();
-            if (boss2 != null && boss2.gameObject.activeInHierarchy) target = boss2.transform;
+            if (boss2 != null && boss2.gameObject.activeInHierarchy)
+            {
+                IDamageable d = boss2.GetComponent<IDamageable>();
+                if (d == null || !d.IsInvincible) target = boss2.transform;
+            }
             else
             {
                 BossPhase3Controller boss3 = FindObjectOfType<BossPhase3Controller>();
-                if (boss3 != null && boss3.gameObject.activeInHierarchy) target = boss3.transform;
+                if (boss3 != null && boss3.gameObject.activeInHierarchy)
+                {
+                    IDamageable d = boss3.GetComponent<IDamageable>();
+                    if (d == null || !d.IsInvincible) target = boss3.transform;
+                }
             }
         }
 
@@ -178,7 +193,16 @@ public class Warehouse : Facility
 
             WarehouseProjectile wp = proj.GetComponent<WarehouseProjectile>();
             if (wp == null) wp = proj.AddComponent<WarehouseProjectile>();
-            wp.Setup(target, ProjectileDamage, offsetToUse);
+
+            // Lấy sát thương chuẩn 5% Máu Tối Đa của chính Mục Tiêu đó (Canonical Math)
+            float finalDamage = 5f; // Fallback mặc định
+            IDamageable damageableTarget = target.GetComponent<IDamageable>();
+            if (damageableTarget != null)
+            {
+                finalDamage = damageableTarget.MaxHealth * 0.05f;
+            }
+
+            wp.Setup(target, finalDamage, offsetToUse);
         }
     }
 
@@ -247,16 +271,16 @@ public class Warehouse : Facility
         switch (statIndex)
         {
             case 0: // Tổng vận chuyển
-                curVal = GetTotalThroughputDisplay(currentLevel).ToString("F1") + "/s";
-                nextVal = GetTotalThroughputDisplay(nextLevel).ToString("F1") + "/s";
+                curVal = CurrencyFormatter.FormatMoney(GetTotalThroughputDisplay(currentLevel)) + "/s";
+                nextVal = CurrencyFormatter.FormatMoney(GetTotalThroughputDisplay(nextLevel)) + "/s";
                 break;
             case 1: // Số lượng nhân viên
                 curVal = GetWorkersCount(currentLevel).ToString();
                 nextVal = GetWorkersCount(nextLevel).ToString();
                 break;
             case 2: // Sức chứa 1 người
-                curVal = GetWorkerCapacity(currentLevel).ToString("F0");
-                nextVal = GetWorkerCapacity(nextLevel).ToString("F0");
+                curVal = CurrencyFormatter.FormatMoney(GetWorkerCapacity(currentLevel));
+                nextVal = CurrencyFormatter.FormatMoney(GetWorkerCapacity(nextLevel));
                 break;
             case 3: // Tốc độ di chuyển
                 curVal = GetWorkerMoveSpeed(currentLevel).ToString("F2");

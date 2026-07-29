@@ -5,7 +5,8 @@ using DG.Tweening; // Thêm thư viện DOTween
 public class EnemyClickReceiver : MonoBehaviour
 {
     [Header("Click Attack Settings")]
-    public float clickDamage = 10f;
+    [Tooltip("Phần trăm Máu Tối Đa bị trừ mỗi lần Click (Mặc định 0.01 = 1%)")]
+    public float clickDamagePercent = 0.01f;
     
     [Header("Damage Popup")]
     public DamagePopup damagePopupPrefab;
@@ -76,13 +77,25 @@ public class EnemyClickReceiver : MonoBehaviour
 
         PlayHitFeedback();
 
-        // 1. Gửi lệnh Trừ máu cho script chính (Không cần quan tâm nó là Minion hay Rồng hay Boss)
-        if (damageableTarget != null)
-        {
-            damageableTarget.TakeDamage(clickDamage);
-        }
+        // Nếu quái đang tàng hình/bất tử thì không nhận sát thương click
+        if (damageableTarget == null || damageableTarget.IsInvincible) return;
 
-        SpawnDamagePopup(clickDamage);
+        // Tính toán sát thương chuẩn = X% Máu Tối Đa của mục tiêu
+        float finalClickDamage = damageableTarget.MaxHealth * clickDamagePercent;
+
+        // Trừ máu
+        damageableTarget.TakeDamage(finalClickDamage);
+
+        // Hiện sát thương nhảy lên (Màu Cam đỏ cho Click tay để phân biệt với Turret màu Trắng)
+        if (damagePopupPrefab != null)
+        {
+            Vector3 pos = (popupSpawnPoint != null) ? popupSpawnPoint.position : transform.position;
+            DamagePopup popup = DamagePopup.Create(damagePopupPrefab, pos, popupSpawnPoint != null ? popupSpawnPoint : null, popupSourceType, customTextScale);
+            if (popup != null)
+            {
+                popup.Setup(finalClickDamage, 1f, new Color(1f, 0.4f, 0f));
+            }
+        }    
     }
 
     public void PlayHitFeedback()

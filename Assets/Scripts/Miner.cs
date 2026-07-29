@@ -104,7 +104,15 @@ public class Miner : MonoBehaviour
                 if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
                 Debug.Log("Miner clicked via OverlapPoint! Current state: " + currentState);
-                if (currentState == MinerState.Idle && currentShaft != null && !currentShaft.isBroken)
+                
+                // LÝ THUYẾT THIẾT KẾ UX: "One-Click Resolution" (Giải quyết 1 chạm)
+                // Các mối đe dọa trực tiếp (Active Threats) phải được giải quyết ngay trên màn hình World Space
+                // Thay vì bắt người chơi mở nhiều menu phức tạp (Macro Management).
+                if (healthState == HealthState.Injured || healthState == HealthState.Dead)
+                {
+                    QuickHeal();
+                }
+                else if (currentState == MinerState.Idle && currentShaft != null && !currentShaft.isBroken)
                 {
                     ChangeState(MinerState.WalkingToDig);
                 }
@@ -412,6 +420,36 @@ public class Miner : MonoBehaviour
         {
             spriteRenderer.DOKill();
             spriteRenderer.DOColor(Color.white, 0.5f);
+        }
+    }
+
+    // LÝ THUYẾT THIẾT KẾ UX: "One-Click Resolution"
+    public void QuickHeal()
+    {
+        if (currentShaft == null || Gamemanager.Instance == null) return;
+        
+        if (healthState == HealthState.Dead)
+        {
+            // Hồi sinh mất 3 giây thu nhập
+            double workerProductivity = currentShaft.GetWorkerProductivity(currentShaft.Level);
+            double cost = workerProductivity * 3; 
+            if (Gamemanager.Instance.DeductCash(cost))
+            {
+                Revive();
+            }
+        }
+        else if (healthState == HealthState.Injured)
+        {
+            // Bơm máu theo công thức: 1 Tinh thần = 0.03 giây thu nhập
+            float missingMorale = maxMorale - morale;
+            double workerProductivity = currentShaft.GetWorkerProductivity(currentShaft.Level);
+            double cost = workerProductivity * 0.03 * missingMorale;
+            if (Gamemanager.Instance.DeductCash(cost))
+            {
+                morale = maxMorale;
+                UpdateMoraleUI();
+                Cleanse();
+            }
         }
     }
 

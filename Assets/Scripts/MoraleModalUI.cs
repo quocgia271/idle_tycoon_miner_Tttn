@@ -192,13 +192,22 @@ public class MoraleModalUI : MonoBehaviour
     {
         currentCost = 0;
         
+        // CÂN BẰNG TOÁN HỌC (Dynamic Income Taxation):
+        // 100 Tinh thần (Max) = 3 giây thu nhập của 1 thợ mỏ.
+        // Vậy 1 Tinh thần = 0.03 giây thu nhập.
+        double moraleUnitCost = 100; // Default fallback
+        if (currentShaft != null)
+        {
+            moraleUnitCost = currentShaft.GetWorkerProductivity(currentShaft.Level) * 0.03;
+            if (moraleUnitCost < 100) moraleUnitCost = 100; // Giá tối thiểu
+        }
+        
         if (selectedOption == 0) // +25 for selected
         {
             if (selectedMiner != null && selectedMiner.morale < selectedMiner.maxMorale)
             {
-                // Placeholder cost formula: 1 morale = 100
                 float amount = Mathf.Min(25f, selectedMiner.maxMorale - selectedMiner.morale);
-                currentCost = amount * 100;
+                currentCost = amount * moraleUnitCost;
             }
         }
         else if (selectedOption == 1) // Max for selected
@@ -206,7 +215,7 @@ public class MoraleModalUI : MonoBehaviour
             if (selectedMiner != null)
             {
                 float missingMorale = selectedMiner.maxMorale - selectedMiner.morale;
-                currentCost = missingMorale * 100;
+                currentCost = missingMorale * moraleUnitCost;
             }
         }
         else if (selectedOption == 2) // Max for all
@@ -216,7 +225,7 @@ public class MoraleModalUI : MonoBehaviour
                 foreach(var miner in currentShaft.activeMiners)
                 {
                     float missing = miner.maxMorale - miner.morale;
-                    currentCost += missing * 100;
+                    currentCost += missing * moraleUnitCost;
                 }
             }
         }
@@ -320,16 +329,27 @@ public class MoraleModalUI : MonoBehaviour
         currentEnduranceCost = 0;
         if (currentShaft == null) return;
 
+        // CÂN BẰNG TOÁN HỌC (Dynamic Income Taxation):
+        // Boss 3 đánh mỗi 40s (Rút 50% máu). Để tạo Thuế 10-20%, 
+        // 100 Máu hầm (Max) = 8 giây tổng thu nhập của hầm.
+        // Vậy 1 Máu = 0.08 giây thu nhập.
+        double enduranceUnitCost = 100; // Default fallback
+        if (currentShaft != null)
+        {
+            enduranceUnitCost = currentShaft.GetTotalExtractionPerSecond(currentShaft.Level) * 0.08;
+            if (enduranceUnitCost < 100) enduranceUnitCost = 100; // Giá tối thiểu
+        }
+
         float missingEndurance = currentShaft.maxEndurance - currentShaft.currentEndurance;
 
         if (selectedEnduranceOption == 0) // +25
         {
             float amount = Mathf.Min(25f, missingEndurance);
-            currentEnduranceCost = amount * 100; // Placeholder formula: 1 endurance = 100 cash
+            currentEnduranceCost = amount * enduranceUnitCost;
         }
         else if (selectedEnduranceOption == 1) // Max
         {
-            currentEnduranceCost = missingEndurance * 100;
+            currentEnduranceCost = missingEndurance * enduranceUnitCost;
         }
 
         if (enduranceCostText != null)

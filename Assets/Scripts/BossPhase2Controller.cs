@@ -7,7 +7,8 @@ public class BossPhase2Controller : MonoBehaviour
     public List<GameObject> attackVFXList;
     
     [Header("Settings")]
-    public float timeBetweenAttacks = 5f;
+    public float baseTimeBetweenAttacks = 60f; // Cân bằng APM: Tăng từ 30s lên 60s
+    public float minTimeBetweenAttacks = 30f;  // Cân bằng APM: Tăng từ 10s lên 30s
     public Transform suckTargetPos; // Kéo object tâm điểm hút vào đây
     public List<MineShaft> allShafts; // Kéo toàn bộ 10 hầm mỏ vào đây theo thứ tự từ 1 đến 10
 
@@ -19,7 +20,26 @@ public class BossPhase2Controller : MonoBehaviour
 
     private void Start()
     {
-        attackTimer = timeBetweenAttacks;
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound != 2)
+        {
+            this.enabled = false; // Tắt script này vì không phải Round 2
+            
+            // Nếu là Round 1 thì ẩn luôn cả hình ảnh Boss đi (vì cả 2 Boss đều chưa xuất hiện)
+            if (Gamemanager.Instance.CurrentRound == 1) 
+            {
+                Debug.Log($"[BossPhase2] Round 1 -> Ẩn Boss GameObject: {gameObject.name}");
+                gameObject.SetActive(false); 
+            }
+            return;
+        }
+
+        Debug.Log($"<color=yellow>[BossPhase2] Round 2 -> BẬT BOSS THÀNH CÔNG! Object: {gameObject.name} đang hiển thị!</color>");
+
+        // TẮT cơ chế Click trừ máu ở Round 2 (Để Boss thành Hiểm họa vĩnh cửu)
+        EnemyClickReceiver clicker = GetComponent<EnemyClickReceiver>();
+        if (clicker != null) clicker.enabled = false;
+
+        attackTimer = baseTimeBetweenAttacks;
         if (bossAnim != null) bossAnim.Play("idle"); // Ép về idle lúc mới vào game
     }
 
@@ -31,7 +51,15 @@ public class BossPhase2Controller : MonoBehaviour
         if (attackTimer <= 0)
         {
             AttackRandomWorker();
-            attackTimer = timeBetweenAttacks;
+            
+            // Tính toán lại Cooldown dựa vào tổng cấp độ hầm
+            int totalLevel = 0;
+            foreach (var shaft in allShafts)
+            {
+                if (shaft != null && shaft.gameObject.activeInHierarchy) totalLevel += shaft.Level;
+            }
+            float newCooldown = baseTimeBetweenAttacks - (totalLevel / 100f);
+            attackTimer = Mathf.Max(newCooldown, minTimeBetweenAttacks);
         }
     }
 
@@ -71,10 +99,11 @@ public class BossPhase2Controller : MonoBehaviour
 
         for (int i = 0; i < validShafts.Count; i++)
         {
-            // Điểm số ngược: Hầm đầu (i=0) điểm cao nhất, hầm cuối điểm thấp nhất.
-            float baseScore = validShafts.Count - i; 
+            // Điểm số thuận: Hầm càng sâu (i càng lớn) điểm ưu tiên càng cao.
+            // Điều này là BẮT BUỘC trong lý thuyết Game Design: Boss phải tấn công vào nơi đẻ ra nhiều tiền nhất của người chơi.
+            float baseScore = i + 1; 
             
-            // Dùng số mũ 1.5 để tạo độ dốc (Ví dụ: hầm 1 tỉ lệ sẽ cao gấp nhiều lần hầm 10, nhưng hầm 10 vẫn > 0)
+            // Dùng số mũ 1.5 để tạo độ dốc (Ví dụ: hầm 10 tỉ lệ sẽ bị đánh cao gấp nhiều lần hầm 1, nhưng hầm 1 vẫn > 0)
             float weight = Mathf.Pow(baseScore, 1.5f); 
             
             totalWeight += weight;

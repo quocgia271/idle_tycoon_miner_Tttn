@@ -6,6 +6,7 @@ public class UIManager : MonoBehaviour
     [Header("UI Elements")]
     public TextMeshProUGUI cashText; // Kéo thả Text hiển thị tiền vào đây
     public TextMeshProUGUI levelText; // Kéo thả Text hiển thị Level vào đây
+    public TextMeshProUGUI roundText; // Text hiển thị Vòng chơi (Round 1, 2, 3)
 
     void Start()
     {
@@ -18,6 +19,11 @@ public class UIManager : MonoBehaviour
             // Cập nhật giao diện lần đầu tiên lúc vừa vào game
             UpdateCashUI(Gamemanager.Instance.IdleCash);
             UpdateLevelUI(Gamemanager.Instance.PlayerLevel);
+            
+            if (roundText != null)
+            {
+                roundText.text = $"Round {Gamemanager.Instance.CurrentRound}";
+            }
         }
     }
 

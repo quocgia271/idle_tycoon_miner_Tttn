@@ -7,6 +7,7 @@ public class BossHealth : MonoBehaviour, IDamageable
 {
     [Header("Health Settings")]
     public float maxHealth = 1000f;
+    public float MaxHealth => maxHealth;
     private float currentHealth;
 
     [Header("UI References")]
@@ -22,12 +23,23 @@ public class BossHealth : MonoBehaviour, IDamageable
     public GameObject deathVFX;            // Kéo cái VFX (đang bị tắt) đã nằm sẵn bên trong con Boss/Rồng vào đây!
 
     private bool isDead = false;
+    public bool IsDead => isDead;
 
     private void OnEnable()
     {
         // Reset máu mỗi khi Boss/Rồng xuất hiện lại
         currentHealth = maxHealth;
         isDead = false;
+
+        // TẠP MỚI: Nếu ở Round 3 (Vòng Cuối), Boss mặc định BẤT TỬ cho đến khi đập vách ngăn
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound == 3)
+        {
+            IsInvincible = true;
+        }
+        else
+        {
+            IsInvincible = false;
+        }
 
         if (healthSlider != null)
         {
@@ -42,6 +54,12 @@ public class BossHealth : MonoBehaviour, IDamageable
     }
 
     public bool IsInvincible { get; set; } = false;
+
+    public void RemoveInvincibility()
+    {
+        IsInvincible = false;
+        Debug.Log($"<color=orange>[{gameObject.name}] Đã Mất Giáp Bất Tử! Bắt đầu pha hành quyết!</color>");
+    }
 
     // Hàm này được tự động gọi bởi EnemyClickReceiver hoặc sau này là Trụ bắn đạn
     public void TakeDamage(float amount)
@@ -84,6 +102,16 @@ public class BossHealth : MonoBehaviour, IDamageable
 
         Debug.Log($"[{gameObject.name}] Đã bị tiêu diệt!");
 
+        // KIỂM TRA ĐIỀU KIỆN WIN GAME (CHỈ Ở ROUND 3)
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound == 3)
+        {
+            if (AreAllBossesDead())
+            {
+                Debug.Log("<color=magenta>★★★ CHÚC MỪNG! BẠN ĐÃ TIÊU DIỆT BOSS CUỐI VÀ PHÁ ĐẢO TRÒ CHƠI! ★★★</color>");
+                // Gắn thêm code mở màn hình Win Game (Win Screen) vào đây nếu cần!
+            }
+        }
+
         if (useProceduralDeath)
         {
             StartCoroutine(ProceduralDeathRoutine());
@@ -125,11 +153,22 @@ public class BossHealth : MonoBehaviour, IDamageable
         if (deathVFX != null)
         {
             deathVFX.SetActive(true);
-            // Đợi 3 giây cho VFX chạy hết vòng đời của nó
-            yield return new WaitForSeconds(3f); 
         }
 
-        // 6. Sau khi VFX bay xong hết thì mới Xóa sổ hoàn toàn cái xác
+        yield return new WaitForSeconds(0.5f);
         Destroy(gameObject);
+    }
+
+    private bool AreAllBossesDead()
+    {
+        BossHealth[] allBosses = FindObjectsOfType<BossHealth>();
+        foreach (var boss in allBosses)
+        {
+            if (boss.gameObject.activeInHierarchy && !boss.IsDead)
+            {
+                return false; // Vẫn còn Boss sống
+            }
+        }
+        return true; // Tất cả đều đã chết
     }
 }

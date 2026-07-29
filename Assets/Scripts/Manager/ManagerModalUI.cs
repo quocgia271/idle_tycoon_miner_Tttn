@@ -147,6 +147,7 @@ public class ManagerModalUI : MonoBehaviour
         RefreshTopPanel();
         RefreshBottomPanel();
         RefreshInventory();
+        RefreshPityText();
     }
 
     public void CloseModal()

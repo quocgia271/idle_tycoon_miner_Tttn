@@ -37,7 +37,16 @@ public class Elevator : Facility
     public double DroppedResource = 0; 
     
     public double BaseCapacity = 50; 
-    public double Capacity => BaseCapacity * Level; 
+    
+    public override double GetCapacity(int targetLevel)
+    {
+        double baseCap = BaseCapacity * System.Math.Pow(1.1f, targetLevel - 1);
+        double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
+        double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+        return baseCap * prestigeMultiplier * roundMultiplier;
+    }
+
+    public double Capacity => GetCapacity(Level);
 
     private ElevatorState currentState = ElevatorState.Idle;
     private int currentShaftIndex = 0;
@@ -335,9 +344,17 @@ public class Elevator : Facility
         return taken;
     }
 
+    // Đồng bộ công thức tốc độ với giao diện UI (Facility.cs) và áp dụng giới hạn Max Speed
+    public override float GetSpeed(int targetLevel)
+    {
+        float baseS = Config != null ? Config.BaseSpeed : 5f;
+        float speed = baseS + ((targetLevel - 1) * 0.2f);
+        return Mathf.Min(speed, 15f); // Khóa tốc độ tối đa ở mức 15 để tránh lỗi xuyên tường
+    }
+
     protected override void OnUpgraded()
     {
-        moveSpeed += 0.2f;
+        moveSpeed = GetSpeed(Level);
     }
 
     private void OnMouseDown()

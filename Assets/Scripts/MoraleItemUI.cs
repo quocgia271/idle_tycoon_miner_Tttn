@@ -20,7 +20,21 @@ public class MoraleItemUI : MonoBehaviour
     public GameObject reviveGroup; // Group chứa nút hồi sinh và text giá tiền
     public Button reviveButton;
     public TextMeshProUGUI reviveCostText;
-    public double reviveCost = 1000;
+    
+    // CÂN BẰNG TOÁN HỌC MỚI (Dynamic Income Taxation - Thuế Thu nhập Động):
+    // Thay vì dựa vào Giá trị tài sản (UpgradeCost) vốn bị lỗi thời khi có Prestige (Uy danh),
+    // Ta neo chi phí vào chính Năng suất của thợ mỏ.
+    // Nếu Boss đánh mỗi 30s, thợ mỏ cày được 30s thu nhập.
+    // Để tạo ra mức "Thuế 10%", giá hồi sinh phải bằng: 30s * 10% = 3 giây thu nhập của thợ mỏ.
+    private double ActualReviveCost 
+    {
+        get 
+        {
+            if (boundMiner == null || boundMiner.currentShaft == null) return 1000 * (Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0);
+            double workerProductivity = boundMiner.currentShaft.GetWorkerProductivity(boundMiner.currentShaft.Level);
+            return workerProductivity * 3; // 3 giây thu nhập
+        }
+    }
 
     private void Awake()
     {
@@ -71,11 +85,11 @@ public class MoraleItemUI : MonoBehaviour
             if (isSelected && miner.healthState == Miner.HealthState.Dead)
             {
                 reviveGroup.SetActive(true);
-                if (reviveCostText != null) reviveCostText.text = CurrencyFormatter.FormatMoney(reviveCost);
+                if (reviveCostText != null) reviveCostText.text = CurrencyFormatter.FormatMoney(ActualReviveCost);
                 
                 if (reviveButton != null)
                 {
-                    bool canAfford = Gamemanager.Instance != null && Gamemanager.Instance.IdleCash >= reviveCost;
+                    bool canAfford = Gamemanager.Instance != null && Gamemanager.Instance.IdleCash >= ActualReviveCost;
                     reviveButton.interactable = canAfford;
                     if (reviveCostText != null) reviveCostText.color = canAfford ? Color.white : Color.red;
                 }
@@ -104,15 +118,15 @@ public class MoraleItemUI : MonoBehaviour
         
         if (Gamemanager.Instance != null)
         {
-            if (Gamemanager.Instance.IdleCash >= reviveCost)
+            if (Gamemanager.Instance.IdleCash >= ActualReviveCost)
             {
                 Debug.Log("Đủ tiền! Tiến hành trừ tiền và hồi sinh.");
-                Gamemanager.Instance.IdleCash -= reviveCost;
+                Gamemanager.Instance.IdleCash -= ActualReviveCost;
                 boundMiner.Revive();
             }
             else
             {
-                Debug.LogWarning($"Không đủ tiền! Cần {reviveCost}, nhưng đang có {Gamemanager.Instance.IdleCash}");
+                Debug.LogWarning($"Không đủ tiền! Cần {ActualReviveCost}, nhưng đang có {Gamemanager.Instance.IdleCash}");
             }
         }
         else

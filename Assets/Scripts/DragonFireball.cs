@@ -55,8 +55,12 @@ public class DragonFireball : MonoBehaviour
             }
 
             // 4. TRỪ MÁU TRỰC TIẾP VÀ BẬT HIỆU ỨNG CHÁY HẦM:
+            // Sát thương từ đạn của Rồng được cân bằng dựa trên maxEndurance của hầm
+            float scaledDamage = shaft.maxEndurance * 0.3f; // Bắn bay 30% máu
+            if (isBigFireball) scaledDamage = shaft.maxEndurance * 0.8f; // Chiêu cuối bắn 80% máu
+            
             // Sát thương từ đạn của Rồng luôn luôn màu Đỏ
-            shaft.AddEndurance(-damage, Color.red);
+            shaft.AddEndurance(-scaledDamage, Color.red);
 
             // Đạn bự hay nhỏ đều kích hoạt cháy hầm, thời gian cháy lấy từ biến burnDuration
             shaft.TriggerBurnVFX(burnDuration, isBigFireball);
