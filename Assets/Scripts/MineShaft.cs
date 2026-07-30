@@ -93,7 +93,19 @@ public class MineShaft : Facility
         double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
         double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
         
-        return exponentialIncome * ProductivityBuff * prestigeMultiplier * roundMultiplier;
+        double finalIncome = exponentialIncome * ProductivityBuff * prestigeMultiplier * roundMultiplier;
+
+        // --- FIRE DEBUFF LOGIC ---
+        if (bigBurnTimer > 0)
+        {
+            finalIncome *= 0.1; // Giảm 90%
+        }
+        else if (normalBurnTimer > 0)
+        {
+            finalIncome *= 0.5; // Giảm 50%
+        }
+
+        return finalIncome;
     }
 
     [Header("Endurance Settings")]
@@ -336,6 +348,39 @@ public class MineShaft : Facility
     protected override void Update()
     {
         base.Update();
+        
+        // --- CLICK TO EXTINGUISH FIRE ---
+        if ((normalBurnTimer > 0 || bigBurnTimer > 0) && Input.GetMouseButtonDown(0))
+        {
+            Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Collider2D col = GetComponent<Collider2D>();
+            if (col != null && col.OverlapPoint(mouseWorldPos))
+            {
+                ExtinguishFireClick();
+            }
+        }
+    }
+
+    private void ExtinguishFireClick()
+    {
+        fireClicksRemaining--;
+        if (fireClicksRemaining <= 0)
+        {
+            // Tắt lửa
+            normalBurnTimer = 0f;
+            bigBurnTimer = 0f;
+            StopVFXSmoothly(normalBurnVFX);
+            StopVFXSmoothly(bigBurnVFX);
+            
+            // Hiện chữ báo hiệu dập lửa thành công
+            SpawnDamagePopup(0, Color.green, true); 
+        }
+        else
+        {
+            // Có thể tạo rung nhẹ hầm để biết đã click trúng
+            transform.DOKill(true);
+            transform.DOPunchPosition(new Vector3(0.05f, 0, 0), 0.15f, 1, 0f);
+        }
     }
 
     public override void ActivateManagerSkill()
@@ -365,6 +410,7 @@ public class MineShaft : Facility
             // Xóa hiệu ứng lửa của Rồng
             normalBurnTimer = 0f;
             bigBurnTimer = 0f;
+            fireClicksRemaining = 0;
             StopVFXSmoothly(normalBurnVFX);
             StopVFXSmoothly(bigBurnVFX);
             
@@ -568,8 +614,11 @@ public class MineShaft : Facility
     public bool IsSkill3Active => skill3Coroutine != null;
 
     [Header("Burn Damage Settings")]
-    public float normalBurnDamagePerSec = 2f; // Sát thương lửa nhỏ mỗi giây
-    public float bigBurnDamagePerSec = 5f;    // Sát thương lửa to mỗi giây
+    public float normalBurnDamagePerSec = 2f; // Không dùng nữa nhưng giữ lại để tương thích
+    public float bigBurnDamagePerSec = 5f;    // Không dùng nữa nhưng giữ lại để tương thích
+    
+    [Header("Fire Clicks")]
+    public int fireClicksRemaining = 0;
 
     private float normalBurnTimer = 0f;
     private float bigBurnTimer = 0f;
@@ -586,12 +635,14 @@ public class MineShaft : Facility
             StopVFXSmoothly(normalBurnVFX);
             bigBurnTimer += duration;
             PlayVFXSmoothly(bigBurnVFX);
+            fireClicksRemaining = 35; // 35 clicks to extinguish big fire
         }
         else
         {
             // Trúng đạn nhỏ: Cộng dồn thời gian lửa nhỏ (nếu bị trúng liên tục)
             normalBurnTimer += duration;
             PlayVFXSmoothly(normalBurnVFX);
+            if (fireClicksRemaining < 15) fireClicksRemaining = 15; // 15 clicks to extinguish small fire
         }
 
         // Bật hệ thống đếm ngược nếu nó chưa chạy
@@ -603,32 +654,31 @@ public class MineShaft : Facility
 
     private System.Collections.IEnumerator BurnTimerRoutine()
     {
-        float tickTimer = 1f;
         while (normalBurnTimer > 0 || bigBurnTimer > 0)
         {
-            tickTimer -= Time.deltaTime;
-
             // Xử lý lửa to
             if (bigBurnTimer > 0)
             {
                 bigBurnTimer -= Time.deltaTime;
-                if (tickTimer <= 0f) AddEndurance(-bigBurnDamagePerSec, Color.red);
                 
                 if (bigBurnTimer <= 0) 
+                {
                     StopVFXSmoothly(bigBurnVFX);
+                    fireClicksRemaining = 0;
+                }
             }
 
             // Xử lý lửa nhỏ
             if (normalBurnTimer > 0)
             {
                 normalBurnTimer -= Time.deltaTime;
-                if (tickTimer <= 0f) AddEndurance(-normalBurnDamagePerSec, Color.red);
                 
                 if (normalBurnTimer <= 0) 
+                {
                     StopVFXSmoothly(normalBurnVFX);
+                    fireClicksRemaining = 0;
+                }
             }
-
-            if (tickTimer <= 0f) tickTimer = 1f;
 
             yield return null; // Chờ frame tiếp theo
         }

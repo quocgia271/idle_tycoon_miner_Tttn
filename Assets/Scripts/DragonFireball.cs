@@ -5,15 +5,35 @@ public class DragonFireball : MonoBehaviour
     public float speed = 10f;
     public float damage = 10f;
     public bool isBigFireball = false; 
-    public float burnDuration = 5f; // Thời gian hầm bị cháy khi trúng đạn bự
+    public float burnDuration = 30f; // Sẽ được ghi đè trong Start
+    [HideInInspector] public Transform targetShaft; // Mục tiêu bay tới
     
     [Header("VFX")]
     public GameObject explosionVFXPrefab; // Kéo prefab hiệu ứng nổ vào đây
 
+    void Start()
+    {
+        // Ghi đè cứng thời gian cháy chuẩn (30s nhỏ, 45s to)
+        burnDuration = isBigFireball ? 45f : 30f;
+    }
+
     void Update()
     {
-        // Đạn luôn bay xuống theo trục nội bộ
-        transform.Translate(Vector3.down * speed * Time.deltaTime);
+        if (targetShaft != null)
+        {
+            // Homing: Bay đuổi theo mục tiêu
+            Vector3 direction = (targetShaft.position - transform.position).normalized;
+            transform.Translate(direction * speed * Time.deltaTime, Space.World);
+            
+            // Xoay đầu đạn về phía mục tiêu
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 90f;
+            transform.rotation = Quaternion.Euler(0, 0, angle);
+        }
+        else
+        {
+            // Dự phòng nếu không có mục tiêu: bay thẳng xuống
+            transform.Translate(Vector3.down * speed * Time.deltaTime, Space.Self);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -23,6 +43,12 @@ public class DragonFireball : MonoBehaviour
         
         if (shaft != null)
         {
+            // Nếu đạn có mục tiêu cụ thể, bỏ qua tất cả các hầm khác trên đường bay
+            if (targetShaft != null && shaft.transform != targetShaft)
+            {
+                return;
+            }
+
             // 1. KIỂM TRA HẦM BỊ KHÓA:
             // Tìm cục khóa (ShaftUnlocker) nằm trong hầm
             ShaftUnlocker unlocker = shaft.GetComponentInChildren<ShaftUnlocker>(true);
@@ -54,15 +80,8 @@ public class DragonFireball : MonoBehaviour
                 Destroy(vfx, 2f); 
             }
 
-            // 4. TRỪ MÁU TRỰC TIẾP VÀ BẬT HIỆU ỨNG CHÁY HẦM:
-            // Sát thương từ đạn của Rồng được cân bằng dựa trên maxEndurance của hầm
-            float scaledDamage = shaft.maxEndurance * 0.3f; // Bắn bay 30% máu
-            if (isBigFireball) scaledDamage = shaft.maxEndurance * 0.8f; // Chiêu cuối bắn 80% máu
-            
-            // Sát thương từ đạn của Rồng luôn luôn màu Đỏ
-            shaft.AddEndurance(-scaledDamage, Color.red);
-
-            // Đạn bự hay nhỏ đều kích hoạt cháy hầm, thời gian cháy lấy từ biến burnDuration
+            // 4. ÁP DỤNG TRẠNG THÁI LỬA GIẢM NĂNG SUẤT HẦM:
+            // Đạn bự hay nhỏ đều kích hoạt cháy hầm, giảm năng suất theo cơ chế mới
             shaft.TriggerBurnVFX(burnDuration, isBigFireball);
 
             if (isBigFireball)

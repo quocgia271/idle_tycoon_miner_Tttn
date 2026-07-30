@@ -9,7 +9,7 @@ public class BarrierController : MonoBehaviour
     [Header("Settings")]
     public BarrierType type;
     public float duration = 10f;
-    public float slowMultiplier = 0.5f;
+    public float slowMultiplier = 0.15f; // Tăng hiệu lực làm chậm lên 85%
 
     [Header("Elevator Specific")]
     public float elevatorSlowDuration = 5f; // Thời gian thang máy bị chậm sau khi chạm

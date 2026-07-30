@@ -41,6 +41,22 @@ public class Elevator : Facility
     public override double GetCapacity(int targetLevel)
     {
         double baseCap = BaseCapacity * System.Math.Pow(1.1f, targetLevel - 1);
+        
+        // --- CHUẨN GAME DESIGN: MILESTONE JUMPS ---
+        // Cơ chế bùng nổ sức chứa tại các mốc Level chẵn để bắt kịp sản lượng của Hầm mới.
+        double milestoneMult = 1.0;
+        if (targetLevel >= 10) milestoneMult *= 2;
+        if (targetLevel >= 25) milestoneMult *= 2;
+        if (targetLevel >= 50) milestoneMult *= 3;
+        if (targetLevel >= 100) milestoneMult *= 4;
+        if (targetLevel >= 200) milestoneMult *= 5;
+        if (targetLevel >= 300) milestoneMult *= 5;
+        if (targetLevel >= 400) milestoneMult *= 10;
+        if (targetLevel >= 500) milestoneMult *= 10;
+        
+        baseCap *= milestoneMult;
+        // ------------------------------------------
+        
         double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
         double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
         return baseCap * prestigeMultiplier * roundMultiplier;

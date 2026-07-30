@@ -1930,6 +1930,7 @@ GameObject:
   - component: {fileID: 8933128228166548766}
   - component: {fileID: 3734595773485260869}
   - component: {fileID: 7713290536623045454}
+  - component: {fileID: 8868694080100797770}
   m_Layer: 0
   m_Name: Mine
   m_TagString: Untagged
@@ -2058,6 +2059,7 @@ MonoBehaviour:
   worldSkillButton: {fileID: 1538597499794737838}
   worldSkillTimerText: {fileID: 4451701411041732261}
   worldSkillIconImage: {fileID: 4964665834480750860}
+  ShaftIndex: 1
   CurrentResource: 0
   BaseResourcePerSecond: 10
   MaxMiners: 5
@@ -2144,6 +2146,19 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 3.4477515, y: 0.95716166}
   m_EdgeRadius: 0
+--- !u!114 &8868694080100797770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9017769452106845334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 850b6d9298b62874186d47a88fcd8a60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  punchCooldown: 0.15
 --- !u!1001 &167346262728943814
 PrefabInstance:
   m_ObjectHideFlags: 0

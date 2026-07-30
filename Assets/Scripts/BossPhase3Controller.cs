@@ -39,12 +39,12 @@ public class BossPhase3Controller : MonoBehaviour
     private bool nextBarrierIsWarehouse = false; // Luân phiên giữa 2 màn chắn
 
     [Header("Skill 3 Settings")]
-    public float skill3Duration = 5f;
+    public float skill3Duration = 8f;
     public float skill3DamagePerSec = 10f;
 
     [Header("Skill 4 Settings")]
     public List<GameObject> skill4CameraVFXs;
-    public float skill4Duration = 5f;
+    public float skill4Duration = 3f;
     public float skill4DamagePerSec = 5f;
     public Color skill4DamageColor = Color.magenta;
     private Coroutine skill4Coroutine;
@@ -96,6 +96,34 @@ public class BossPhase3Controller : MonoBehaviour
         timeBetweenAttacks = phase3B_AttackInterval;
         attackTimer = 0f;
         Debug.Log("<color=red>[Boss 3] KHIÊN ĐÃ VỠ! BOSS 3 NỔI ĐIÊN!</color>");
+    }
+
+    public void IncreaseBarrierAggro()
+    {
+        if (!isEnraged) return; // Kỹ năng Barrier chỉ có ở Phase 3B
+
+        // NẾU BOSS ĐANG BẤT TỬ (ĐANG Ở TRONG MÀN CHẮN), BỎ QUA AGGRO
+        // Điều này ngăn chặn việc Boss ném khiên liên tục đè lên nhau gây bất tử vĩnh viễn
+        BossHealth hp = GetComponent<BossHealth>();
+        if (hp != null && hp.IsInvincible) return;
+
+        foreach (var sw in skillWeights)
+        {
+            if (sw.skill == BossPhase3Skill.Barrier)
+            {
+                sw.weight = 150f; // Tăng siêu trọng số lên 150 để phản ứng cực gắt
+                break;
+            }
+        }
+        
+        // Ép lần tung Barrier tiếp theo chắc chắn rơi vào Nhà Kho
+        nextBarrierIsWarehouse = true; 
+
+        // Rút ngắn Cooldown: Boss tức giận nên sẽ phản đòn nhanh hơn bình thường!
+        if (attackTimer > 5f)
+        {
+            attackTimer = 5f; 
+        }
     }
 
     private void ChooseAndExecuteSkill()
@@ -298,7 +326,7 @@ public class BossPhase3Controller : MonoBehaviour
 
         foreach (var shaft in activeShafts)
         {
-            if (!shaft.IsSkill3Active)
+            if (!shaft.IsSkill3Active && shaft.fireClicksRemaining <= 0)
             {
                 validShafts.Add(shaft);
             }
@@ -367,6 +395,16 @@ public class BossPhase3Controller : MonoBehaviour
             }
         }
 
+        // RESET AGGRO SAU KHI ĐÃ TRẢ THÙ XONG
+        foreach (var sw in skillWeights)
+        {
+            if (sw.skill == BossPhase3Skill.Barrier)
+            {
+                sw.weight = 25f; // Trả về trọng số mặc định ban đầu
+                break;
+            }
+        }
+
         nextBarrierIsWarehouse = !nextBarrierIsWarehouse;
     }
 
@@ -395,9 +433,9 @@ public class BossPhase3Controller : MonoBehaviour
             MineShaft targetShaft = ChooseShaftWithPriority(validShafts);
             if (targetShaft != null)
             {
-                // Cân bằng Game: Giảm sát thương từ 20% xuống 10% máu tối đa mỗi giây
-                // Tổng 5 giây = 50% máu, cho người chơi đủ thời gian phản ứng thay vì sập hầm ngay lập tức
-                float scaledDamage = targetShaft.maxEndurance * 0.1f;
+                // Cân bằng Game (DoT Standard): Độc/Cháy trong game RPG/Idle chuẩn thường gây 5% Max HP mỗi giây.
+                // Tổng 5 giây = 25% máu, cho người chơi đủ thời gian phản ứng và không bị chết sốc khi dính đạn của Rồng.
+                float scaledDamage = targetShaft.maxEndurance * 0.05f;
                 targetShaft.TriggerSkill3VFX(skill3Duration, scaledDamage);
             }
         }
@@ -442,8 +480,8 @@ public class BossPhase3Controller : MonoBehaviour
                 List<MineShaft> activeShafts = GetActiveShafts();
                 foreach (var shaft in activeShafts)
                 {
-                    // 10% max máu mỗi giây
-                    float scaledDamage = shaft.maxEndurance * 0.1f;
+                    // 5% max máu mỗi giây
+                    float scaledDamage = shaft.maxEndurance * 0.05f;
                     shaft.AddEndurance(-scaledDamage, skill4DamageColor);
                 }
                 tickTimer = 1f;

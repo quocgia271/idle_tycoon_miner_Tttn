@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class DragonBossController : MonoBehaviour
 {
@@ -157,6 +158,8 @@ public class DragonBossController : MonoBehaviour
 
         if (chargeVFX != null) chargeVFX.SetActive(false);
         if (dragonAnim != null) dragonAnim.speed = 1f;
+        
+        PlayAnim(idleAnimName); // Ngăn chặn animation attack bị loop và xả đạn lần 2
 
         // Bắn xong chiêu cuối, đợi 2 giây để hả hê rồi bay khỏi màn hình
         yield return new WaitForSeconds(2f);
@@ -168,6 +171,81 @@ public class DragonBossController : MonoBehaviour
         StartCoroutine(ExecuteShootPattern());
     }
 
+    private List<MineShaft> GetBaseValidShafts()
+    {
+        List<MineShaft> activeShafts = new List<MineShaft>();
+        MineShaft[] allShafts = FindObjectsOfType<MineShaft>();
+        
+        foreach (var shaft in allShafts)
+        {
+            if (shaft != null && shaft.gameObject.activeInHierarchy && !shaft.isBroken)
+            {
+                if (shaft.isInvincible) continue; // Bỏ qua hầm đang có khiên bất tử
+                if (shaft.IsSkill3Active) continue; // SMART TARGETING: Bỏ qua hầm đang bị Boss 3 thả độc
+                
+                ShaftUnlocker unlocker = shaft.GetComponentInChildren<ShaftUnlocker>(true);
+                if (unlocker == null || !unlocker.gameObject.activeInHierarchy)
+                {
+                    activeShafts.Add(shaft);
+                }
+            }
+        }
+        return activeShafts;
+    }
+
+    private MineShaft GetTargetWithWeightedPriority()
+    {
+        List<MineShaft> activeShafts = GetBaseValidShafts();
+        if (activeShafts.Count == 0) return null;
+
+        // Sắp xếp hầm theo Y giảm dần (Y càng thấp -> hầm càng sâu -> index càng lớn)
+        activeShafts.Sort((a, b) => b.transform.position.y.CompareTo(a.transform.position.y));
+
+        float totalWeight = 0;
+        List<float> weights = new List<float>();
+
+        for (int i = 0; i < activeShafts.Count; i++)
+        {
+            float baseScore = i + 1; 
+            float weight = Mathf.Pow(baseScore, 1.5f); 
+            weights.Add(weight);
+            totalWeight += weight;
+        }
+
+        float randomVal = Random.Range(0, totalWeight);
+        float currentSum = 0;
+
+        for (int i = 0; i < activeShafts.Count; i++)
+        {
+            currentSum += weights[i];
+            if (randomVal <= currentSum)
+            {
+                return activeShafts[i];
+            }
+        }
+        return activeShafts[activeShafts.Count - 1];
+    }
+
+    private List<MineShaft> GetSpreadTargetsGaussian()
+    {
+        List<MineShaft> activeShafts = GetBaseValidShafts();
+        if (activeShafts.Count <= 3) return activeShafts;
+
+        activeShafts.Sort((a, b) => b.transform.position.y.CompareTo(a.transform.position.y));
+
+        List<MineShaft> result = new List<MineShaft>();
+        int third = activeShafts.Count / 3;
+
+        // Lấy 1 hầm ngẫu nhiên ở 1/3 trên
+        result.Add(activeShafts[Random.Range(0, third)]);
+        // Lấy 1 hầm ngẫu nhiên ở 1/3 giữa
+        result.Add(activeShafts[Random.Range(third, 2 * third)]);
+        // Lấy 1 hầm ngẫu nhiên ở 1/3 dưới cùng
+        result.Add(activeShafts[Random.Range(2 * third, activeShafts.Count)]);
+
+        return result;
+    }
+
     private IEnumerator ExecuteShootPattern()
     {
         if (mouthPosition == null) yield break;
@@ -177,29 +255,50 @@ public class DragonBossController : MonoBehaviour
             case AttackType.Big:
                 if (chargeVFX != null) chargeVFX.SetActive(false);
                 if (dragonAnim != null) dragonAnim.speed = 1f;
-                if (bigFireballPrefab != null) Instantiate(bigFireballPrefab, mouthPosition.position, Quaternion.identity);
+                
+                MineShaft bigTarget = GetTargetWithWeightedPriority();
+                if (bigTarget != null && bigFireballPrefab != null)
+                {
+                    GameObject fb = Instantiate(bigFireballPrefab, mouthPosition.position, Quaternion.identity);
+                    DragonFireball df = fb.GetComponent<DragonFireball>();
+                    if (df != null) df.targetShaft = bigTarget.transform;
+                }
                 break;
 
             case AttackType.Single:
-                float randZ = Random.Range(-spreadAngle, spreadAngle);
-                if (normalFireballPrefab != null) Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.Euler(0, 0, randZ));
+                MineShaft singleTarget = GetTargetWithWeightedPriority();
+                if (singleTarget != null && normalFireballPrefab != null)
+                {
+                    GameObject fb = Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
+                    DragonFireball df = fb.GetComponent<DragonFireball>();
+                    if (df != null) df.targetShaft = singleTarget.transform;
+                }
                 break;
 
             case AttackType.Rapid:
-                for (int i = 0; i < 5; i++)
+                MineShaft rapidTarget = GetTargetWithWeightedPriority();
+                if (rapidTarget != null && normalFireballPrefab != null)
                 {
-                    float rZ = Random.Range(-spreadAngle, spreadAngle);
-                    if (normalFireballPrefab != null) Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.Euler(0, 0, rZ));
-                    yield return new WaitForSeconds(0.15f);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        GameObject fb = Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
+                        DragonFireball df = fb.GetComponent<DragonFireball>();
+                        if (df != null) df.targetShaft = rapidTarget.transform;
+                        yield return new WaitForSeconds(0.15f);
+                    }
                 }
                 break;
 
             case AttackType.Spread:
+                List<MineShaft> spreadTargets = GetSpreadTargetsGaussian();
                 if (normalFireballPrefab != null)
                 {
-                    Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.Euler(0, 0, spreadAngle)); 
-                    Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);                 
-                    Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.Euler(0, 0, -spreadAngle));
+                    foreach (var target in spreadTargets)
+                    {
+                        GameObject fb = Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
+                        DragonFireball df = fb.GetComponent<DragonFireball>();
+                        if (df != null) df.targetShaft = target.transform;
+                    }
                 }
                 break;
         }

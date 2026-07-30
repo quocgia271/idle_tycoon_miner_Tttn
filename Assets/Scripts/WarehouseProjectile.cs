@@ -112,6 +112,14 @@ public class WarehouseProjectile : MonoBehaviour
                 // Gọi hiệu ứng giật lùi
                 receiver.PlayHitFeedback();
                 
+                // Aggro Logic: Nếu bắn trúng Boss 3, chọc giận nó!
+                BossPhase3Controller boss3 = target.GetComponentInParent<BossPhase3Controller>();
+                if (boss3 == null) boss3 = target.GetComponentInChildren<BossPhase3Controller>();
+                if (boss3 != null)
+                {
+                    boss3.IncreaseBarrierAggro();
+                }
+
                 // Trừ máu và văng số sát thương (popup)
                 IDamageable damageable = target.GetComponent<IDamageable>();
                 if (damageable == null) damageable = target.GetComponentInChildren<IDamageable>();
@@ -130,6 +138,8 @@ public class WarehouseProjectile : MonoBehaviour
                 if (boss != null)
                 {
                     boss.TakeDamage(damage);
+                    BossPhase3Controller boss3 = target.GetComponent<BossPhase3Controller>();
+                    if (boss3 != null) boss3.IncreaseBarrierAggro();
                 }
                 else
                 {
