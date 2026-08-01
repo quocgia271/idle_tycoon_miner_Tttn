@@ -34,13 +34,15 @@ public class MinionController : MonoBehaviour, IDamageable
     public Color specialDamageColor = Color.yellow;
 
     private float currentHealth;
+    public float CurrentHealth => currentHealth;
     private float attackTimer;
     private int attackCount = 0;
     private bool isDead = false;
-    public bool IsDead => isDead;
+    public bool IsDead { get => isDead; set => isDead = value; }
 
     private void OnEnable()
     {
+        IsDead = false;
         currentHealth = maxHealth;
         isDead = false;
         attackCount = 0;
@@ -231,5 +233,19 @@ public class MinionController : MonoBehaviour, IDamageable
         // HỦY BỎ HOÀN TOÀN thay vì ẩn đi. 
         // Đây là cách duy nhất trị triệt để lỗi của Animator tải từ mạng về.
         Destroy(gameObject); 
+    }
+
+    public void LoadHealth(float health)
+    {
+        currentHealth = health;
+        if (healthSlider != null)
+        {
+            healthSlider.value = currentHealth;
+            if (currentHealth <= 0)
+            {
+                healthSlider.gameObject.SetActive(false);
+                isDead = true;
+            }
+        }
     }
 }

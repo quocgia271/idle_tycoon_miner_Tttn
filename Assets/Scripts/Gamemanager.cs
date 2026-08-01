@@ -11,6 +11,27 @@ public class Gamemanager : MonoBehaviour
     public double IdleCash = 0;
     public double LifetimeCash = 0; // Tổng tiền đã kiếm được trong vòng chơi hiện tại
     public int PlayerLevel = 1; // Thêm thông số level cho người chơi
+    public bool isBroken { get; private set; } // Trạng thái hầm mỏ
+
+    // AI Check: Quét toàn bộ bản đồ xem có còn ai đang sống không
+    public bool IsDeadGame()
+    {
+        MineShaft[] shafts = FindObjectsOfType<MineShaft>();
+        foreach (var shaft in shafts)
+        {
+            if (shaft != null && shaft.gameObject.activeInHierarchy && shaft.activeMiners != null)
+            {
+                foreach (var miner in shaft.activeMiners)
+                {
+                    if (miner != null && miner.healthState != Miner.HealthState.Dead)
+                    {
+                        return false; // Vẫn còn ít nhất 1 người đang sống -> Chưa phải Dead Game
+                    }
+                }
+            }
+        }
+        return true; // Tất cả thợ mỏ trên toàn bản đồ đã chết trắng
+    }
     
     [Header("Game Progression")]
     public double PrestigeMultiplier = 1.0; // Hệ số nhân tiền khi chuyển sinh
@@ -19,6 +40,7 @@ public class Gamemanager : MonoBehaviour
 
     public Action<double> OnCashChanged;
     public Action<int> OnLevelChanged; // Event khi level thay đổi
+    public Action<int> OnRoundChanged; // Event khi qua màn (Round) hoặc nạp Save
 
     [Header("Admin / Testing")]
     public double TestCashAmount = 1000000;
@@ -45,7 +67,50 @@ public class Gamemanager : MonoBehaviour
 
     void Start()
     {
-        // Cấp vốn khởi nghiệp Vàng (Golden Starting Cash) ngay khi game mới bắt đầu
+        // Đăng ký sự kiện nạp game từ SaveManager
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.OnGameLoaded += HandleGameLoaded;
+            
+            // Nếu SaveManager đã load xong trước cả khi GameManager Start, gọi luôn
+            if (SaveManager.Instance.CurrentSaveData != null)
+            {
+                HandleGameLoaded();
+            }
+        }
+        else
+        {
+            InitializeNewRoundCash();
+        }
+    }
+
+    private void HandleGameLoaded()
+    {
+        var data = SaveManager.Instance.CurrentSaveData;
+        
+        // Chỉ nạp dữ liệu tiền nếu đây không phải là một file Save trống mới tạo
+        if (data != null && data.LastSaveTimeUnixSeconds > 0)
+        {
+            IdleCash = data.IdleCash;
+            LifetimeCash = data.LifetimeCash;
+            PlayerLevel = data.PlayerLevel == 0 ? 1 : data.PlayerLevel;
+            PrestigeMultiplier = data.PrestigeMultiplier < 1.0 ? 1.0 : data.PrestigeMultiplier;
+            CurrentRound = data.CurrentRound == 0 ? 1 : data.CurrentRound;
+            
+            OnCashChanged?.Invoke(IdleCash);
+            OnLevelChanged?.Invoke(PlayerLevel);
+            OnRoundChanged?.Invoke(CurrentRound);
+            Debug.Log("[GameManager] Loaded state from SaveManager.");
+        }
+        else
+        {
+            // Nếu không có Save hoặc Save trống, cấp tiền khởi nghiệp
+            InitializeNewRoundCash();
+        }
+    }
+
+    private void InitializeNewRoundCash()
+    {
         if (IdleCash == 0)
         {
             IdleCash = 150 * RoundMultiplier;
@@ -71,10 +136,17 @@ public class Gamemanager : MonoBehaviour
     public void Prestige()
     {
         double baseRequirement = 1000000 * RoundMultiplier;
-        if (LifetimeCash < baseRequirement)
+        bool isDeadGame = IsDeadGame();
+        
+        if (LifetimeCash < baseRequirement && !isDeadGame)
         {
             Debug.Log($"<color=red>Chưa đủ điều kiện chuyển sinh! (Cần kiếm tổng cộng {CurrencyFormatter.FormatMoney(baseRequirement)})</color>");
             return;
+        }
+
+        if (isDeadGame)
+        {
+            Debug.Log("<color=orange>DEAD GAME DETECTED! Hệ thống cho phép Đặc cách Chuyển sinh sớm (Fail-Forward)!</color>");
         }
 
         PrestigeMultiplier = CalculateNextPrestigeMultiplier();
@@ -83,14 +155,33 @@ public class Gamemanager : MonoBehaviour
         IdleCash = 150 * RoundMultiplier;
         OnCashChanged?.Invoke(IdleCash);
         
-        // Cực kỳ quan trọng: Reset toàn bộ Quản lý khi Chuyển sinh (Theo chuẩn thiết kế Idle Game)
+        // Cực kỳ quan trọng: Reset toàn bộ Quản lý khi Chuyển sinh
         if (ManagerController.Instance != null)
         {
             ManagerController.Instance.ResetManagers();
         }
         
-        // Load lại cảnh hiện tại (giữ nguyên CurrentRound)
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.isTransitioning = true;
+            SaveManager.Instance.SaveResetState(); // Ghi file ngay lập tức
+        }
+        
+        StartCoroutine(PrestigeTransitionRoutine());
+    }
+
+    private IEnumerator PrestigeTransitionRoutine()
+    {
+        // Load lại cảnh hiện tại đồng bộ
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        
+        // Chờ 1.5 giây để toàn bộ scene mới, các script Start/Awake chạy xong hoàn toàn
+        yield return new WaitForSeconds(1.5f);
+        
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.isTransitioning = false;
+        }
         
         Debug.Log($"<color=green>Đã Chuyển sinh! Hệ số tiền thưởng mới: x{PrestigeMultiplier}</color>");
     }
@@ -98,6 +189,10 @@ public class Gamemanager : MonoBehaviour
     [ContextMenu("Qua Màn (Next Round)")]
     public void ProceedToNextRound()
     {
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.isTransitioning = true; // Khóa Save NGAY LẬP TỨC để chống lỗi tắt cái rụp
+        }
         StartCoroutine(TransitionToNextRoundRoutine());
     }
 
@@ -119,24 +214,40 @@ public class Gamemanager : MonoBehaviour
         // Giữ Canvas không bị hủy khi load scene
         DontDestroyOnLoad(fadeCanvas.gameObject);
 
-        // Fade Out (Màn hình tối dần)
-        Tween fadeOut = fadeImage.DOFade(1f, 1f);
-        yield return fadeOut.WaitForCompletion();
-
-        // Tăng Round và Reset với vốn khởi nghiệp
+        // ==========================================
+        // 1. TÍNH TOÁN VÀ LƯU DATA NGAY LẬP TỨC 
+        // ==========================================
+        // Tính trước các thông số của Round mới
         CurrentRound++;
         IdleCash = 150 * RoundMultiplier;
         LifetimeCash = 0; 
         PrestigeMultiplier = 1.0; 
-        OnCashChanged?.Invoke(IdleCash);
         
-        // Cực kỳ quan trọng: Xóa toàn bộ Quản lý cũ khi qua màn mới (Tránh lỗi State Desync)
+        // Tạo 1 file save sạch tinh ngay lập tức (Ghi đè file cũ)
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.SaveResetState(); 
+        }
+        // Kể từ khoảnh khắc này, nếu người chơi có tắt app thì dữ liệu trong máy ĐÃ LÀ ROUND MỚI!
+
+        // ==========================================
+        // 2. HIỆU ỨNG HÌNH ẢNH (FADE OUT)
+        // ==========================================
+        Tween fadeOut = fadeImage.DOFade(1f, 1f);
+        yield return fadeOut.WaitForCompletion();
+
+        // 3. Sau khi màn hình đã đen, mới bắt đầu cập nhật UI và reset Manager
+        OnCashChanged?.Invoke(IdleCash);
+        OnRoundChanged?.Invoke(CurrentRound);
+        
         if (ManagerController.Instance != null)
         {
             ManagerController.Instance.ResetManagers();
         }
-        
-        // Load Scene
+
+        // ==========================================
+        // 4. CHUYỂN SCENE
+        // ==========================================
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
         while (!asyncLoad.isDone)
         {
@@ -154,6 +265,12 @@ public class Gamemanager : MonoBehaviour
 
         // Hủy Canvas sau khi Fade xong
         Destroy(fadeCanvas.gameObject);
+
+        // MỞ KHÓA SAVE LẠI SAU KHI NGƯỜI CHƠI THỰC SỰ BẮT ĐẦU CHƠI
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.isTransitioning = false;
+        }
     }
 
     public void AddCash(double amount)
@@ -161,6 +278,8 @@ public class Gamemanager : MonoBehaviour
         IdleCash += amount;
         LifetimeCash += amount; // Ghi nhận vào tổng tiền để tính Prestige
         OnCashChanged?.Invoke(IdleCash);
+        
+        // Auto-save khi có tiền được add số lượng lớn (tuỳ chọn)
     }
 
     public void AddLevel(int amount)
@@ -176,6 +295,7 @@ public class Gamemanager : MonoBehaviour
         {
             IdleCash -= amount;
             OnCashChanged?.Invoke(IdleCash);
+            // XÓA SaveManager.Instance.SaveGame(); Ở ĐÂY ĐỂ TRÁNH LỖI STATE DESYNC VÀ LAG
             return true;
         }
         return false;

@@ -9,6 +9,7 @@ public class BossHealth : MonoBehaviour, IDamageable
     public float maxHealth = 1000f;
     public float MaxHealth => maxHealth;
     private float currentHealth;
+    public float CurrentHealth => currentHealth;
 
     [Header("UI References")]
     public Slider healthSlider; // Kéo thanh máu World Space vào đây
@@ -59,6 +60,22 @@ public class BossHealth : MonoBehaviour, IDamageable
     {
         IsInvincible = false;
         Debug.Log($"<color=orange>[{gameObject.name}] Đã Mất Giáp Bất Tử! Bắt đầu pha hành quyết!</color>");
+    }
+
+    public void LoadState(BossHealthSaveData data)
+    {
+        if (data.IsDead)
+        {
+            isDead = true;
+            gameObject.SetActive(false);
+            return;
+        }
+
+        currentHealth = data.CurrentHealth;
+        if (healthSlider != null)
+        {
+            healthSlider.value = currentHealth;
+        }
     }
 
     // Hàm này được tự động gọi bởi EnemyClickReceiver hoặc sau này là Trụ bắn đạn

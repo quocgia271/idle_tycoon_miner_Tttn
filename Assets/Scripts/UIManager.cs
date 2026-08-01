@@ -7,6 +7,7 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI cashText; // Kéo thả Text hiển thị tiền vào đây
     public TextMeshProUGUI levelText; // Kéo thả Text hiển thị Level vào đây
     public TextMeshProUGUI roundText; // Text hiển thị Vòng chơi (Round 1, 2, 3)
+    public TextMeshProUGUI multiplierText; // Text hiển thị Hệ số nhân (Multiplier)
 
     void Start()
     {
@@ -23,6 +24,11 @@ public class UIManager : MonoBehaviour
             if (roundText != null)
             {
                 roundText.text = $"Round {Gamemanager.Instance.CurrentRound}";
+            }
+
+            if (multiplierText != null)
+            {
+                multiplierText.text = $"x{Gamemanager.Instance.PrestigeMultiplier:F2}";
             }
         }
     }
@@ -42,8 +48,8 @@ public class UIManager : MonoBehaviour
     {
         if (cashText != null)
         {
-            // Hiển thị số tiền kèm dấu $ và làm tròn 2 chữ số (VD: $150.50)
-            cashText.text = newCash.ToString("F2");
+            // Hiển thị số tiền bằng CurrencyFormatter để hỗ trợ M, B, aa, ab...
+            cashText.text = CurrencyFormatter.FormatMoney(newCash);
         }
     }
 

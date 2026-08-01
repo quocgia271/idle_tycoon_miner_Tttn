@@ -31,30 +31,12 @@ public class ShaftUnlocker : MonoBehaviour
 
     private void Start()
     {
-        // 1. Tự động tính toán giá tiền mở khóa dựa vào độ sâu của Hầm (Toán học Cân bằng)
-        MineShaft parentShaft = GetComponent<MineShaft>(); 
-        if (parentShaft == null) parentShaft = GetComponentInParent<MineShaft>();
-
-        if (parentShaft != null)
-        {
-            // Công thức: 50 * (15 ^ (Index - 1)). 
-            // Hầm 1: 50 | Hầm 2: 750 | Hầm 3: 11,250 | Hầm 4: 168,750...
-            double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
-            requiredGold = 50 * System.Math.Pow(15, parentShaft.ShaftIndex - 1) * roundMultiplier;
-            Debug.Log($"[ShaftUnlocker] Đã cập nhật giá mở hầm {parentShaft.ShaftIndex} thành {requiredGold}");
-            
-            // Có thể tự động chỉnh requiredLevel luôn nếu muốn
-            requiredLevel = parentShaft.ShaftIndex;
-        }
-        else
-        {
-            Debug.LogError("[ShaftUnlocker] LỖI: Không tìm thấy MineShaft! Hãy chắc chắn ShaftUnlocker nằm chung hoặc là con của MineShaft.");
-        }
+        // Tính toán giá tiền lần đầu
+        UpdateUnlockCost();
 
         // Khởi tạo UI (Chỉ khi không phải chế độ sửa chữa)
         if (!isRepairMode)
         {
-            if (costText != null) costText.text = CurrencyFormatter.FormatMoney(requiredGold);
             if (timeText != null) timeText.text = FormatTime(buildTimeSeconds);
             
             // Tạm thời ẩn yêu cầu Level theo yêu cầu của Hào
@@ -79,7 +61,7 @@ public class ShaftUnlocker : MonoBehaviour
         {
             Gamemanager.Instance.OnCashChanged += OnCashChanged;
             Gamemanager.Instance.OnLevelChanged += OnLevelChanged;
-            UpdateRequirementColors(); // Gọi 1 lần lúc đầu để set màu chuẩn
+            Gamemanager.Instance.OnRoundChanged += OnRoundChanged;
         }
     }
 
@@ -89,11 +71,32 @@ public class ShaftUnlocker : MonoBehaviour
         {
             Gamemanager.Instance.OnCashChanged -= OnCashChanged;
             Gamemanager.Instance.OnLevelChanged -= OnLevelChanged;
+            Gamemanager.Instance.OnRoundChanged -= OnRoundChanged;
         }
     }
 
     private void OnCashChanged(double cash) => UpdateRequirementColors();
     private void OnLevelChanged(int level) => UpdateRequirementColors();
+    private void OnRoundChanged(int round) => UpdateUnlockCost();
+
+    public void UpdateUnlockCost()
+    {
+        MineShaft parentShaft = GetComponent<MineShaft>(); 
+        if (parentShaft == null) parentShaft = GetComponentInParent<MineShaft>();
+
+        if (parentShaft != null)
+        {
+            double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
+            requiredGold = 50 * System.Math.Pow(15, parentShaft.ShaftIndex - 1) * roundMultiplier;
+            requiredLevel = parentShaft.ShaftIndex;
+            
+            if (!isRepairMode && costText != null)
+            {
+                costText.text = CurrencyFormatter.FormatMoney(requiredGold);
+            }
+            UpdateRequirementColors();
+        }
+    }
 
     private void UpdateRequirementColors()
     {
@@ -113,6 +116,9 @@ public class ShaftUnlocker : MonoBehaviour
         }
     }
 
+    public bool IsBuilding => isBuilding;
+    public bool isPurchased = false;
+
     private void OnUnlockClicked()
     {
         if (isBuilding) return; // Đang xây rồi thì bỏ qua
@@ -121,6 +127,7 @@ public class ShaftUnlocker : MonoBehaviour
         {
             if (Gamemanager.Instance.DeductCash(repairCost))
             {
+                isPurchased = true;
                 Debug.Log("<color=green>Sửa chữa hầm thành công!</color>");
                 isRepairMode = false;
                 
@@ -151,6 +158,7 @@ public class ShaftUnlocker : MonoBehaviour
         // Kiểm tra và trừ Vàng
         if (Gamemanager.Instance.DeductCash(requiredGold))
         {
+            isPurchased = true;
             Debug.Log("<color=green>Bắt đầu xây dựng hầm mỏ!</color>");
             StartCoroutine(BuildRoutine());
         }

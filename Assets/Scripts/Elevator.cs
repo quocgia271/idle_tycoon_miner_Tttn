@@ -411,4 +411,23 @@ public class Elevator : Facility
         ElevatorMoveSpeedBuff = 1f;
         ElevatorLoadSpeedBuff = 1f;
     }
+
+    // =====================================
+    // LƯU TRỮ VÀ TẢI DỮ LIỆU (SAVE/LOAD)
+    // =====================================
+    public override FacilitySaveData SaveState()
+    {
+        FacilitySaveData data = base.SaveState();
+        data.Index = 0; // Elevator không cần Index
+        data.CurrentResource = this.DroppedResource; 
+        return data;
+    }
+
+    public override void LoadState(FacilitySaveData data)
+    {
+        base.LoadState(data);
+        if (data == null) return;
+        this.DroppedResource = data.CurrentResource;
+        UpdateElevatorUI();
+    }
 }

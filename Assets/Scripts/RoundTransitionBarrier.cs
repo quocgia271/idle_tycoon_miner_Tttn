@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 public class RoundTransitionBarrier : MonoBehaviour
 {
@@ -121,6 +122,19 @@ public class RoundTransitionBarrier : MonoBehaviour
             }
 
             confirmModal.SetActive(true);
+            
+            CanvasGroup cg = confirmModal.GetComponent<CanvasGroup>();
+            if (cg == null) cg = confirmModal.AddComponent<CanvasGroup>();
+            RectTransform rect = confirmModal.GetComponent<RectTransform>();
+
+            DOTween.Kill(cg);
+            DOTween.Kill(rect);
+
+            cg.alpha = 0f;
+            rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, -150f);
+            
+            cg.DOFade(1f, 0.35f).SetUpdate(true).SetEase(Ease.OutQuad);
+            rect.DOAnchorPosY(0f, 0.35f).SetEase(Ease.OutBack).SetUpdate(true);
         }
         else
         {
@@ -133,7 +147,23 @@ public class RoundTransitionBarrier : MonoBehaviour
     {
         if (confirmModal != null)
         {
-            confirmModal.SetActive(false);
+            CanvasGroup cg = confirmModal.GetComponent<CanvasGroup>();
+            RectTransform rect = confirmModal.GetComponent<RectTransform>();
+
+            if (cg != null && rect != null)
+            {
+                DOTween.Kill(cg);
+                DOTween.Kill(rect);
+
+                cg.DOFade(0f, 0.25f).SetUpdate(true).SetEase(Ease.OutQuad);
+                rect.DOAnchorPosY(-150f, 0.25f).SetEase(Ease.InBack).SetUpdate(true).OnComplete(() => {
+                    confirmModal.SetActive(false);
+                });
+            }
+            else
+            {
+                confirmModal.SetActive(false);
+            }
         }
     }
 
@@ -142,17 +172,19 @@ public class RoundTransitionBarrier : MonoBehaviour
         Debug.Log("Đã bấm nút YES Xác nhận đập vách ngăn!");
         CloseConfirmModal();
 
-        if (Gamemanager.Instance.DeductCash(requireCashToPass))
+        int currentRound = Gamemanager.Instance.CurrentRound;
+
+        if (currentRound == 3)
         {
-            if (Gamemanager.Instance.CurrentRound == 3)
+            // Ở Round 3, đập vách ngăn tốn tiền nhưng không qua màn, chỉ gỡ giáp rồng
+            if (Gamemanager.Instance.DeductCash(requireCashToPass))
             {
                 Debug.Log("<color=green>Đã đập vỡ vách ngăn! GỠ BỎ GIÁP BẤT TỬ CỦA RỒNG!</color>");
                 
-                // Mở khóa cho phép tấn công Boss
-                BossHealth[] allBosses = FindObjectsOfType<BossHealth>();
+                BossHealth[] allBosses = FindObjectsOfType<BossHealth>(true);
                 foreach (var boss in allBosses)
                 {
-                    boss.RemoveInvincibility();
+                    if (boss != null) boss.RemoveInvincibility();
                 }
 
                 // Kích nộ Rồng và Boss
@@ -165,10 +197,14 @@ public class RoundTransitionBarrier : MonoBehaviour
                 // Ẩn vách ngăn đi để người chơi thấy rõ Rồng
                 gameObject.SetActive(false);
             }
-            else
+        }
+        else
+        {
+            // Ở Round 1 và 2, KHÔNG DÙNG DeductCash vì nó sẽ lưu file save giữa chừng gây lỗi nếu tắt game.
+            // Chỉ cần check đủ tiền, sau đó gọi ProceedToNextRound (hàm này tự Reset tiền về 150M rồi).
+            if (Gamemanager.Instance.IdleCash >= requireCashToPass)
             {
                 Debug.Log("<color=green>Đã đập vỡ vách ngăn! Bắt đầu Qua Màn...</color>");
-                // 3. Gọi lệnh Qua màn trong GameManager (Dành cho Round 1 và 2)
                 Gamemanager.Instance.ProceedToNextRound();
             }
         }

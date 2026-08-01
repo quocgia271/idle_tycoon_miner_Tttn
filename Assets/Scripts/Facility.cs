@@ -400,4 +400,35 @@ public abstract class Facility : MonoBehaviour
             Debug.LogError("Chưa kéo ManagerModalUI vào scene hoặc đã bị xóa!");
         }
     }
+
+    // =====================================
+    // LƯU TRỮ VÀ TẢI DỮ LIỆU (SAVE/LOAD)
+    // =====================================
+    public virtual FacilitySaveData SaveState()
+    {
+        FacilitySaveData data = new FacilitySaveData();
+        data.Level = this.Level;
+        data.ActiveManagerID = this.currentManager != null ? this.currentManager.Id : "";
+        return data;
+    }
+
+    public virtual void LoadState(FacilitySaveData data)
+    {
+        if (data == null) return;
+        this.Level = data.Level == 0 ? 1 : data.Level;
+        
+        // Khôi phục Manager bằng cách gọi đúng hàm AssignManager để nó spawn UI và Visual
+        if (!string.IsNullOrEmpty(data.ActiveManagerID) && ManagerController.Instance != null)
+        {
+            ManagerData foundManager = ManagerController.Instance.OwnedManagers.Find(m => m.Id == data.ActiveManagerID);
+            if (foundManager != null)
+            {
+                AssignManager(foundManager);
+            }
+        }
+
+        // Bắt buộc gọi OnUpgraded để update lại các chỉ số dựa trên Level mới nạp
+        OnUpgraded();
+        UpdateUpgradeUI();
+    }
 }

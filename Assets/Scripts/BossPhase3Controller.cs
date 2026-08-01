@@ -48,29 +48,57 @@ public class BossPhase3Controller : MonoBehaviour
     public float skill4DamagePerSec = 5f;
     public Color skill4DamageColor = Color.magenta;
     private Coroutine skill4Coroutine;
+    public float CurrentSkill4Timer = 0f;
 
     private float attackTimer;
 
     private void Start()
     {
-        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound != 3)
+        if (Gamemanager.Instance != null)
         {
-            this.enabled = false; // Tắt script này vì không phải Round 3
-            
-            // Nếu là Round 1 thì ẩn luôn cả hình ảnh Boss đi (vì cả 2 Boss đều chưa xuất hiện)
-            if (Gamemanager.Instance.CurrentRound == 1) 
+            Gamemanager.Instance.OnRoundChanged += HandleRoundChanged;
+            HandleRoundChanged(Gamemanager.Instance.CurrentRound);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Gamemanager.Instance != null)
+        {
+            Gamemanager.Instance.OnRoundChanged -= HandleRoundChanged;
+        }
+    }
+
+    private void HandleRoundChanged(int round)
+    {
+        if (round != 3)
+        {
+            if (round == 1 && gameObject.activeInHierarchy) 
             {
-                Debug.Log($"[BossPhase3] Round 1 -> Ẩn Boss GameObject: {gameObject.name}");
-                gameObject.SetActive(false); 
+                Debug.Log($"[BossPhase3] Round {round} -> Ẩn Boss GameObject: {gameObject.name}");
+                StartCoroutine(HideBossRoutine()); 
             }
+            this.enabled = false;
             return;
         }
 
         Debug.Log($"<color=magenta>[BossPhase3] Round 3 -> BẬT BOSS THÀNH CÔNG! Object: {gameObject.name} đang hiển thị!</color>");
-
+        
+        gameObject.SetActive(true);
+        this.enabled = true;
+        
         timeBetweenAttacks = phase3A_AttackInterval;
         attackTimer = timeBetweenAttacks;
         if (bossAnim != null) bossAnim.Play("idle");
+    }
+
+    private System.Collections.IEnumerator HideBossRoutine()
+    {
+        yield return new WaitForEndOfFrame();
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound == 1)
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     private void Update()
@@ -96,6 +124,13 @@ public class BossPhase3Controller : MonoBehaviour
         timeBetweenAttacks = phase3B_AttackInterval;
         attackTimer = 0f;
         Debug.Log("<color=red>[Boss 3] KHIÊN ĐÃ VỠ! BOSS 3 NỔI ĐIÊN!</color>");
+    }
+
+    public void LoadEnrage()
+    {
+        isEnraged = true;
+        timeBetweenAttacks = phase3B_AttackInterval;
+        attackTimer = timeBetweenAttacks; // Không đánh ngay khi load
     }
 
     public void IncreaseBarrierAggro()
@@ -467,11 +502,11 @@ public class BossPhase3Controller : MonoBehaviour
             }
         }
 
-        float timer = skill4Duration;
+        if (CurrentSkill4Timer <= 0) CurrentSkill4Timer = skill4Duration;
         float tickTimer = 1f;
-        while (timer > 0)
+        while (CurrentSkill4Timer > 0)
         {
-            timer -= Time.deltaTime;
+            CurrentSkill4Timer -= Time.deltaTime;
             tickTimer -= Time.deltaTime;
             
             if (tickTimer <= 0f)
@@ -513,5 +548,20 @@ public class BossPhase3Controller : MonoBehaviour
             chosenVFX.SetActive(false);
         }
         skill4Coroutine = null;
+        CurrentSkill4Timer = 0f;
+    }
+
+    public void RestoreMinion(MineShaft targetShaft, float loadedHealth)
+    {
+        if (minionPrefabs == null || minionPrefabs.Length == 0) return;
+        GameObject randomPrefab = minionPrefabs[UnityEngine.Random.Range(0, minionPrefabs.Length)];
+        GameObject newMinionObj = Instantiate(randomPrefab, targetShaft.transform);
+        
+        MinionController chosenMinion = newMinionObj.GetComponent<MinionController>();
+        if (chosenMinion != null)
+        {
+            chosenMinion.targetShaft = targetShaft; 
+            chosenMinion.LoadHealth(loadedHealth);
+        }
     }
 }

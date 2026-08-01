@@ -7,9 +7,9 @@ public class DragonBossController : MonoBehaviour
     public Animator dragonAnim;
     
     [Header("Attack Settings")]
-    public float phase3A_AttackInterval = 30f;
-    public float phase3B_AttackInterval = 10f;
-    private float timeBetweenAttacks = 30f;
+    public float phase3A_AttackInterval = 45f;
+    public float phase3B_AttackInterval = 20f;
+    private float timeBetweenAttacks = 45f;
     private bool isEnraged = false;
 
     public float spreadAngle = 8f; 
@@ -43,12 +43,38 @@ public class DragonBossController : MonoBehaviour
 
     private void Start()
     {
-        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound != 3)
+        if (Gamemanager.Instance != null)
         {
-            gameObject.SetActive(false);
+            Gamemanager.Instance.OnRoundChanged += HandleRoundChanged;
+            HandleRoundChanged(Gamemanager.Instance.CurrentRound);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Gamemanager.Instance != null)
+        {
+            Gamemanager.Instance.OnRoundChanged -= HandleRoundChanged;
+        }
+    }
+
+    private void HandleRoundChanged(int round)
+    {
+        if (round != 3)
+        {
+            if (chargeVFX != null) chargeVFX.SetActive(false); // Fix rồng khạc lửa ở round 2
+            
+            if (gameObject.activeInHierarchy) 
+            {
+                StartCoroutine(HideBossRoutine());
+            }
+            this.enabled = false;
             return;
         }
 
+        this.enabled = true;
+        gameObject.SetActive(true);
+        
         originalPos = transform.position;
         timeBetweenAttacks = phase3A_AttackInterval;
         attackTimer = timeBetweenAttacks;
@@ -60,6 +86,15 @@ public class DragonBossController : MonoBehaviour
         if (!HasAnyUnlockedMineshaft())
         {
             StartCoroutine(FlyOffScreenRoutine(true));
+        }
+    }
+
+    private System.Collections.IEnumerator HideBossRoutine()
+    {
+        yield return new WaitForEndOfFrame();
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound != 3)
+        {
+            gameObject.SetActive(false);
         }
     }
 
@@ -105,6 +140,13 @@ public class DragonBossController : MonoBehaviour
         timeBetweenAttacks = phase3B_AttackInterval;
         attackTimer = 0f;
         Debug.Log("<color=red>[Dragon] RAWRRR! RỒNG ĐÃ NỔI ĐIÊN!</color>");
+    }
+
+    public void LoadEnrage()
+    {
+        isEnraged = true;
+        timeBetweenAttacks = phase3B_AttackInterval;
+        attackTimer = timeBetweenAttacks;
     }
 
     private void DecideNextMajorAction()

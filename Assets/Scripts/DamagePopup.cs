@@ -103,16 +103,16 @@ public class DamagePopup : MonoBehaviour
         transform.DOKill();
         if (textMesh != null) textMesh.DOKill();
 
-        // Hiển thị số (ví dụ: +25 hoặc -10)
+        // Hiển thị số
         if (textMesh != null)
         {
             if (isHeal)
             {
-                textMesh.text = "+" + amount.ToString("F0");
+                textMesh.text = "+" + CurrencyFormatter.FormatMoney(amount);
             }
             else
             {
-                textMesh.text = "-" + amount.ToString("F0");
+                textMesh.text = "-" + CurrencyFormatter.FormatMoney(amount);
             }
 
             // Ép Alpha = 1 phòng trường hợp User quên kéo thanh Alpha trong Inspector của Color

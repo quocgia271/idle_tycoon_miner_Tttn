@@ -21,10 +21,14 @@ public class BarrierController : MonoBehaviour
     private int activeEffects = 0;
     private bool timeExpired = false;
 
+    public float currentTimer = 0f;
+
     private void OnEnable()
     {
         activeEffects = 0;
         timeExpired = false;
+        
+        if (currentTimer <= 0) currentTimer = duration;
 
         // Reset lại hiển thị và collider (phòng trường hợp trước đó Elevator chạm vào làm ẩn đi)
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
@@ -45,6 +49,7 @@ public class BarrierController : MonoBehaviour
 
     private void OnDisable()
     {
+        currentTimer = 0f; // Đảm bảo reset khi tắt
         // Khi tắt Warehouse Barrier, tắt bất tử
         if (type == BarrierType.Warehouse)
         {
@@ -61,7 +66,11 @@ public class BarrierController : MonoBehaviour
 
     private IEnumerator LifeTimerRoutine()
     {
-        yield return new WaitForSeconds(duration);
+        while (currentTimer > 0)
+        {
+            currentTimer -= Time.deltaTime;
+            yield return null;
+        }
         timeExpired = true;
         CheckAndDeactivate();
     }

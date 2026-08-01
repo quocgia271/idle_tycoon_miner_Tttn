@@ -63,6 +63,10 @@ public class Miner : MonoBehaviour
         {
             originalDeathVFXPos = deathVFX.transform.localPosition;
             originalDeathVFXScale = deathVFX.transform.localScale;
+            if (healthState != HealthState.Dead)
+            {
+                deathVFX.SetActive(false);
+            }
         }
 
         // Gọi ngay animation Idle lúc vừa vào game
@@ -361,6 +365,69 @@ public class Miner : MonoBehaviour
         }
     }
 
+    public void SetDeadStateOffline()
+    {
+        healthState = HealthState.Dead;
+        morale = 0f;
+        currentState = MinerState.Idle;
+        if (anim != null) anim.enabled = false;
+        
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.DOKill();
+            spriteRenderer.color = Color.white;
+            spriteRenderer.enabled = false; // Tàng hình ngay lập tức
+        }
+
+        transform.SetParent(null, true);
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = false;
+        
+        if (deathVFX != null)
+        {
+             // Vô hiệu hóa VFX tử vong vì thợ mỏ đã chết từ trước đó (offline)
+             // Tránh trường hợp cứ mở game lên là thấy hiệu ứng nổ bùm bùm
+             deathVFX.SetActive(false);
+        }
+    }
+
+    public void LoadState(MinerSaveData data)
+    {
+        this.morale = data.Morale;
+        this.healthState = (HealthState)data.HealthState;
+        
+        UpdateMoraleUI();
+
+        if (this.healthState == HealthState.Injured)
+        {
+            // Tái kích hoạt trạng thái bị ám mà không qua ApplyHaunt (để tránh đè logic)
+            BossPhase2Controller boss = FindObjectOfType<BossPhase2Controller>(true);
+            if (boss != null && boss.gameObject.activeInHierarchy)
+            {
+                currentBoss = boss;
+                if (hurtVFXList != null && hurtVFXList.Count > 0)
+                {
+                    foreach (var vfx in hurtVFXList) if (vfx != null) vfx.SetActive(false);
+                    int rndIndex = Random.Range(0, hurtVFXList.Count);
+                    if (hurtVFXList[rndIndex] != null) hurtVFXList[rndIndex].SetActive(true);
+                }
+
+                if (spriteRenderer != null)
+                {
+                    spriteRenderer.DOColor(Color.red, 0.5f).SetLoops(-1, LoopType.Yoyo);
+                }
+            }
+            else
+            {
+                Cleanse();
+            }
+        }
+        else if (this.healthState == HealthState.Dead)
+        {
+            SetDeadStateOffline();
+        }
+    }
+
     public void Revive()
     {
         // Tránh gọi lặp lại nếu đã khỏe mạnh
@@ -493,12 +560,6 @@ public class Miner : MonoBehaviour
         currentState = MinerState.Idle; // Tạm dừng mọi hoạt động
         if (anim != null) anim.SetTrigger("idle");
         
-        // Nếu đang bay lơ lửng, làm mờ đi ngay tại chỗ nó đang bay
-        if (wasDead && spriteRenderer != null)
-        {
-            yield return spriteRenderer.DOFade(0f, 0.4f).WaitForCompletion();
-        }
-
         // Bật lại vật lý và animation
         Collider2D col = GetComponent<Collider2D>();
         if (col != null) col.enabled = true;
@@ -510,15 +571,13 @@ public class Miner : MonoBehaviour
         transform.position = startPos.position;
         transform.rotation = Quaternion.identity;
         
-        // Hiệu ứng Fade In và Nảy lên mừng rỡ
+        // Sáng bừng ngay lập tức
         if (spriteRenderer != null)
         {
             spriteRenderer.enabled = true;
             Color c = Color.white;
-            c.a = 0f;
+            c.a = 1f;
             spriteRenderer.color = c;
-            
-            spriteRenderer.DOFade(1f, 0.5f);
         }
 
         // Animation nhảy tưng tưng + lộn vòng

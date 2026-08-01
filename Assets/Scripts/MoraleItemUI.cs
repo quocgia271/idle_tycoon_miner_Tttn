@@ -123,6 +123,8 @@ public class MoraleItemUI : MonoBehaviour
                 Debug.Log("Đủ tiền! Tiến hành trừ tiền và hồi sinh.");
                 Gamemanager.Instance.IdleCash -= ActualReviveCost;
                 boundMiner.Revive();
+                
+                if (reviveButton != null) reviveButton.interactable = false;
             }
             else
             {

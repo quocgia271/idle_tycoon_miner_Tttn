@@ -83,7 +83,7 @@ public class MineShaft : Facility
         return digTime / MinerDigSpeedBuff;
     }
 
-    public double GetWorkerProductivity(int targetLevel)
+    public double GetWorkerProductivity(int targetLevel, bool isOfflineCalculation = false)
     {
         // Thu nhập cơ bản tăng theo độ sâu hầm (Gấp 12 lần mỗi hầm)
         double scaledBaseIncome = BaseResourcePerSecond * System.Math.Pow(12, ShaftIndex - 1); 
@@ -93,16 +93,20 @@ public class MineShaft : Facility
         double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
         double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
         
-        double finalIncome = exponentialIncome * ProductivityBuff * prestigeMultiplier * roundMultiplier;
+        double currentProductivityBuff = isOfflineCalculation ? 1.0 : ProductivityBuff;
+        double finalIncome = exponentialIncome * currentProductivityBuff * prestigeMultiplier * roundMultiplier;
 
         // --- FIRE DEBUFF LOGIC ---
-        if (bigBurnTimer > 0)
+        if (!isOfflineCalculation)
         {
-            finalIncome *= 0.1; // Giảm 90%
-        }
-        else if (normalBurnTimer > 0)
-        {
-            finalIncome *= 0.5; // Giảm 50%
+            if (bigBurnTimer > 0)
+            {
+                finalIncome *= 0.1; // Giảm 90%
+            }
+            else if (normalBurnTimer > 0)
+            {
+                finalIncome *= 0.5; // Giảm 50%
+            }
         }
 
         return finalIncome;
@@ -175,7 +179,7 @@ public class MineShaft : Facility
         }
     }
 
-    private void BreakShaft()
+    private void BreakShaft(bool isLoading = false)
     {
         isBroken = true;
         
@@ -193,25 +197,25 @@ public class MineShaft : Facility
         
         // Tắt Skill 3 nếu đang chạy
         ForceStopSkill3();
-
-        // Bật VFX phát nổ và tự động tính toán thời gian của VFX
-        float waitTime = fallbackExplosionDuration;
-        if (explosionVFX != null) 
+        float waitTime = 0f;
+        if (!isLoading)
         {
-            explosionVFX.SetActive(true);
-            
-            // Tìm tất cả ParticleSystem trong VFX nổ để lấy thời gian dài nhất
-            ParticleSystem[] pSystems = explosionVFX.GetComponentsInChildren<ParticleSystem>();
-            if (pSystems.Length > 0)
+            waitTime = fallbackExplosionDuration;
+            if (explosionVFX != null) 
             {
-                float maxDuration = 0f;
-                foreach (var ps in pSystems)
+                explosionVFX.SetActive(true);
+                ParticleSystem[] pSystems = explosionVFX.GetComponentsInChildren<ParticleSystem>();
+                if (pSystems.Length > 0)
                 {
-                    // Tổng thời gian = Thời lượng phát + Thời gian sống của hạt
-                    float duration = ps.main.duration + ps.main.startLifetime.constantMax;
-                    if (duration > maxDuration) maxDuration = duration;
+                    float maxDuration = 0f;
+                    foreach (var ps in pSystems)
+                    {
+                        float duration = ps.main.duration + ps.main.startLifetime.constantMax;
+                        if (duration > maxDuration) maxDuration = duration;
+                    }
+                    if (maxDuration > 0) waitTime = maxDuration;
                 }
-                if (maxDuration > 0) waitTime = maxDuration;
+
             }
         }
 
@@ -317,10 +321,10 @@ public class MineShaft : Facility
         }
     }
 
-    public double GetTotalExtractionPerSecond(int targetLevel)
+    public double GetTotalExtractionPerSecond(int targetLevel, bool isOfflineCalculation = false)
     {
         // Tổng lượng đào = Năng suất 1 thợ * Số lượng thợ
-        return GetWorkerProductivity(targetLevel) * GetMinersCount(targetLevel);
+        return GetWorkerProductivity(targetLevel, isOfflineCalculation) * GetMinersCount(targetLevel);
     }
 
     [Header("UI")]
@@ -575,8 +579,8 @@ public class MineShaft : Facility
         switch (statIndex)
         {
             case 0: // Tổng khai thác
-                curVal = GetTotalExtractionPerSecond(currentLevel).ToString("F1") + "/s";
-                nextVal = GetTotalExtractionPerSecond(nextLevel).ToString("F1") + "/s";
+                curVal = CurrencyFormatter.FormatMoney(GetTotalExtractionPerSecond(currentLevel)) + "/s";
+                nextVal = CurrencyFormatter.FormatMoney(GetTotalExtractionPerSecond(nextLevel)) + "/s";
                 break;
             case 1: // Số thợ mỏ
                 curVal = GetMinersCount(currentLevel).ToString();
@@ -591,8 +595,8 @@ public class MineShaft : Facility
                 nextVal = GetMinerDigTime(nextLevel).ToString("F2") + "s";
                 break;
             case 4: // Năng suất 1 thợ mỏ
-                curVal = GetWorkerProductivity(currentLevel).ToString("F1") + "/s";
-                nextVal = GetWorkerProductivity(nextLevel).ToString("F1") + "/s";
+                curVal = CurrencyFormatter.FormatMoney(GetWorkerProductivity(currentLevel)) + "/s";
+                nextVal = CurrencyFormatter.FormatMoney(GetWorkerProductivity(nextLevel)) + "/s";
                 break;
         }
 
@@ -606,11 +610,16 @@ public class MineShaft : Facility
     public GameObject normalBurnVFX; // Lửa nhỏ cho đạn thường
     public GameObject bigBurnVFX;    // Lửa to cho đạn bự
     
-    [Header("Skill 3 Settings")]
-    public List<GameObject> skill3VFXs;
-    public List<Color> skill3DamageColors;
+    [Header("Skill 3 - Poison (Boss 3)")]
+    public List<GameObject> skill3VFXs; 
+    public List<Color> skill3DamageColors; 
     private Coroutine skill3Coroutine;
     private GameObject activeSkill3VFX;
+    
+    // Lưu trữ trạng thái Event Freeze cho Skill 3
+    public float currentSkill3Timer = 0f;
+    public float currentSkill3DPS = 0f;
+    public int currentSkill3Index = -1;
     public bool IsSkill3Active => skill3Coroutine != null;
 
     [Header("Burn Damage Settings")]
@@ -633,15 +642,24 @@ public class MineShaft : Facility
             // Trúng đạn to: Tắt mượt mà lửa nhỏ, cộng dồn thời gian lửa to
             normalBurnTimer = 0f; 
             StopVFXSmoothly(normalBurnVFX);
+            
+            bool wasAlreadyBigBurning = bigBurnTimer > 0;
             bigBurnTimer += duration;
-            PlayVFXSmoothly(bigBurnVFX);
+            if (!wasAlreadyBigBurning)
+            {
+                PlayVFXSmoothly(bigBurnVFX);
+            }
             fireClicksRemaining = 35; // 35 clicks to extinguish big fire
         }
         else
         {
             // Trúng đạn nhỏ: Cộng dồn thời gian lửa nhỏ (nếu bị trúng liên tục)
+            bool wasAlreadyNormalBurning = normalBurnTimer > 0;
             normalBurnTimer += duration;
-            PlayVFXSmoothly(normalBurnVFX);
+            if (!wasAlreadyNormalBurning && bigBurnTimer <= 0)
+            {
+                PlayVFXSmoothly(normalBurnVFX);
+            }
             if (fireClicksRemaining < 15) fireClicksRemaining = 15; // 15 clicks to extinguish small fire
         }
 
@@ -687,22 +705,23 @@ public class MineShaft : Facility
     }
 
     // ==========================================
-    // SKILL 3: ĐỘC/SÁT THƯƠNG NGẪU NHIÊN LÊN HẦM
+    // KỸ NĂNG 3: ĐỘC HẦM (BOSS PHASE 3)
     // ==========================================
     private Color currentSkill3Color = Color.white;
 
-    public void TriggerSkill3VFX(float duration, float dps)
+    public void TriggerSkill3VFX(float duration, float dps, int colorIndex = -1)
     {
         if (isBroken || isInvincible || skill3VFXs == null || skill3VFXs.Count == 0) return;
         
         if (skill3Coroutine != null) StopCoroutine(skill3Coroutine);
-        skill3Coroutine = StartCoroutine(Skill3Routine(duration, dps));
+        skill3Coroutine = StartCoroutine(Skill3Routine(duration, dps, colorIndex));
     }
 
     private void ForceStopSkill3()
     {
         if (skill3Coroutine != null) StopCoroutine(skill3Coroutine);
         skill3Coroutine = null;
+        currentSkill3Timer = 0f;
 
         if (activeSkill3VFX != null)
         {
@@ -736,10 +755,12 @@ public class MineShaft : Facility
         vfxObject.SetActive(false);
     }
 
-    private System.Collections.IEnumerator Skill3Routine(float duration, float dps)
+    private System.Collections.IEnumerator Skill3Routine(float duration, float dps, int colorIndex)
     {
-        int rndIndex = Random.Range(0, skill3VFXs.Count);
+        int rndIndex = colorIndex >= 0 ? colorIndex : Random.Range(0, skill3VFXs.Count);
         activeSkill3VFX = skill3VFXs[rndIndex];
+        currentSkill3Index = rndIndex;
+        currentSkill3DPS = dps;
         
         if (skill3DamageColors != null && rndIndex < skill3DamageColors.Count)
         {
@@ -770,11 +791,12 @@ public class MineShaft : Facility
             ps.Play(true);
         }
 
-        float timer = duration;
+        if (currentSkill3Timer <= 0) currentSkill3Timer = duration;
         float tickTimer = 1f;
-        while (timer > 0)
+
+        while (currentSkill3Timer > 0)
         {
-            timer -= Time.deltaTime;
+            currentSkill3Timer -= Time.deltaTime;
             tickTimer -= Time.deltaTime;
 
             if (tickTimer <= 0f)
@@ -913,5 +935,112 @@ public class MineShaft : Facility
         foreach (var sr in fadeSrs) { Color c = sr.color; c.a = 1f; sr.color = c; }
         
         attackBirdCoroutine = null;
+    }
+
+    // =====================================
+    // LƯU TRỮ VÀ TẢI DỮ LIỆU (SAVE/LOAD)
+    // =====================================
+    public override FacilitySaveData SaveState()
+    {
+        FacilitySaveData data = base.SaveState();
+        data.Index = this.ShaftIndex;
+        
+        ShaftUnlocker unlocker = GetComponentInChildren<ShaftUnlocker>(true);
+        // Hầm được coi là đã mở khóa nếu: UI Unlock bị tắt, HOẶC đã mua (đang chờ xây), HOẶC đang bị hỏng
+        data.IsUnlocked = unlocker == null || !unlocker.gameObject.activeSelf || unlocker.isPurchased || this.isBroken;
+        
+        data.CurrentResource = this.CurrentResource;
+        data.CurrentEndurance = this.currentEndurance;
+        data.IsBroken = this.isBroken;
+        data.NormalBurnTimer = this.normalBurnTimer;
+        data.BigBurnTimer = this.bigBurnTimer;
+        data.FireClicksRemaining = this.fireClicksRemaining;
+        
+        data.Skill3Timer = this.currentSkill3Timer;
+        data.Skill3DPS = this.currentSkill3DPS;
+        data.Skill3ColorIndex = this.currentSkill3Index;
+        
+        // Cập nhật máu Minion đang bám trên hầm
+        data.MinionHealth = 0f;
+        MinionController[] minions = GetComponentsInChildren<MinionController>(true);
+        foreach (var minion in minions)
+        {
+            if (minion.gameObject.activeInHierarchy && !minion.IsDead)
+            {
+                data.MinionHealth = minion.CurrentHealth;
+                break; // Chỉ lấy 1 con đầu tiên
+            }
+        }
+        
+        data.MinersData.Clear();
+        foreach (var m in activeMiners)
+        {
+            if (m != null)
+            {
+                data.MinersData.Add(new MinerSaveData {
+                    Morale = m.morale,
+                    HealthState = (int)m.healthState
+                });
+            }
+        }
+        
+        return data;
+    }
+
+    public override void LoadState(FacilitySaveData data)
+    {
+        base.LoadState(data); // Gọi hàm cha để nạp Level
+        
+        if (data == null) return;
+        
+        this.CurrentResource = data.CurrentResource;
+        this.currentEndurance = (data.CurrentEndurance == 0 && !data.IsBroken) ? maxEndurance : data.CurrentEndurance; 
+        
+        ShaftUnlocker unlocker = GetComponentInChildren<ShaftUnlocker>(true);
+        
+        if (data.IsBroken)
+        {
+            BreakShaft(true); // Khôi phục trạng thái vỡ mà không play VFX nổ
+        }
+        else
+        {
+            // Tắt UI khóa hầm nếu đã mở khóa
+            if (data.IsUnlocked && unlocker != null)
+            {
+                unlocker.gameObject.SetActive(false);
+            }
+            // Nếu chưa mở khóa, đảm bảo bật UI lên
+            else if (!data.IsUnlocked && unlocker != null)
+            {
+                unlocker.gameObject.SetActive(true);
+            }
+
+            UpdateEnduranceUI();
+            
+            CheckAndSpawnMiners();
+            if (data.MinersData != null && data.MinersData.Count > 0)
+            {
+                for (int i = 0; i < data.MinersData.Count && i < activeMiners.Count; i++)
+                {
+                    if (activeMiners[i] != null)
+                    {
+                        activeMiners[i].LoadState(data.MinersData[i]);
+                    }
+                }
+            }
+
+            // Phục hồi hiệu ứng lửa
+            if (data.NormalBurnTimer > 0) TriggerBurnVFX(data.NormalBurnTimer, false);
+            if (data.BigBurnTimer > 0) TriggerBurnVFX(data.BigBurnTimer, true);
+            this.fireClicksRemaining = data.FireClicksRemaining;
+            
+            // Phục hồi Skill 3
+            if (data.Skill3Timer > 0)
+            {
+                TriggerSkill3VFX(data.Skill3Timer, data.Skill3DPS, data.Skill3ColorIndex);
+            }
+        }
+        
+        UpdateUI();
     }
 }

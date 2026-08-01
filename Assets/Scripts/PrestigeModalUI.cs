@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 public class PrestigeModalUI : MonoBehaviour
 {
@@ -29,11 +30,40 @@ public class PrestigeModalUI : MonoBehaviour
     {
         gameObject.SetActive(true);
         UpdateInfoText();
+
+        CanvasGroup cg = GetComponent<CanvasGroup>();
+        if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+        RectTransform rect = GetComponent<RectTransform>();
+
+        DOTween.Kill(cg);
+        DOTween.Kill(rect);
+
+        cg.alpha = 0f;
+        rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, -150f);
+        
+        cg.DOFade(1f, 0.35f).SetUpdate(true).SetEase(Ease.OutQuad);
+        rect.DOAnchorPosY(0f, 0.35f).SetEase(Ease.OutBack).SetUpdate(true);
     }
 
     public void CloseModal()
     {
-        gameObject.SetActive(false);
+        CanvasGroup cg = GetComponent<CanvasGroup>();
+        RectTransform rect = GetComponent<RectTransform>();
+
+        if (cg != null && rect != null)
+        {
+            DOTween.Kill(cg);
+            DOTween.Kill(rect);
+
+            cg.DOFade(0f, 0.25f).SetUpdate(true).SetEase(Ease.OutQuad);
+            rect.DOAnchorPosY(-150f, 0.25f).SetEase(Ease.InBack).SetUpdate(true).OnComplete(() => {
+                gameObject.SetActive(false);
+            });
+        }
+        else
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     private void UpdateInfoText()

@@ -20,19 +20,32 @@ public class BossPhase2Controller : MonoBehaviour
 
     private void Start()
     {
-        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound != 2)
+        if (Gamemanager.Instance != null)
         {
-            this.enabled = false; // Tắt script này vì không phải Round 2
-            
-            // Nếu là Round 1 thì ẩn luôn cả hình ảnh Boss đi (vì cả 2 Boss đều chưa xuất hiện)
-            if (Gamemanager.Instance.CurrentRound == 1) 
-            {
-                Debug.Log($"[BossPhase2] Round 1 -> Ẩn Boss GameObject: {gameObject.name}");
-                gameObject.SetActive(false); 
-            }
+            Gamemanager.Instance.OnRoundChanged += HandleRoundChanged;
+            HandleRoundChanged(Gamemanager.Instance.CurrentRound);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Gamemanager.Instance != null)
+        {
+            Gamemanager.Instance.OnRoundChanged -= HandleRoundChanged;
+        }
+    }
+
+    private void HandleRoundChanged(int round)
+    {
+        if (round != 2)
+        {
+            if (round == 1 && gameObject.activeInHierarchy) StartCoroutine(HideBossRoutine());
+            this.enabled = false; 
             return;
         }
 
+        this.enabled = true;
+        gameObject.SetActive(true);
         Debug.Log($"<color=yellow>[BossPhase2] Round 2 -> BẬT BOSS THÀNH CÔNG! Object: {gameObject.name} đang hiển thị!</color>");
 
         // TẮT cơ chế Click trừ máu ở Round 2 (Để Boss thành Hiểm họa vĩnh cửu)
@@ -41,6 +54,17 @@ public class BossPhase2Controller : MonoBehaviour
 
         attackTimer = baseTimeBetweenAttacks;
         if (bossAnim != null) bossAnim.Play("idle"); // Ép về idle lúc mới vào game
+    }
+
+    private System.Collections.IEnumerator HideBossRoutine()
+    {
+        // Chờ đến cuối frame để đảm bảo tất cả các component khác (như BossPhase3) 
+        // trên cùng GameObject đều đã chạy xong hàm Start() và đăng ký sự kiện thành công.
+        yield return new WaitForEndOfFrame();
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound == 1)
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     private void Update()
@@ -52,13 +76,24 @@ public class BossPhase2Controller : MonoBehaviour
         {
             AttackRandomWorker();
             
-            // Tính toán lại Cooldown dựa vào tổng cấp độ hầm
-            int totalLevel = 0;
+            // Tính toán lại Cooldown dựa vào tổng số Hầm đã mở khóa (Cách chuẩn mực cho Idle Pacing)
+            int unlockedShaftsCount = 0;
             foreach (var shaft in allShafts)
             {
-                if (shaft != null && shaft.gameObject.activeInHierarchy) totalLevel += shaft.Level;
+                if (shaft != null && shaft.gameObject.activeInHierarchy)
+                {
+                    ShaftUnlocker unlocker = shaft.GetComponentInChildren<ShaftUnlocker>(false);
+                    // Nếu không có unlocker (hầm đầu tiên) hoặc unlocker đã bị tắt (đã mua)
+                    if (unlocker == null || !unlocker.gameObject.activeInHierarchy)
+                    {
+                        unlockedShaftsCount++;
+                    }
+                }
             }
-            float newCooldown = baseTimeBetweenAttacks - (totalLevel / 100f);
+            
+            // Giảm 2 giây cooldown cho MỖI hầm được mở (Giới hạn giảm tối đa 20s cho 10 hầm)
+            // Nhịp độ Boss sẽ căng thẳng dần theo từng giai đoạn (Early -> Mid -> Late game)
+            float newCooldown = baseTimeBetweenAttacks - (unlockedShaftsCount * 2f);
             attackTimer = Mathf.Max(newCooldown, minTimeBetweenAttacks);
         }
     }

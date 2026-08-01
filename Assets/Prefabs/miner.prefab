@@ -340,7 +340,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 114566830303460284, guid: 7c2a9b83b809a0848915fabd9596b68b, type: 3}
       propertyPath: clearBehavior
-      value: 0
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 114566830303460284, guid: 7c2a9b83b809a0848915fabd9596b68b, type: 3}
       propertyPath: cameraShake.shakeStrength.x
