@@ -140,6 +140,9 @@ public abstract class Facility : MonoBehaviour
             OnUpgraded(); // Gọi lớp con để cập nhật chỉ số
             UpdateUpgradeUI(); // Cập nhật lại Text trên nút bấm
             Debug.Log($"<color=green>{gameObject.name} upgraded to level {Level}</color>");
+
+            // Bắn sự kiện nâng cấp hầm sang cho MissionManager
+            GameEvents.OnShaftUpgraded?.Invoke(Level);
         }
         else
         {

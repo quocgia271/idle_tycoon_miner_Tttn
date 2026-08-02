@@ -13,15 +13,51 @@ public class Gamemanager : MonoBehaviour
     void Awake()
     {
         if (Instance == null) 
+        {
             Instance = this;
+            EnsureManagersExist();
+        }
         else
+        {
             Destroy(gameObject);
+        }
+    }
+
+    /// <summary>
+    /// Tu dong khoi tao cac Manager va Bảng HUD Giao dien khi Run game neu trong Scene chua keo tha
+    /// </summary>
+    private void EnsureManagersExist()
+    {
+        if (LevelManager.Instance == null && FindObjectOfType<LevelManager>() == null)
+        {
+            GameObject go = new GameObject("LevelManager");
+            go.AddComponent<LevelManager>();
+        }
+
+        if (StageManager.Instance == null && FindObjectOfType<StageManager>() == null)
+        {
+            GameObject go = new GameObject("StageManager");
+            go.AddComponent<StageManager>();
+        }
+
+        if (MissionManager.Instance == null && FindObjectOfType<MissionManager>() == null)
+        {
+            GameObject go = new GameObject("MissionManager");
+            go.AddComponent<MissionManager>();
+        }
+
+        if (StageHUDUI.Instance == null && FindObjectOfType<StageHUDUI>() == null)
+        {
+            GameObject go = new GameObject("StageHUDUI");
+            go.AddComponent<StageHUDUI>();
+        }
     }
 
     public void AddCash(double amount)
     {
         IdleCash += amount;
         OnCashChanged?.Invoke(IdleCash);
+        GameEvents.OnMoneyChanged?.Invoke(IdleCash);
     }
 
     public void AddLevel(int amount)
@@ -37,6 +73,7 @@ public class Gamemanager : MonoBehaviour
         {
             IdleCash -= amount;
             OnCashChanged?.Invoke(IdleCash);
+            GameEvents.OnMoneyChanged?.Invoke(IdleCash);
             return true;
         }
         return false;
