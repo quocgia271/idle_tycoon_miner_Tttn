@@ -250,7 +250,54 @@ public class ShaftUnlocker : MonoBehaviour
         if (indicatorVFX != null) indicatorVFX.SetActive(false); // Chắc chắn tắt VFX
         
         // Ẩn toàn bộ UI mở khóa (nút bấm, text...)
-        gameObject.SetActive(false); 
+        gameObject.SetActive(false);
+
+        // Bắn sự kiện mua hầm thành công sang cho MissionManager
+        GameEvents.OnShaftPurchased?.Invoke(1); 
+    }
+
+    /// <summary>
+    /// Reset lại trạng thái ban đầu của ShaftUnlocker khi bị Rollback (Cho phép mua lại hầm mỏ)
+    /// </summary>
+    public void ResetUnlockerState()
+    {
+        StopAllCoroutines();
+        isBuilding = false;
+        
+        if (loadingTween != null) loadingTween.Kill();
+
+        gameObject.SetActive(true);
+
+        if (lockButton != null) lockButton.interactable = true;
+        if (coinIcon != null) coinIcon.SetActive(true);
+
+        if (costText != null)
+        {
+            costText.text = CurrencyFormatter.FormatMoney(requiredGold);
+            Color c = costText.color;
+            c.a = 1f;
+            costText.color = c;
+        }
+
+        if (timeText != null)
+        {
+            timeText.text = FormatTime(buildTimeSeconds);
+        }
+
+        if (levelText != null)
+        {
+            levelText.gameObject.SetActive(true);
+            levelText.text = $"Level: {requiredLevel}";
+        }
+
+        if (lockImage != null)
+        {
+            Color c = lockImage.color;
+            c.a = 1f;
+            lockImage.color = c;
+        }
+
+        UpdateRequirementColors();
     }
 
     public void TriggerRepairMode(double cost)

@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "idle_tycoon_miner_Tttn1.sln"
+    "dotnet.defaultSolution": "idle_tycoon_miner_Tttn.sln"
 }

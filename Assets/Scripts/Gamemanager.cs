@@ -58,6 +58,7 @@ public class Gamemanager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject); // Giữ GameManager khi load lại scene để không mất Round và Multiplier
+            EnsureManagersExist();
         }
         else
         {
@@ -273,13 +274,43 @@ public class Gamemanager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Tu dong khoi tao cac Manager va Bảng HUD Giao dien khi Run game neu trong Scene chua keo tha
+    /// </summary>
+    private void EnsureManagersExist()
+    {
+        if (LevelManager.Instance == null && FindObjectOfType<LevelManager>() == null)
+        {
+            GameObject go = new GameObject("LevelManager");
+            go.AddComponent<LevelManager>();
+        }
+
+        if (StageManager.Instance == null && FindObjectOfType<StageManager>() == null)
+        {
+            GameObject go = new GameObject("StageManager");
+            go.AddComponent<StageManager>();
+        }
+
+        if (MissionManager.Instance == null && FindObjectOfType<MissionManager>() == null)
+        {
+            GameObject go = new GameObject("MissionManager");
+            go.AddComponent<MissionManager>();
+        }
+
+        if (StageHUDUI.Instance == null && FindObjectOfType<StageHUDUI>() == null)
+        {
+            GameObject go = new GameObject("StageHUDUI");
+            go.AddComponent<StageHUDUI>();
+        }
+    }
+
     public void AddCash(double amount)
     {
         IdleCash += amount;
         LifetimeCash += amount; // Ghi nhận vào tổng tiền để tính Prestige
         OnCashChanged?.Invoke(IdleCash);
-        
         // Auto-save khi có tiền được add số lượng lớn (tuỳ chọn)
+        GameEvents.OnMoneyChanged?.Invoke(IdleCash);
     }
 
     public void AddLevel(int amount)
@@ -296,6 +327,7 @@ public class Gamemanager : MonoBehaviour
             IdleCash -= amount;
             OnCashChanged?.Invoke(IdleCash);
             // XÓA SaveManager.Instance.SaveGame(); Ở ĐÂY ĐỂ TRÁNH LỖI STATE DESYNC VÀ LAG
+            GameEvents.OnMoneyChanged?.Invoke(IdleCash);
             return true;
         }
         return false;
