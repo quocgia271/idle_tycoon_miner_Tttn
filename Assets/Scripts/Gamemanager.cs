@@ -302,6 +302,12 @@ public class Gamemanager : MonoBehaviour
             GameObject go = new GameObject("StageHUDUI");
             go.AddComponent<StageHUDUI>();
         }
+
+        if (PauseMenuManager.Instance == null && FindObjectOfType<PauseMenuManager>() == null)
+        {
+            GameObject go = new GameObject("PauseMenuManager");
+            go.AddComponent<PauseMenuManager>();
+        }
     }
 
     public void AddCash(double amount)

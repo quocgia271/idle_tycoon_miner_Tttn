@@ -36,7 +36,7 @@ public class StageHUDUI : MonoBehaviour
     public bool isPanelOpen = true; // Auto Popup khi moi vao game
 
     [Header("Auto GUI Settings")]
-    public bool useRuntimeGUIIfNoUI = false; // Tắt OnGUI mặc định để hiển thị Canvas UI chuẩn đẹp
+    public bool useRuntimeGUIIfNoUI = true; // Bật OnGUI mặc định để hiển thị liền lúc chưa gắn Canvas
 
     private GUIStyle bigTimeStyle;
 
