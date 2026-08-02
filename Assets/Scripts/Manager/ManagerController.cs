@@ -143,6 +143,8 @@ public class ManagerController : MonoBehaviour
 
         // Xác định độ hiếm (có xét bảo hiểm)
         int pity = HiresUntilPitys.ContainsKey(facilityType) ? HiresUntilPitys[facilityType] : 10;
+        int count = TotalHiredCounts.ContainsKey(facilityType) ? TotalHiredCounts[facilityType] : 0;
+
         if (pity <= 1)
         {
             md.Rarity = ManagerRarity.Senior; // Bảo hiểm 100% ra Senior
@@ -150,7 +152,12 @@ public class ManagerController : MonoBehaviour
         else
         {
             float totalWeight = 0;
-            foreach(var r in Config.RaritySettings) totalWeight += r.Weight;
+            foreach(var r in Config.RaritySettings)
+            {
+                // Bỏ qua Senior nếu chưa mua đủ 9 lần (lần thứ 10 mới có thể ra)
+                if (r.Rarity == ManagerRarity.Senior && count < 9) continue;
+                totalWeight += r.Weight;
+            }
             
             float roll = Random.Range(0, totalWeight);
             float currentSum = 0;
@@ -158,6 +165,8 @@ public class ManagerController : MonoBehaviour
             
             foreach (var r in Config.RaritySettings)
             {
+                if (r.Rarity == ManagerRarity.Senior && count < 9) continue;
+                
                 currentSum += r.Weight;
                 if (roll <= currentSum)
                 {
