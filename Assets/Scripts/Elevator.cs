@@ -258,7 +258,8 @@ public class Elevator : Facility
         {
             foreach (var miner in shaft.activeMiners)
             {
-                if (miner != null && miner.healthState == Miner.HealthState.Injured)
+                WorkerHealth wh = miner != null ? miner.GetComponent<WorkerHealth>() : null;
+                if (wh != null && wh.healthState == WorkerHealth.HealthState.Injured)
                 {
                     needsHeal = true;
                     break;
@@ -429,5 +430,18 @@ public class Elevator : Facility
         if (data == null) return;
         this.DroppedResource = data.CurrentResource;
         UpdateElevatorUI();
+    }
+
+    public override void PopulateSaveData(SaveData data)
+    {
+        data.Elevator = this.SaveState();
+    }
+
+    public override void LoadFromSaveData(SaveData data)
+    {
+        if (data.Elevator != null)
+        {
+            this.LoadState(data.Elevator);
+        }
     }
 }

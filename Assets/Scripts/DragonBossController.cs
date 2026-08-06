@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class DragonBossController : MonoBehaviour
+public class DragonBossController : MonoBehaviour, ISaveable
 {
     public Animator dragonAnim;
     
@@ -48,6 +48,10 @@ public class DragonBossController : MonoBehaviour
             Gamemanager.Instance.OnRoundChanged += HandleRoundChanged;
             HandleRoundChanged(Gamemanager.Instance.CurrentRound);
         }
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.OnBeforeSave += ResolveFlyingProjectiles;
+        }
     }
 
     private void OnDestroy()
@@ -55,6 +59,10 @@ public class DragonBossController : MonoBehaviour
         if (Gamemanager.Instance != null)
         {
             Gamemanager.Instance.OnRoundChanged -= HandleRoundChanged;
+        }
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.OnBeforeSave -= ResolveFlyingProjectiles;
         }
     }
 
@@ -301,7 +309,9 @@ public class DragonBossController : MonoBehaviour
                 MineShaft bigTarget = GetTargetWithWeightedPriority();
                 if (bigTarget != null && bigFireballPrefab != null)
                 {
-                    GameObject fb = Instantiate(bigFireballPrefab, mouthPosition.position, Quaternion.identity);
+                    GameObject fb = PoolManager.Instance != null 
+                        ? PoolManager.Instance.Spawn(bigFireballPrefab, mouthPosition.position, Quaternion.identity)
+                        : Instantiate(bigFireballPrefab, mouthPosition.position, Quaternion.identity);
                     DragonFireball df = fb.GetComponent<DragonFireball>();
                     if (df != null) df.targetShaft = bigTarget.transform;
                 }
@@ -311,7 +321,9 @@ public class DragonBossController : MonoBehaviour
                 MineShaft singleTarget = GetTargetWithWeightedPriority();
                 if (singleTarget != null && normalFireballPrefab != null)
                 {
-                    GameObject fb = Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
+                    GameObject fb = PoolManager.Instance != null 
+                        ? PoolManager.Instance.Spawn(normalFireballPrefab, mouthPosition.position, Quaternion.identity)
+                        : Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
                     DragonFireball df = fb.GetComponent<DragonFireball>();
                     if (df != null) df.targetShaft = singleTarget.transform;
                 }
@@ -323,7 +335,9 @@ public class DragonBossController : MonoBehaviour
                 {
                     for (int i = 0; i < 5; i++)
                     {
-                        GameObject fb = Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
+                        GameObject fb = PoolManager.Instance != null 
+                            ? PoolManager.Instance.Spawn(normalFireballPrefab, mouthPosition.position, Quaternion.identity)
+                            : Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
                         DragonFireball df = fb.GetComponent<DragonFireball>();
                         if (df != null) df.targetShaft = rapidTarget.transform;
                         yield return new WaitForSeconds(0.15f);
@@ -337,7 +351,9 @@ public class DragonBossController : MonoBehaviour
                 {
                     foreach (var target in spreadTargets)
                     {
-                        GameObject fb = Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
+                        GameObject fb = PoolManager.Instance != null 
+                            ? PoolManager.Instance.Spawn(normalFireballPrefab, mouthPosition.position, Quaternion.identity)
+                            : Instantiate(normalFireballPrefab, mouthPosition.position, Quaternion.identity);
                         DragonFireball df = fb.GetComponent<DragonFireball>();
                         if (df != null) df.targetShaft = target.transform;
                     }
@@ -398,5 +414,64 @@ public class DragonBossController : MonoBehaviour
         PlayAnim(idleAnimName);
         attackTimer = timeBetweenAttacks; // Tránh việc vừa bay về đã khạc lửa luôn
         isBusy = false;
+    }
+
+    // ==========================================
+    // LOGIC LƯU TRỮ (SAVE/LOAD)
+    // ==========================================
+    public int GetWaveCount()
+    {
+        return waveCount;
+    }
+
+    public float GetAttackTimer()
+    {
+        return attackTimer;
+    }
+
+    public bool IsChargingBigFireball()
+    {
+        return isBusy && currentAttack == AttackType.Big;
+    }
+
+    public void LoadState(int savedWaveCount, float savedAttackTimer, bool isChargingBigFireball)
+    {
+        this.waveCount = savedWaveCount;
+        this.attackTimer = savedAttackTimer;
+
+        if (isChargingBigFireball)
+        {
+            StartCoroutine(ChargeAndShootBigFireball());
+        }
+    }
+
+    private void ResolveFlyingProjectiles()
+    {
+        DragonFireball[] fireballs = FindObjectsOfType<DragonFireball>();
+        foreach (var fb in fireballs)
+        {
+            if (fb.targetShaft != null)
+            {
+                MineShaft target = fb.targetShaft.GetComponent<MineShaft>();
+                if (target != null) target.TriggerBurnVFX(fb.burnDuration, fb.isBigFireball);
+            }
+        }
+    }
+
+    public void PopulateSaveData(SaveData data)
+    {
+        if (Gamemanager.Instance == null || Gamemanager.Instance.CurrentRound != 3) return;
+        
+        data.BossData.DragonWaveCount = this.waveCount;
+        data.BossData.DragonAttackTimer = this.attackTimer;
+        data.BossData.IsDragonChargingBigFireball = (isBusy && currentAttack == AttackType.Big);
+    }
+
+    public void LoadFromSaveData(SaveData data)
+    {
+        if (Gamemanager.Instance == null || Gamemanager.Instance.CurrentRound != 3) return;
+        
+        LoadState(data.BossData.DragonWaveCount, data.BossData.DragonAttackTimer, data.BossData.IsDragonChargingBigFireball);
+        if (data.IsRound3BarrierBroken) LoadEnrage();
     }
 }

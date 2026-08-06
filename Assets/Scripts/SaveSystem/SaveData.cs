@@ -15,6 +15,9 @@ public class SaveData
     // Để cho an toàn khi parse, ta dùng long (ticks hoặc giây). Ở đây dùng số giây tính từ Epoch.
     public long LastSaveTimeUnixSeconds; 
     
+    // Lưu trữ thời gian Uptime của phần cứng để chống hack đổi giờ (Anti-Cheat)
+    public long LastSaveUptimeSeconds; 
+    
     // Dữ liệu tĩnh và động của các cơ sở
     public List<FacilitySaveData> MineShafts = new List<FacilitySaveData>();
     public FacilitySaveData Elevator = new FacilitySaveData();
@@ -115,4 +118,9 @@ public class BossSaveData
     // Boss 3: Màn chắn (Barrier)
     public float ElevatorBarrierTimer;
     public float WarehouseBarrierTimer;
+
+    // Boss 3: Rồng bay (Dragon Boss)
+    public int DragonWaveCount;
+    public float DragonAttackTimer;
+    public bool IsDragonChargingBigFireball;
 }

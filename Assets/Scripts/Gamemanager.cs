@@ -23,7 +23,8 @@ public class Gamemanager : MonoBehaviour
             {
                 foreach (var miner in shaft.activeMiners)
                 {
-                    if (miner != null && miner.healthState != Miner.HealthState.Dead)
+                    WorkerHealth wh = miner != null ? miner.GetComponent<WorkerHealth>() : null;
+                    if (wh != null && wh.healthState != WorkerHealth.HealthState.Dead)
                     {
                         return false; // Vẫn còn ít nhất 1 người đang sống -> Chưa phải Dead Game
                     }
@@ -33,6 +34,9 @@ public class Gamemanager : MonoBehaviour
         return true; // Tất cả thợ mỏ trên toàn bản đồ đã chết trắng
     }
     
+    [Header("UI References")]
+    public GameObject transitionPrefab;
+
     [Header("Game Progression")]
     public double PrestigeMultiplier = 1.0; // Hệ số nhân tiền khi chuyển sinh
     public int CurrentRound = 1; // Vòng chơi hiện tại (1, 2, 3)
@@ -198,21 +202,23 @@ public class Gamemanager : MonoBehaviour
 
     private IEnumerator TransitionToNextRoundRoutine()
     {
-        // Tạo màn hình đen để fade
-        Canvas fadeCanvas = new GameObject("FadeCanvas").AddComponent<Canvas>();
-        fadeCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        fadeCanvas.sortingOrder = 9999;
-        
-        Image fadeImage = new GameObject("FadeImage").AddComponent<Image>();
-        fadeImage.transform.SetParent(fadeCanvas.transform, false);
-        fadeImage.rectTransform.anchorMin = Vector2.zero;
-        fadeImage.rectTransform.anchorMax = Vector2.one;
-        fadeImage.rectTransform.offsetMin = Vector2.zero;
-        fadeImage.rectTransform.offsetMax = Vector2.zero;
-        fadeImage.color = new Color(0, 0, 0, 0);
+        if (transitionPrefab == null)
+        {
+            Debug.LogError("Transition Prefab is missing! Please assign it in the GameManager Inspector.");
+            yield break;
+        }
 
-        // Giữ Canvas không bị hủy khi load scene
-        DontDestroyOnLoad(fadeCanvas.gameObject);
+        // Tạo màn hình đen từ Prefab
+        GameObject fadeObj = Instantiate(transitionPrefab);
+        DontDestroyOnLoad(fadeObj);
+
+        Image fadeImage = fadeObj.GetComponentInChildren<Image>();
+        if (fadeImage != null)
+        {
+            Color c = fadeImage.color;
+            c.a = 0;
+            fadeImage.color = c;
+        }
 
         // ==========================================
         // 1. TÍNH TOÁN VÀ LƯU DATA NGAY LẬP TỨC 
@@ -264,7 +270,7 @@ public class Gamemanager : MonoBehaviour
         yield return fadeIn.WaitForCompletion();
 
         // Hủy Canvas sau khi Fade xong
-        Destroy(fadeCanvas.gameObject);
+        Destroy(fadeObj);
 
         // MỞ KHÓA SAVE LẠI SAU KHI NGƯỜI CHƠI THỰC SỰ BẮT ĐẦU CHƠI
         if (SaveManager.Instance != null)
@@ -279,13 +285,15 @@ public class Gamemanager : MonoBehaviour
         LifetimeCash += amount; // Ghi nhận vào tổng tiền để tính Prestige
         OnCashChanged?.Invoke(IdleCash);
         
-        // Auto-save khi có tiền được add số lượng lớn (tuỳ chọn)
+        if (SaveManager.Instance != null) SaveManager.Instance.MarkAsDirty();
     }
 
     public void AddLevel(int amount)
     {
         PlayerLevel += amount;
         OnLevelChanged?.Invoke(PlayerLevel);
+        
+        if (SaveManager.Instance != null) SaveManager.Instance.MarkAsDirty();
     }
 
     // Hàm trừ tiền an toàn: Trả về true nếu đủ tiền và mua thành công
@@ -295,7 +303,7 @@ public class Gamemanager : MonoBehaviour
         {
             IdleCash -= amount;
             OnCashChanged?.Invoke(IdleCash);
-            // XÓA SaveManager.Instance.SaveGame(); Ở ĐÂY ĐỂ TRÁNH LỖI STATE DESYNC VÀ LAG
+            if (SaveManager.Instance != null) SaveManager.Instance.MarkAsDirty();
             return true;
         }
         return false;

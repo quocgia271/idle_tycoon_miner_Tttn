@@ -199,7 +199,7 @@ public class Warehouse : Facility
                 }
             }
 
-            GameObject proj = Instantiate(projectilePrefab, turretPos.position, Quaternion.identity);
+            GameObject proj = PoolManager.Instance.Spawn(projectilePrefab, turretPos.position, Quaternion.identity);
             // Lựa chọn offset bắn trúng đích tùy theo loại quái
             Vector3 offsetToUse = groundBossTargetOffset;
             if (target.GetComponent<DragonBossController>() != null || target.GetComponentInChildren<DragonBossController>() != null)
@@ -334,5 +334,18 @@ public class Warehouse : Facility
         base.RemoveManagerBuff();
         WorkerMoveSpeedBuff = 1f;
         WorkerLoadSpeedBuff = 1f;
+    }
+
+    public override void PopulateSaveData(SaveData data)
+    {
+        data.Warehouse = this.SaveState();
+    }
+
+    public override void LoadFromSaveData(SaveData data)
+    {
+        if (data.Warehouse != null)
+        {
+            this.LoadState(data.Warehouse);
+        }
     }
 }

@@ -42,7 +42,7 @@ public class WarehouseProjectile : MonoBehaviour
         }
         else
         {
-            Destroy(gameObject);
+            if (PoolManager.Instance != null) PoolManager.Instance.Despawn(gameObject); else Destroy(gameObject);
         }
     }
 
@@ -53,7 +53,7 @@ public class WarehouseProjectile : MonoBehaviour
         // Nếu Boss đột ngột chết hoặc biến mất giữa chừng thì tự hủy đạn
         if (target == null || !target.gameObject.activeInHierarchy)
         {
-            Destroy(gameObject);
+            if (PoolManager.Instance != null) PoolManager.Instance.Despawn(gameObject); else Destroy(gameObject);
             return;
         }
 
@@ -97,8 +97,16 @@ public class WarehouseProjectile : MonoBehaviour
             // Sinh ra hiệu ứng nổ tại vị trí viên đạn chạm mục tiêu
             if (hitVFXPrefab != null)
             {
-                GameObject hitVfx = Instantiate(hitVFXPrefab, transform.position, Quaternion.identity);
+                GameObject hitVfx = PoolManager.Instance != null 
+                    ? PoolManager.Instance.Spawn(hitVFXPrefab, transform.position, Quaternion.identity)
+                    : Instantiate(hitVFXPrefab, transform.position, Quaternion.identity);
+                
                 hitVfx.SetActive(true); // Bật nó lên trong trường hợp Prefab gốc bị tắt (Inactive)
+                
+                if (hitVfx.GetComponent<AutoDespawn>() == null)
+                {
+                    hitVfx.AddComponent<AutoDespawn>().lifetime = 1.5f;
+                }
             }
 
             EnemyClickReceiver receiver = target.GetComponent<EnemyClickReceiver>();
@@ -149,6 +157,6 @@ public class WarehouseProjectile : MonoBehaviour
             }
         }
         
-        Destroy(gameObject);
+        if (PoolManager.Instance != null) PoolManager.Instance.Despawn(gameObject); else Destroy(gameObject);
     }
 }

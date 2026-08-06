@@ -114,11 +114,12 @@ public class BossPhase2Controller : MonoBehaviour
             bool hasLivingMiner = false;
             foreach (var m in shaft.activeMiners)
             {
-                if (m.healthState != Miner.HealthState.Injured && m.healthState != Miner.HealthState.Dead)
-                {
-                    hasLivingMiner = true;
-                    break;
-                }
+            WorkerHealth wh = m.GetComponent<WorkerHealth>();
+            if (wh != null && wh.healthState != WorkerHealth.HealthState.Injured && wh.healthState != WorkerHealth.HealthState.Dead)
+            {
+                hasLivingMiner = true;
+                break;
+            }
             }
 
             if (hasLivingMiner) validShafts.Add(shaft);
@@ -162,7 +163,8 @@ public class BossPhase2Controller : MonoBehaviour
         List<Miner> validMiners = new List<Miner>();
         foreach (var m in chosenShaft.activeMiners)
         {
-            if (m.healthState != Miner.HealthState.Injured && m.healthState != Miner.HealthState.Dead) 
+            WorkerHealth wh = m.GetComponent<WorkerHealth>();
+            if (wh != null && wh.healthState != WorkerHealth.HealthState.Injured && wh.healthState != WorkerHealth.HealthState.Dead) 
                 validMiners.Add(m);
         }
         
@@ -206,6 +208,7 @@ public class BossPhase2Controller : MonoBehaviour
 
         // 4. Chọn 1 thợ mỏ ngẫu nhiên để ám
         Miner target = validMiners[Random.Range(0, validMiners.Count)];
-        target.ApplyHaunt(this);
+        WorkerHealth whTarget = target.GetComponent<WorkerHealth>();
+        if (whTarget != null) whTarget.ApplyHaunt(this);
     }
 }

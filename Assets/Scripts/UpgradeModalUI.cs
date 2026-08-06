@@ -212,7 +212,8 @@ public class UpgradeModalUI : MonoBehaviour
             int aliveCount = 0;
             foreach(var miner in shaft.activeMiners)
             {
-                if (miner.healthState != Miner.HealthState.Dead) aliveCount++;
+                WorkerHealth wh = miner.GetComponent<WorkerHealth>();
+                if (wh != null && wh.healthState != WorkerHealth.HealthState.Dead) aliveCount++;
             }
 
             if (aliveCount < shaft.GetMinersCount(shaft.Level))

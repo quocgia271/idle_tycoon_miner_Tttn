@@ -60,19 +60,20 @@ public class MoraleItemUI : MonoBehaviour
         parentModal = modal;
         
         if (indexText != null) indexText.text = $"#{index}";
-        if (moraleText != null) moraleText.text = $"{Mathf.RoundToInt(miner.morale)}/{miner.maxMorale}";
+        WorkerHealth wh = miner.GetComponent<WorkerHealth>();
+        if (moraleText != null && wh != null) moraleText.text = $"{Mathf.RoundToInt(wh.morale)}/{wh.maxMorale}";
         
-        if (stateText != null) 
+        if (stateText != null && wh != null) 
         {
-            if (miner.healthState == Miner.HealthState.Dead)
+            if (wh.healthState == WorkerHealth.HealthState.Dead)
             {
                 stateText.text = "Đã chết";
                 stateText.color = Color.gray;
             }
             else
             {
-                stateText.text = miner.healthState == Miner.HealthState.Normal ? "Bình thường" : "Chấn thương";
-                stateText.color = miner.healthState == Miner.HealthState.Normal ? Color.green : Color.red;
+                stateText.text = wh.healthState == WorkerHealth.HealthState.Normal ? "Bình thường" : "Chấn thương";
+                stateText.color = wh.healthState == WorkerHealth.HealthState.Normal ? Color.green : Color.red;
             }
         }
         
@@ -82,7 +83,7 @@ public class MoraleItemUI : MonoBehaviour
         // Logic hiển thị nút Hồi Sinh
         if (reviveGroup != null)
         {
-            if (isSelected && miner.healthState == Miner.HealthState.Dead)
+            if (isSelected && wh != null && wh.healthState == WorkerHealth.HealthState.Dead)
             {
                 reviveGroup.SetActive(true);
                 if (reviveCostText != null) reviveCostText.text = CurrencyFormatter.FormatMoney(ActualReviveCost);
@@ -110,9 +111,10 @@ public class MoraleItemUI : MonoBehaviour
             return;
         }
         
-        if (boundMiner.healthState != Miner.HealthState.Dead) 
+        WorkerHealth whBound = boundMiner.GetComponent<WorkerHealth>();
+        if (whBound == null || whBound.healthState != WorkerHealth.HealthState.Dead) 
         {
-            Debug.LogWarning("Thợ mỏ này chưa chết (Trạng thái hiện tại: " + boundMiner.healthState + "), không thể hồi sinh!");
+            Debug.LogWarning("Thợ mỏ này chưa chết, không thể hồi sinh!");
             return;
         }
         
@@ -122,7 +124,7 @@ public class MoraleItemUI : MonoBehaviour
             {
                 Debug.Log("Đủ tiền! Tiến hành trừ tiền và hồi sinh.");
                 Gamemanager.Instance.IdleCash -= ActualReviveCost;
-                boundMiner.Revive();
+                if (whBound != null) whBound.Revive();
                 
                 if (reviveButton != null) reviveButton.interactable = false;
             }

@@ -425,7 +425,8 @@ public class MineShaft : Facility
                 {
                     if (miner != null)
                     {
-                        miner.Revive();
+                        WorkerHealth wh = miner.GetComponent<WorkerHealth>();
+                        if (wh != null) wh.Revive();
                     }
                 }
             }
@@ -863,9 +864,10 @@ public class MineShaft : Facility
         
         foreach (var miner in activeMiners)
         {
-            if (miner != null && miner.healthState == Miner.HealthState.Injured)
+            WorkerHealth wh = miner != null ? miner.GetComponent<WorkerHealth>() : null;
+            if (wh != null && wh.healthState == WorkerHealth.HealthState.Injured)
             {
-                miner.Cleanse(); // CHỈ thanh tẩy (giải độc), KHÔNG buff lại tinh thần và KHÔNG cứu người chết
+                wh.Cleanse(); // CHỈ thanh tẩy (giải độc), KHÔNG buff lại tinh thần và KHÔNG cứu người chết
             }
         }
         
@@ -914,7 +916,9 @@ public class MineShaft : Facility
             Vector3 spawnPos = attackBirdVFX.transform.position + birdProjectileSpawnOffset;
             
             // Bắn đạn: Spawn làm child của con chim để lấy đúng tỷ lệ (Scale) của chim
-            GameObject proj = Instantiate(birdAttackProjectilePrefab, spawnPos, Quaternion.identity, attackBirdVFX.transform);
+            GameObject proj = PoolManager.Instance != null 
+                ? PoolManager.Instance.Spawn(birdAttackProjectilePrefab, spawnPos, Quaternion.identity) 
+                : Instantiate(birdAttackProjectilePrefab, spawnPos, Quaternion.identity, attackBirdVFX.transform);
             
             // Sau khi nhận scale, lập tức nhả parent ra để đạn bay độc lập
             // (Nếu không nhả parent, khi chim biến mất đạn sẽ bị biến mất theo)
@@ -977,9 +981,10 @@ public class MineShaft : Facility
         {
             if (m != null)
             {
+                WorkerHealth wh = m.GetComponent<WorkerHealth>();
                 data.MinersData.Add(new MinerSaveData {
-                    Morale = m.morale,
-                    HealthState = (int)m.healthState
+                    Morale = wh != null ? wh.morale : 100f,
+                    HealthState = wh != null ? (int)wh.healthState : 0
                 });
             }
         }
@@ -1041,6 +1046,21 @@ public class MineShaft : Facility
             }
         }
         
+        // Bắt buộc gọi OnUpgraded để update lại các chỉ số dựa trên Level mới nạp
         UpdateUI();
+    }
+
+    public override void PopulateSaveData(SaveData data)
+    {
+        data.MineShafts.Add(this.SaveState());
+    }
+
+    public override void LoadFromSaveData(SaveData data)
+    {
+        var savedData = data.MineShafts.Find(s => s.Index == this.ShaftIndex);
+        if (savedData != null) 
+        {
+            this.LoadState(savedData);
+        }
     }
 }

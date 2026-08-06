@@ -11,7 +11,7 @@ public enum FacilityType
 }
 
 // Lớp cha trừu tượng (Abstract) quản lý mọi thông số chung cho việc Nâng cấp
-public abstract class Facility : MonoBehaviour
+public abstract class Facility : MonoBehaviour, ISaveable
 {
     public int Level = 1;
 
@@ -430,5 +430,15 @@ public abstract class Facility : MonoBehaviour
         // Bắt buộc gọi OnUpgraded để update lại các chỉ số dựa trên Level mới nạp
         OnUpgraded();
         UpdateUpgradeUI();
+    }
+
+    public virtual void PopulateSaveData(SaveData data)
+    {
+        // Override by children to populate specific data list/field in SaveData
+    }
+
+    public virtual void LoadFromSaveData(SaveData data)
+    {
+        // Override by children to read from specific data list/field in SaveData
     }
 }

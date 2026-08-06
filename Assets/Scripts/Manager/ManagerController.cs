@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class ManagerController : MonoBehaviour
+public class ManagerController : MonoBehaviour, ISaveable
 {
     public static ManagerController Instance { get; private set; }
 
@@ -263,5 +263,70 @@ public class ManagerController : MonoBehaviour
             return OwnedManagers.FindAll(m => m.AssignedFacilityType == facilityType && m.BuffType == buffType.Value);
         }
         return OwnedManagers.FindAll(m => m.AssignedFacilityType == facilityType);
+    }
+
+    public void PopulateSaveData(SaveData data)
+    {
+        data.OwnedManagers.Clear();
+        foreach (var md in OwnedManagers)
+        {
+            ManagerSaveData smd = new ManagerSaveData();
+            smd.Id = md.Id;
+            smd.Name = md.Name;
+            smd.CharacterID = md.CharacterID;
+            smd.Rarity = (int)md.Rarity;
+            smd.BuffType = (int)md.BuffType;
+            smd.AssignedFacilityType = (int)md.AssignedFacilityType;
+            smd.SpecialFeature = (int)md.SpecialFeature;
+            smd.BuffValue = md.BuffValue;
+            smd.BuffDuration = md.BuffDuration;
+            smd.CooldownDuration = md.CooldownDuration;
+            smd.OriginalHirePrice = md.OriginalHirePrice;
+            smd.IsAssigned = md.IsAssigned;
+            smd.AssignedShaftId = md.AssignedShaftId;
+            
+            long currentUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            float remainingSkill = Mathf.Max(0, md.SkillEndTime - Time.time);
+            float remainingCooldown = Mathf.Max(0, md.CooldownEndTime - Time.time);
+            
+            smd.SkillEndUnixTime = currentUnix + (long)remainingSkill;
+            smd.CooldownEndUnixTime = currentUnix + (long)remainingCooldown;
+            
+            data.OwnedManagers.Add(smd);
+        }
+    }
+
+    public void LoadFromSaveData(SaveData data)
+    {
+        if (data.OwnedManagers == null) return;
+
+        OwnedManagers.Clear();
+        foreach (var smd in data.OwnedManagers)
+        {
+            ManagerData md = new ManagerData();
+            md.Id = smd.Id;
+            md.Name = smd.Name;
+            md.CharacterID = smd.CharacterID;
+            md.Rarity = (ManagerRarity)smd.Rarity;
+            md.BuffType = (ManagerBuffType)smd.BuffType;
+            md.AssignedFacilityType = (FacilityType)smd.AssignedFacilityType;
+            md.SpecialFeature = (SeniorSpecialFeature)smd.SpecialFeature;
+            md.BuffValue = smd.BuffValue;
+            md.BuffDuration = smd.BuffDuration;
+            md.CooldownDuration = smd.CooldownDuration;
+            md.OriginalHirePrice = smd.OriginalHirePrice;
+            md.IsAssigned = smd.IsAssigned;
+            md.AssignedShaftId = smd.AssignedShaftId;
+            
+            long currentUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            float remainingSkill = Mathf.Max(0, smd.SkillEndUnixTime - currentUnix);
+            float remainingCooldown = Mathf.Max(0, smd.CooldownEndUnixTime - currentUnix);
+            
+            md.SkillEndTime = Time.time + remainingSkill;
+            md.CooldownEndTime = Time.time + remainingCooldown;
+            
+            OwnedManagers.Add(md);
+        }
+        OnManagerListUpdated?.Invoke();
     }
 }

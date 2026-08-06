@@ -13,6 +13,10 @@ GameObject:
   - component: {fileID: 6562581377061058701}
   - component: {fileID: 6625610793755389604}
   - component: {fileID: 9039157642214481808}
+  - component: {fileID: 6009162174142699447}
+  - component: {fileID: 5570036651742562202}
+  - component: {fileID: 6535091215319501963}
+  - component: {fileID: 8544225146602264078}
   m_Layer: 0
   m_Name: miner
   m_TagString: Untagged
@@ -125,18 +129,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentShaft: {fileID: 0}
-  anim: {fileID: 6562581377061058701}
   startPos: {fileID: 0}
   digPos: {fileID: 0}
-  progressBar: {fileID: 1539426050733782965}
-  moraleBar: {fileID: 2658839015077007097}
-  morale: 100
-  maxMorale: 100
-  healthState: 0
-  hurtVFXList:
-  - {fileID: 5431562219567593734}
-  - {fileID: 7474992150456488768}
-  deathVFX: {fileID: 5929084623844236925}
 --- !u!61 &9039157642214481808
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -182,6 +176,65 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.3846154, y: 0.61538464}
   m_EdgeRadius: 0
+--- !u!114 &6009162174142699447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2803782195026113211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91f846585de48ae44a37ec104a5a4dc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  morale: 100
+  maxMorale: 100
+  healthState: 0
+--- !u!114 &5570036651742562202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2803782195026113211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5483aab3b74c634f813bd46c8319c0d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6535091215319501963
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2803782195026113211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9f35f990bcb5b543bff1b7e1afae8be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  anim: {fileID: 6562581377061058701}
+  spriteRenderer: {fileID: 2638786124489008869}
+  hurtVFXList:
+  - {fileID: 5431562219567593734}
+  - {fileID: 7474992150456488768}
+  deathVFX: {fileID: 5929084623844236925}
+--- !u!114 &8544225146602264078
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2803782195026113211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c2cc665255aa824794420c1c85f4c81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  progressBar: {fileID: 1539426050733782965}
+  moraleBar: {fileID: 2658839015077007097}
 --- !u!1 &4262569082671405080
 GameObject:
   m_ObjectHideFlags: 0

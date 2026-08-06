@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.Events;
 using DG.Tweening; // Thêm thư viện DOTween vào đây để hết báo lỗi
 
-public class BossHealth : MonoBehaviour, IDamageable
+public class BossHealth : MonoBehaviour, IDamageable, ISaveable
 {
     [Header("Health Settings")]
     public float maxHealth = 1000f;
@@ -187,5 +187,36 @@ public class BossHealth : MonoBehaviour, IDamageable
             }
         }
         return true; // Tất cả đều đã chết
+    }
+
+    public void PopulateSaveData(SaveData data)
+    {
+        data.BossHealths.Add(new BossHealthSaveData
+        {
+            BossName = this.gameObject.name,
+            CurrentHealth = this.CurrentHealth,
+            IsDead = this.IsDead
+        });
+    }
+
+    public void LoadFromSaveData(SaveData data)
+    {
+        var bossData = data.BossHealths.Find(b => b.BossName == this.gameObject.name);
+        if (bossData != null)
+        {
+            this.LoadState(bossData);
+        }
+
+        if (data.CurrentRound == 3)
+        {
+            if (data.IsRound3BarrierBroken && !this.IsDead)
+            {
+                this.RemoveInvincibility();
+            }
+            else
+            {
+                this.IsInvincible = true;
+            }
+        }
     }
 }

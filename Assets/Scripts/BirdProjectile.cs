@@ -43,7 +43,7 @@ public class BirdProjectile : MonoBehaviour
         }
         else
         {
-            Destroy(gameObject);
+            if (PoolManager.Instance != null) PoolManager.Instance.Despawn(gameObject); else Destroy(gameObject);
         }
     }
 
@@ -53,7 +53,7 @@ public class BirdProjectile : MonoBehaviour
 
         if (target == null || !target.gameObject.activeInHierarchy || (targetMinion != null && targetMinion.IsDead))
         {
-            Destroy(gameObject);
+            if (PoolManager.Instance != null) PoolManager.Instance.Despawn(gameObject); else Destroy(gameObject);
             return;
         }
 
@@ -92,13 +92,20 @@ public class BirdProjectile : MonoBehaviour
         {
             if (hitVFXPrefab != null)
             {
-                GameObject hitVfx = Instantiate(hitVFXPrefab, transform.position, Quaternion.identity);
+                GameObject hitVfx = PoolManager.Instance != null
+                    ? PoolManager.Instance.Spawn(hitVFXPrefab, transform.position, Quaternion.identity)
+                    : Instantiate(hitVFXPrefab, transform.position, Quaternion.identity);
                 hitVfx.SetActive(true);
+                
+                if (hitVfx.GetComponent<AutoDespawn>() == null)
+                {
+                    hitVfx.AddComponent<AutoDespawn>().lifetime = 1.5f;
+                }
             }
 
             targetMinion.TakeDamage(9999f); // Kill minion
         }
 
-        Destroy(gameObject);
+        if (PoolManager.Instance != null) PoolManager.Instance.Despawn(gameObject); else Destroy(gameObject);
     }
 }

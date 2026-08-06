@@ -71,8 +71,14 @@ public class DragonFireball : MonoBehaviour
         // 3. TẠO HIỆU ỨNG NỔ:
         if (explosionVFXPrefab != null)
         {
-            GameObject vfx = Instantiate(explosionVFXPrefab, transform.position, Quaternion.identity);
-            Destroy(vfx, 2f); 
+            GameObject vfx = PoolManager.Instance != null 
+                ? PoolManager.Instance.Spawn(explosionVFXPrefab, transform.position, Quaternion.identity)
+                : Instantiate(explosionVFXPrefab, transform.position, Quaternion.identity);
+                
+            if (vfx.GetComponent<AutoDespawn>() == null)
+            {
+                vfx.AddComponent<AutoDespawn>().lifetime = 2f;
+            }
         }
 
         // 4. ÁP DỤNG TRẠNG THÁI LỬA GIẢM NĂNG SUẤT HẦM:
@@ -87,6 +93,6 @@ public class DragonFireball : MonoBehaviour
             Debug.Log($"Hầm {shaft.gameObject.name} trúng đạn thường, cháy nhỏ trong {burnDuration} giây.");
         }
 
-        Destroy(gameObject);
+        if (PoolManager.Instance != null) PoolManager.Instance.Despawn(gameObject); else Destroy(gameObject);
     }
 }

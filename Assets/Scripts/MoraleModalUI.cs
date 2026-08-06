@@ -204,17 +204,19 @@ public class MoraleModalUI : MonoBehaviour
         
         if (selectedOption == 0) // +25 for selected
         {
-            if (selectedMiner != null && selectedMiner.morale < selectedMiner.maxMorale)
+            WorkerHealth wh = selectedMiner != null ? selectedMiner.GetComponent<WorkerHealth>() : null;
+            if (wh != null && wh.morale < wh.maxMorale)
             {
-                float amount = Mathf.Min(25f, selectedMiner.maxMorale - selectedMiner.morale);
+                float amount = Mathf.Min(25f, wh.maxMorale - wh.morale);
                 currentCost = amount * moraleUnitCost;
             }
         }
         else if (selectedOption == 1) // Max for selected
         {
-            if (selectedMiner != null)
+            WorkerHealth wh = selectedMiner != null ? selectedMiner.GetComponent<WorkerHealth>() : null;
+            if (wh != null)
             {
-                float missingMorale = selectedMiner.maxMorale - selectedMiner.morale;
+                float missingMorale = wh.maxMorale - wh.morale;
                 currentCost = missingMorale * moraleUnitCost;
             }
         }
@@ -224,8 +226,12 @@ public class MoraleModalUI : MonoBehaviour
             {
                 foreach(var miner in currentShaft.activeMiners)
                 {
-                    float missing = miner.maxMorale - miner.morale;
-                    currentCost += missing * moraleUnitCost;
+                    WorkerHealth wh = miner != null ? miner.GetComponent<WorkerHealth>() : null;
+                    if (wh != null) 
+                    {
+                        float missing = wh.maxMorale - wh.morale;
+                        currentCost += missing * moraleUnitCost;
+                    }
                 }
             }
         }
@@ -251,11 +257,13 @@ public class MoraleModalUI : MonoBehaviour
             
             if (selectedOption == 0) // +25
             {
-                if (selectedMiner != null) selectedMiner.AddMorale(25f);
+                WorkerHealth wh = selectedMiner != null ? selectedMiner.GetComponent<WorkerHealth>() : null;
+                if (wh != null) wh.AddMorale(25f);
             }
             else if (selectedOption == 1) // Max 1
             {
-                if (selectedMiner != null) selectedMiner.AddMorale(selectedMiner.maxMorale);
+                WorkerHealth wh = selectedMiner != null ? selectedMiner.GetComponent<WorkerHealth>() : null;
+                if (wh != null) wh.AddMorale(wh.maxMorale);
             }
             else if (selectedOption == 2) // Max all
             {
@@ -263,7 +271,8 @@ public class MoraleModalUI : MonoBehaviour
                 {
                     foreach (var miner in currentShaft.activeMiners)
                     {
-                        miner.AddMorale(miner.maxMorale);
+                        WorkerHealth wh = miner != null ? miner.GetComponent<WorkerHealth>() : null;
+                        if (wh != null) wh.AddMorale(wh.maxMorale);
                     }
                 }
             }

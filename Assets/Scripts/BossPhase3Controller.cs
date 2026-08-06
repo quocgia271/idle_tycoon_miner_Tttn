@@ -19,7 +19,7 @@ public class SkillWeight
     [HideInInspector] public float currentCooldown = 0f;
 }
 
-public class BossPhase3Controller : MonoBehaviour
+public class BossPhase3Controller : MonoBehaviour, ISaveable
 {
     public Animator bossAnim;
     public List<GameObject> attackVFXList;
@@ -562,6 +562,88 @@ public class BossPhase3Controller : MonoBehaviour
         {
             chosenMinion.targetShaft = targetShaft; 
             chosenMinion.LoadHealth(loadedHealth);
+        }
+    }
+
+    public void PopulateSaveData(SaveData data)
+    {
+        if (Gamemanager.Instance == null || Gamemanager.Instance.CurrentRound != 3) return;
+
+        data.BossData.Skill4Timer = this.CurrentSkill4Timer;
+
+        data.BossData.ElevatorBarrierTimer = 0f;
+        data.BossData.WarehouseBarrierTimer = 0f;
+
+        if (elevatorBarrier != null && elevatorBarrier.activeInHierarchy)
+        {
+            BarrierController bc = elevatorBarrier.GetComponent<BarrierController>();
+            if (bc != null && bc.currentTimer > 0)
+            {
+                data.BossData.ElevatorBarrierTimer = bc.currentTimer;
+            }
+        }
+        
+        if (warehouseBarrier != null && warehouseBarrier.activeInHierarchy)
+        {
+            BarrierController bc = warehouseBarrier.GetComponent<BarrierController>();
+            if (bc != null && bc.currentTimer > 0)
+            {
+                data.BossData.WarehouseBarrierTimer = bc.currentTimer;
+            }
+        }
+
+        RoundTransitionBarrier barrier = FindObjectOfType<RoundTransitionBarrier>(true);
+        if (barrier != null) 
+        {
+            data.IsRound3BarrierBroken = !barrier.gameObject.activeInHierarchy;
+        }
+    }
+
+    public void LoadFromSaveData(SaveData data)
+    {
+        if (Gamemanager.Instance == null || Gamemanager.Instance.CurrentRound != 3) return;
+
+        // Phục hồi Minions
+        MineShaft[] shafts = FindObjectsOfType<MineShaft>();
+        foreach (var shaft in shafts)
+        {
+            var savedData = data.MineShafts.Find(s => s.Index == shaft.ShaftIndex);
+            if (savedData != null && savedData.MinionHealth > 0)
+            {
+                RestoreMinion(shaft, savedData.MinionHealth);
+            }
+        }
+
+        RoundTransitionBarrier barrier = FindObjectOfType<RoundTransitionBarrier>(true);
+        if (barrier != null && data.IsRound3BarrierBroken)
+        {
+            barrier.gameObject.SetActive(false);
+        }
+        
+        if (data.IsRound3BarrierBroken)
+        {
+            LoadEnrage();
+            if (data.BossData != null && data.BossData.Skill4Timer > 0)
+            {
+                CurrentSkill4Timer = data.BossData.Skill4Timer;
+                ExecuteSkill(BossPhase3Skill.Skill4_GlobalDoT); 
+            }
+            
+            if (data.BossData != null)
+            {
+                if (data.BossData.ElevatorBarrierTimer > 0 && elevatorBarrier != null)
+                {
+                    BarrierController bc = elevatorBarrier.GetComponent<BarrierController>();
+                    if (bc != null) bc.currentTimer = data.BossData.ElevatorBarrierTimer;
+                    elevatorBarrier.SetActive(true);
+                }
+                if (data.BossData.WarehouseBarrierTimer > 0 && warehouseBarrier != null)
+                {
+                    BarrierController bc = warehouseBarrier.GetComponent<BarrierController>();
+                    if (bc != null) bc.currentTimer = data.BossData.WarehouseBarrierTimer;
+                    warehouseBarrier.SetActive(true);
+                }
+            }
         }
     }
 }
