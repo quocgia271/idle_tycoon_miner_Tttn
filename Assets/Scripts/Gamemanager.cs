@@ -158,14 +158,51 @@ public class Gamemanager : MonoBehaviour
 
     private IEnumerator PrestigeTransitionRoutine()
     {
-        // Đánh dấu để MainMenuController không tự động bật Menu hoặc Fake Loading lên
-        MainMenuController.skipMenuInstantly = true;
+        if (transitionPrefab != null)
+        {
+            // Tạo màn hình đen từ Prefab
+            GameObject fadeObj = Instantiate(transitionPrefab);
+            DontDestroyOnLoad(fadeObj);
 
-        // Load lại cảnh hiện tại đồng bộ
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        
-        // Chờ 1.5 giây để toàn bộ scene mới, các script Start/Awake chạy xong hoàn toàn
-        yield return new WaitForSeconds(1.5f);
+            Image fadeImage = fadeObj.GetComponentInChildren<Image>();
+            if (fadeImage != null)
+            {
+                Color c = fadeImage.color;
+                c.a = 0;
+                fadeImage.color = c;
+                
+                // Fade Out (Màn hình đen dần)
+                Tween fadeOut = fadeImage.DOFade(1f, 1f);
+                yield return fadeOut.WaitForCompletion();
+            }
+
+            MainMenuController.skipMenuInstantly = true;
+            
+            // Load Scene bất đồng bộ
+            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
+            while (!asyncLoad.isDone)
+            {
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.5f);
+
+            if (fadeImage != null)
+            {
+                // Fade In (Màn hình sáng dần)
+                Tween fadeIn = fadeImage.DOFade(0f, 1f);
+                yield return fadeIn.WaitForCompletion();
+            }
+
+            Destroy(fadeObj);
+        }
+        else
+        {
+            // Dự phòng nếu quên gắn transitionPrefab
+            MainMenuController.skipMenuInstantly = true;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            yield return new WaitForSeconds(1.5f);
+        }
         
         if (SaveManager.Instance != null)
         {

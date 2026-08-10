@@ -32,6 +32,7 @@ public class WarehouseProjectile : MonoBehaviour
         target = targetTransform;
         damage = dmg;
         targetOffset = specificOffset;
+        timeElapsed = 0f;
 
         if (target != null)
         {

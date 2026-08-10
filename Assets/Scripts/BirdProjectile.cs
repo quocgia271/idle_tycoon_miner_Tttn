@@ -26,6 +26,7 @@ public class BirdProjectile : MonoBehaviour
     {
         target = targetTransform;
         targetMinion = minion;
+        timeElapsed = 0f;
 
         if (target != null)
         {
