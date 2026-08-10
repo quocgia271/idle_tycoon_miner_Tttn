@@ -187,6 +187,12 @@ public class SaveManager : MonoBehaviour
             File.Delete(path);
             Debug.Log("[SaveManager] Save file deleted.");
         }
+        
+        // Xoá toàn bộ PlayerPrefs (Kỷ lục Leaderboard, Volume Settings, quá trình Bot...)
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+        Debug.Log("[SaveManager] PlayerPrefs đã được xoá sạch (Reset Leaderboard).");
+
         CurrentSaveData = new SaveData();
     }
 

@@ -103,6 +103,10 @@ public class Warehouse : Facility
     [Header("Effects")]
     public ParticleSystem loadingVFX; // Kéo thả hiệu ứng VFX vào đây
     private int loadingWorkersCount = 0;
+    
+    [Header("Round VFX Settings")]
+    [Tooltip("Danh sách Sprite hiển thị ở VFX hứng đồ tùy theo từng Round (index 0 = Round 1, 1 = Round 2,...)")]
+    public Sprite[] roundLoadingSprites;
 
     protected override void Start()
     {
@@ -127,6 +131,49 @@ public class Warehouse : Facility
         if (loadingVFX != null)
         {
             loadingVFX.Stop();
+        }
+        
+        // Đăng ký sự kiện nạp Save
+        if (Gamemanager.Instance != null)
+        {
+            Gamemanager.Instance.OnRoundChanged += UpdateRoundVisuals;
+        }
+
+        UpdateRoundVisuals(Gamemanager.Instance != null ? Gamemanager.Instance.CurrentRound : 1);
+    }
+
+    private void OnDestroy()
+    {
+        if (Gamemanager.Instance != null)
+        {
+            Gamemanager.Instance.OnRoundChanged -= UpdateRoundVisuals;
+        }
+    }
+
+    private void UpdateRoundVisuals(int round)
+    {
+        if (loadingVFX != null)
+        {
+            // Cập nhật Sprite cho Particle System (bằng Texture Sheet Animation) theo Round hiện tại
+            if (roundLoadingSprites != null)
+            {
+                int currentRoundIndex = round - 1;
+                if (currentRoundIndex >= 0 && currentRoundIndex < roundLoadingSprites.Length && roundLoadingSprites[currentRoundIndex] != null)
+                {
+                    var tsa = loadingVFX.textureSheetAnimation;
+                    tsa.enabled = true;
+                    tsa.mode = ParticleSystemAnimationMode.Sprites;
+                    
+                    if (tsa.spriteCount > 0)
+                    {
+                        tsa.SetSprite(0, roundLoadingSprites[currentRoundIndex]);
+                    }
+                    else
+                    {
+                        tsa.AddSprite(roundLoadingSprites[currentRoundIndex]);
+                    }
+                }
+            }
         }
     }
 

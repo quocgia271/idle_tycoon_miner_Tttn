@@ -10,7 +10,6 @@ public class DragonBossController : MonoBehaviour, ISaveable
     public float phase3A_AttackInterval = 45f;
     public float phase3B_AttackInterval = 20f;
     private float timeBetweenAttacks = 45f;
-    private bool isEnraged = false;
 
     public float spreadAngle = 8f; 
     public Transform mouthPosition; 
@@ -144,7 +143,6 @@ public class DragonBossController : MonoBehaviour, ISaveable
 
     public void Enrage()
     {
-        isEnraged = true;
         timeBetweenAttacks = phase3B_AttackInterval;
         attackTimer = 0f;
         Debug.Log("<color=red>[Dragon] RAWRRR! RỒNG ĐÃ NỔI ĐIÊN!</color>");
@@ -152,7 +150,6 @@ public class DragonBossController : MonoBehaviour, ISaveable
 
     public void LoadEnrage()
     {
-        isEnraged = true;
         timeBetweenAttacks = phase3B_AttackInterval;
         attackTimer = timeBetweenAttacks;
     }

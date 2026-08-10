@@ -112,6 +112,12 @@ public class SettingsModalUI : MonoBehaviour
         // Lưu lại cài đặt trước khi thoát
         PlayerPrefs.Save();
         
+        // Lưu game ngay lập tức trước khi ra Menu để bảo toàn dữ liệu và làm mốc tính Offline
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.SaveGame(true);
+        }
+
         // Đảm bảo Time.timeScale trở lại bình thường nếu game đang bị pause
         Time.timeScale = 1f;
 

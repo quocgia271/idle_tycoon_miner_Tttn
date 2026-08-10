@@ -89,9 +89,22 @@ public partial class MineShaft : Facility
     [Header("UI")]
     public TextMeshProUGUI shaftCashText; // Hiển thị số tiền/tài nguyên hiện tại của hầm
 
+    [Header("Round Dirt Settings")]
+    public Transform dirtArea;
+    [Tooltip("Danh sách prefab của các round (index 0 = Round 1, 1 = Round 2,...)")]
+    public GameObject[] roundDirtPrefabs;
+
     protected override void Start()
     {
         base.Start(); // Gọi hàm Start của lớp cha (Facility) để update text Level
+
+        // Đăng ký sự kiện thay đổi Round (phục vụ khi nạp Save)
+        if (Gamemanager.Instance != null)
+        {
+            Gamemanager.Instance.OnRoundChanged += UpdateRoundVisuals;
+        }
+
+        UpdateRoundVisuals(Gamemanager.Instance != null ? Gamemanager.Instance.CurrentRound : 1);
 
         // Tìm thợ mỏ có sẵn trong cảnh (con của hầm) và thêm vào danh sách nếu chưa có
         Miner[] existingMiners = GetComponentsInChildren<Miner>();
@@ -106,6 +119,44 @@ public partial class MineShaft : Facility
 
         UpdateUI();
         UpdateEnduranceUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (Gamemanager.Instance != null)
+        {
+            Gamemanager.Instance.OnRoundChanged -= UpdateRoundVisuals;
+        }
+    }
+
+    private void UpdateRoundVisuals(int round)
+    {
+        // --- CẬP NHẬT PREFAB CHO AREA FILLER THEO ROUND ---
+        if (dirtArea != null && roundDirtPrefabs != null)
+        {
+            int currentRoundIndex = round - 1;
+            if (currentRoundIndex >= 0 && currentRoundIndex < roundDirtPrefabs.Length && roundDirtPrefabs[currentRoundIndex] != null)
+            {
+                AreaFiller filler = dirtArea.GetComponent<AreaFiller>();
+                if (filler != null)
+                {
+                    filler.itemPrefab = roundDirtPrefabs[currentRoundIndex];
+                    
+                    // Đảm bảo clear các cục đất cũ nếu AreaFiller lỡ rải từ trước hoặc round đổi
+                    filler.ClearAll();
+                    filler.FillRandomly();
+                }
+                else
+                {
+                    // Nếu không xài AreaFiller mà Instantiate chay thì Destroy child cũ trước
+                    foreach (Transform child in dirtArea)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                    Instantiate(roundDirtPrefabs[currentRoundIndex], dirtArea.position, Quaternion.identity, dirtArea);
+                }
+            }
+        }
     }
 
     protected override void Update()

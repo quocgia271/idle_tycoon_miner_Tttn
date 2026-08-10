@@ -18,8 +18,22 @@ public class RoundTransitionBarrier : MonoBehaviour
     public Button confirmYesButton;
     public Button confirmNoButton;
 
+    [Header("Barrier Dirt Area Settings")]
+    public Transform barrierDirtArea;
+    [Tooltip("Danh sách prefab của các round để hiển thị mỏ của phần kế tiếp (index 0 = Round 1, 1 = Round 2,...)")]
+    public GameObject[] roundDirtPrefabs;
+
     private void Start()
     {
+        // Đăng ký sự kiện nạp Save (nếu màn chơi chưa đổi nhưng số Round thay đổi từ Save)
+        if (Gamemanager.Instance != null)
+        {
+            Gamemanager.Instance.OnCashChanged += CheckAffordability;
+            Gamemanager.Instance.OnRoundChanged += UpdateRoundVisuals;
+        }
+
+        UpdateRoundVisuals(Gamemanager.Instance != null ? Gamemanager.Instance.CurrentRound : 1);
+
         // Tự động tính toán giá đập vách ngăn (Giá trị bằng với việc mở Hầm số 11)
         // Hầm 11 (Index = 11) -> 50 * 15^(11-1) = 50 * 15^10 = ~28.8 Nghìn Tỷ (Trillion)
         double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
@@ -68,8 +82,37 @@ public class RoundTransitionBarrier : MonoBehaviour
 
         if (Gamemanager.Instance != null)
         {
-            Gamemanager.Instance.OnCashChanged += CheckAffordability;
             CheckAffordability(Gamemanager.Instance.IdleCash);
+        }
+    }
+
+    private void UpdateRoundVisuals(int round)
+    {
+        // --- CẬP NHẬT PREFAB CHO AREA FILLER CỦA ROUND TIẾP THEO ---
+        if (barrierDirtArea != null && roundDirtPrefabs != null)
+        {
+            // Do currentRound = 1, nếu index trong mảng là 1 sẽ lấy prefab ở index 1 (tức là Round 2).
+            int nextRoundIndex = round; 
+            if (nextRoundIndex < roundDirtPrefabs.Length && roundDirtPrefabs[nextRoundIndex] != null)
+            {
+                AreaFiller filler = barrierDirtArea.GetComponent<AreaFiller>();
+                if (filler != null)
+                {
+                    filler.itemPrefab = roundDirtPrefabs[nextRoundIndex];
+                    
+                    // Đảm bảo clear các cục đất cũ (nếu AreaFiller lỡ rải từ trước) và rải lại
+                    filler.ClearAll();
+                    filler.FillRandomly();
+                }
+                else
+                {
+                    foreach (Transform child in barrierDirtArea)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                    Instantiate(roundDirtPrefabs[nextRoundIndex], barrierDirtArea.position, Quaternion.identity, barrierDirtArea);
+                }
+            }
         }
     }
 
@@ -78,6 +121,7 @@ public class RoundTransitionBarrier : MonoBehaviour
         if (Gamemanager.Instance != null)
         {
             Gamemanager.Instance.OnCashChanged -= CheckAffordability;
+            Gamemanager.Instance.OnRoundChanged -= UpdateRoundVisuals;
         }
     }
 

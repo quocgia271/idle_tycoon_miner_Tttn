@@ -2066,6 +2066,11 @@ MonoBehaviour:
   MinerDigSpeedBuff: 1
   ProductivityBuff: 1
   shaftCashText: {fileID: 2103557826966776328}
+  dirtArea: {fileID: 281776713863686160}
+  roundDirtPrefabs:
+  - {fileID: 3863364326359592878, guid: 26e6fba607e21b9419196c55908cf689, type: 3}
+  - {fileID: 3598003230336893643, guid: 36f8c7632be47974d810eaf3c6c3d1e9, type: 3}
+  - {fileID: 2287766950443912033, guid: b28f28bad13e2294ab6c1a233de4ff6a, type: 3}
   attackBirdVFX: {fileID: 7590821436293696225}
   healBirdVFX: {fileID: 5361604143001025688}
   birdAttackProjectilePrefab: {fileID: 5907577995302021571, guid: 0bbc26a9bf1f52a4ba85a53342f7fce3, type: 3}

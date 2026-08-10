@@ -89,6 +89,12 @@ public class MainMenuController : MonoBehaviour
             menuCanvasGroup.blocksRaycasts = false;
         }
 
+        // Nạp lại dữ liệu game khi bấm Play (giúp áp dụng Offline Progression nếu người chơi vừa treo máy ở Menu)
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.LoadGame();
+        }
+
         // Bật Fake Loading với hiệu ứng mờ dần từ sáng sang đen
         StartFakeLoading(false);
     }
