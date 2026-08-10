@@ -87,7 +87,15 @@ public class ShaftUnlocker : MonoBehaviour
         if (parentShaft != null)
         {
             double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
-            requiredGold = 50 * System.Math.Pow(15, parentShaft.ShaftIndex - 1) * roundMultiplier;
+            if (Gamemanager.Instance != null && Gamemanager.Instance.GlobalConfig != null)
+            {
+                var config = Gamemanager.Instance.GlobalConfig;
+                requiredGold = config.ShaftUnlockBaseCost * System.Math.Pow(config.ShaftDepthMultiplier, parentShaft.ShaftIndex - 1) * roundMultiplier;
+            }
+            else
+            {
+                requiredGold = 50 * System.Math.Pow(15, parentShaft.ShaftIndex - 1) * roundMultiplier;
+            }
             requiredLevel = parentShaft.ShaftIndex;
             
             if (!isRepairMode && costText != null)

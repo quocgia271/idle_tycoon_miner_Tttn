@@ -194,7 +194,12 @@ public abstract class Facility : MonoBehaviour, ISaveable
         if (Config == null) return 0;
         double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
         double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
-        return Config.BaseCapacity * System.Math.Pow(1.1f, targetLevel - 1) * roundMultiplier * prestigeMultiplier; // Mỗi cấp tăng 10%
+        float capacityMultiplier = 1.1f;
+        if (Gamemanager.Instance != null && Gamemanager.Instance.GlobalConfig != null)
+        {
+            capacityMultiplier = Gamemanager.Instance.GlobalConfig.CapacityLevelMultiplier;
+        }
+        return Config.BaseCapacity * System.Math.Pow(capacityMultiplier, targetLevel - 1) * roundMultiplier * prestigeMultiplier;
     }
 
     // 2. Tính Tốc Độ (Tăng từ từ tuyến tính để không hỏng animation)

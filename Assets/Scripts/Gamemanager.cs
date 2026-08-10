@@ -13,34 +13,16 @@ public class Gamemanager : MonoBehaviour
     public int PlayerLevel = 1; // Thêm thông số level cho người chơi
     public bool isBroken { get; private set; } // Trạng thái hầm mỏ
 
-    // AI Check: Quét toàn bộ bản đồ xem có còn ai đang sống không
-    public bool IsDeadGame()
-    {
-        MineShaft[] shafts = FindObjectsOfType<MineShaft>();
-        foreach (var shaft in shafts)
-        {
-            if (shaft != null && shaft.gameObject.activeInHierarchy && shaft.activeMiners != null)
-            {
-                foreach (var miner in shaft.activeMiners)
-                {
-                    WorkerHealth wh = miner != null ? miner.GetComponent<WorkerHealth>() : null;
-                    if (wh != null && wh.healthState != WorkerHealth.HealthState.Dead)
-                    {
-                        return false; // Vẫn còn ít nhất 1 người đang sống -> Chưa phải Dead Game
-                    }
-                }
-            }
-        }
-        return true; // Tất cả thợ mỏ trên toàn bản đồ đã chết trắng
-    }
-    
+    // AI Check đã được tách sang file DeadGameChecker.cs để tuân thủ SOLID
+
     [Header("UI References")]
     public GameObject transitionPrefab;
 
     [Header("Game Progression")]
+    public GlobalGameConfigSO GlobalConfig;
     public double PrestigeMultiplier = 1.0; // Hệ số nhân tiền khi chuyển sinh
     public int CurrentRound = 1; // Vòng chơi hiện tại (1, 2, 3)
-    public double RoundMultiplier => Math.Pow(1000000, CurrentRound - 1); // Hệ số Dịch chuyển theo vòng
+    public double RoundMultiplier => Math.Pow(GlobalConfig != null ? GlobalConfig.RoundDifficultyMultiplier : 1000000, CurrentRound - 1); // Hệ số Dịch chuyển theo vòng
 
     public Action<double> OnCashChanged;
     public Action<int> OnLevelChanged; // Event khi level thay đổi
@@ -140,7 +122,7 @@ public class Gamemanager : MonoBehaviour
     public void Prestige()
     {
         double baseRequirement = 1000000 * RoundMultiplier;
-        bool isDeadGame = IsDeadGame();
+        bool isDeadGame = DeadGameChecker.Instance != null && DeadGameChecker.Instance.IsDeadGame;
         
         if (LifetimeCash < baseRequirement && !isDeadGame)
         {
@@ -176,6 +158,9 @@ public class Gamemanager : MonoBehaviour
 
     private IEnumerator PrestigeTransitionRoutine()
     {
+        // Đánh dấu để MainMenuController không tự động bật Menu hoặc Fake Loading lên
+        MainMenuController.skipMenuInstantly = true;
+
         // Load lại cảnh hiện tại đồng bộ
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         
@@ -254,6 +239,7 @@ public class Gamemanager : MonoBehaviour
         // ==========================================
         // 4. CHUYỂN SCENE
         // ==========================================
+        MainMenuController.skipMenuInstantly = true; // Bỏ qua Menu và Fake Loading
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
         while (!asyncLoad.isDone)
         {

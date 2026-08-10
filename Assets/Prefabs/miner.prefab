@@ -235,6 +235,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   progressBar: {fileID: 1539426050733782965}
   moraleBar: {fileID: 2658839015077007097}
+  moneyText: {fileID: 0}
 --- !u!1 &4262569082671405080
 GameObject:
   m_ObjectHideFlags: 0
@@ -558,13 +559,29 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6855314210357232287, guid: 7c2a9b83b809a0848915fabd9596b68b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1454465951646169936}
   m_SourcePrefab: {fileID: 100100000, guid: 7c2a9b83b809a0848915fabd9596b68b, type: 3}
 --- !u!1 &5929084623844236925 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6855314210357232287, guid: 7c2a9b83b809a0848915fabd9596b68b, type: 3}
   m_PrefabInstance: {fileID: 966762062194711778}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1454465951646169936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5929084623844236925}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3a267e2e6ce6754793d5e21191c86d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sfxClip: {fileID: 8300000, guid: 629bc69b6a190d34b943de617e590897, type: 3}
 --- !u!4 &5929084623844236926 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6855314210357232284, guid: 7c2a9b83b809a0848915fabd9596b68b, type: 3}

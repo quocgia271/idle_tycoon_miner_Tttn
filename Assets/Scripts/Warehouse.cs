@@ -60,7 +60,12 @@ public class Warehouse : Facility
 
     public double GetWorkerCapacity(int targetLevel)
     {
-        double baseCap = BaseCapacity * System.Math.Pow(1.1f, targetLevel - 1);
+        float capacityMultiplier = 1.1f;
+        if (Gamemanager.Instance != null && Gamemanager.Instance.GlobalConfig != null)
+        {
+            capacityMultiplier = Gamemanager.Instance.GlobalConfig.CapacityLevelMultiplier;
+        }
+        double baseCap = BaseCapacity * System.Math.Pow(capacityMultiplier, targetLevel - 1);
         
         // --- CHUẨN GAME DESIGN: MILESTONE JUMPS ---
         // Cơ chế bùng nổ sức chứa tại các mốc Level chẵn để bắt kịp sản lượng của Hầm mới.

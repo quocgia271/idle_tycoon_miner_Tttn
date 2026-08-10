@@ -23,7 +23,15 @@ public class RoundTransitionBarrier : MonoBehaviour
         // Tự động tính toán giá đập vách ngăn (Giá trị bằng với việc mở Hầm số 11)
         // Hầm 11 (Index = 11) -> 50 * 15^(11-1) = 50 * 15^10 = ~28.8 Nghìn Tỷ (Trillion)
         double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
-        requireCashToPass = 50 * System.Math.Pow(15, 10) * roundMultiplier;
+        if (Gamemanager.Instance != null && Gamemanager.Instance.GlobalConfig != null)
+        {
+            var config = Gamemanager.Instance.GlobalConfig;
+            requireCashToPass = config.ShaftUnlockBaseCost * System.Math.Pow(config.ShaftDepthMultiplier, 10) * roundMultiplier;
+        }
+        else
+        {
+            requireCashToPass = 50 * System.Math.Pow(15, 10) * roundMultiplier;
+        }
 
         if (costText != null)
         {

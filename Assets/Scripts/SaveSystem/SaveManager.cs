@@ -60,13 +60,13 @@ public class SaveManager : MonoBehaviour
     private void OnApplicationPause(bool pauseStatus)
     {
         if (Instance != this) return; 
-        if (pauseStatus) SaveGame();
+        if (pauseStatus) SaveGame(true);
     }
 
     private void OnApplicationQuit()
     {
         if (Instance != this) return; 
-        SaveGame();
+        SaveGame(true);
     }
 
     public string GetSaveFilePath()
@@ -79,9 +79,14 @@ public class SaveManager : MonoBehaviour
     [ContextMenu("Save Game")]
     public void SaveGame()
     {
+        SaveGame(false);
+    }
+
+    public void SaveGame(bool force = false)
+    {
         if (Instance != this) return; 
         if (isTransitioning) return; 
-        if (!isDirty) return; // Chỉ lưu khi có thay đổi thực sự
+        if (!isDirty && !force) return; // Chỉ lưu khi có thay đổi thực sự hoặc bị ép buộc (force)
         
         if (CurrentSaveData == null) CurrentSaveData = new SaveData();
         
@@ -214,6 +219,44 @@ public class SaveManager : MonoBehaviour
         else 
         {
             Debug.LogWarning("[SaveManager] OfflineProgressionManager Instance is null! Thêm script này vào 1 GameObject (vd GameManager).");
+        }
+
+        // 3. Kiểm tra điều kiện Win Game (chống kẹt khi Load Game mà Boss đã chết hết ở Round 3)
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound == 3)
+        {
+            BossHealth[] allBosses = Resources.FindObjectsOfTypeAll<BossHealth>();
+            bool allDead = true;
+            int bossCount = 0;
+            foreach (var boss in allBosses)
+            {
+                // Chỉ xét các Boss nằm trong Scene hiện tại (không lấy từ Prefab)
+                if (boss.gameObject.scene.isLoaded)
+                {
+                    bossCount++;
+                    if (!boss.IsDead)
+                    {
+                        allDead = false;
+                        break;
+                    }
+                }
+            }
+
+            if (bossCount > 0 && allDead)
+            {
+                Debug.Log("<color=magenta>★★★ LOAD GAME: PHÁT HIỆN TẤT CẢ BOSS ĐÃ CHẾT, GỌI LẠI BẢNG WIN! ★★★</color>");
+                WinModalUI winUI = WinModalUI.Instance;
+                if (winUI == null)
+                {
+                    WinModalUI[] allUIs = Resources.FindObjectsOfTypeAll<WinModalUI>();
+                    if (allUIs.Length > 0) winUI = allUIs[0];
+                }
+
+                if (winUI != null)
+                {
+                    winUI.gameObject.SetActive(true);
+                    winUI.TriggerWinSequence();
+                }
+            }
         }
     }
 }

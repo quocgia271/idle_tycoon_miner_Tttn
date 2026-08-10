@@ -688,6 +688,7 @@ MonoBehaviour:
   coinIcon: {fileID: 7324116441263002553}
   indicatorVFX: {fileID: 8280304737887433520}
   shaftRoot: {fileID: 6631038249246671307}
+  isPurchased: 0
 --- !u!114 &4685411795120396331
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1930,7 +1931,6 @@ GameObject:
   - component: {fileID: 8933128228166548766}
   - component: {fileID: 3734595773485260869}
   - component: {fileID: 7713290536623045454}
-  - component: {fileID: 8868694080100797770}
   m_Layer: 0
   m_Name: Mine
   m_TagString: Untagged
@@ -2062,23 +2062,16 @@ MonoBehaviour:
   ShaftIndex: 1
   CurrentResource: 0
   BaseResourcePerSecond: 10
-  MaxMiners: 5
-  MaxMoveSpeed: 5
-  MinDigTime: 0.5
-  minerPrefab: {fileID: 6625610793755389604, guid: 02a9eb59f9a3c8a4695c3ad51d99953a, type: 3}
-  minerStartPos: {fileID: 3793058806161542310}
-  minerDigPos: {fileID: 8782198207359850779}
-  spawnOffsetX: -0.1
-  activeMiners: []
+  MinerMoveSpeedBuff: 1
+  MinerDigSpeedBuff: 1
+  ProductivityBuff: 1
+  shaftCashText: {fileID: 2103557826966776328}
   attackBirdVFX: {fileID: 7590821436293696225}
   healBirdVFX: {fileID: 5361604143001025688}
   birdAttackProjectilePrefab: {fileID: 5907577995302021571, guid: 0bbc26a9bf1f52a4ba85a53342f7fce3, type: 3}
   birdProjectileSpawnOffset: {x: 1, y: 0.3, z: 0}
   isInvincible: 0
   invincibilityVFX: {fileID: 3346632157793543626}
-  MinerMoveSpeedBuff: 1
-  MinerDigSpeedBuff: 1
-  ProductivityBuff: 1
   maxEndurance: 100
   currentEndurance: 100
   enduranceSlider: {fileID: 683686540442703244}
@@ -2089,7 +2082,6 @@ MonoBehaviour:
   fallbackExplosionDuration: 1.5
   damagedStateVFX: {fileID: 2034200448056001491}
   repairCost: 5000
-  shaftCashText: {fileID: 2103557826966776328}
   normalBurnVFX: {fileID: 4672760377485874396}
   bigBurnVFX: {fileID: 5854305901662477716}
   skill3VFXs:
@@ -2098,9 +2090,21 @@ MonoBehaviour:
   skill3DamageColors:
   - {r: 0.4351387, g: 1, b: 0, a: 1}
   - {r: 0.23032388, g: 0.98249024, b: 0.9924528, a: 1}
+  currentSkill3Timer: 0
+  currentSkill3DPS: 0
+  currentSkill3Index: -1
   normalBurnDamagePerSec: 2
   bigBurnDamagePerSec: 5
+  fireClicksRemaining: 0
   cleanseVFX: {fileID: 4257741543953881260}
+  MaxMiners: 5
+  MaxMoveSpeed: 5
+  MinDigTime: 0.5
+  minerPrefab: {fileID: 6625610793755389604, guid: 02a9eb59f9a3c8a4695c3ad51d99953a, type: 3}
+  minerStartPos: {fileID: 3793058806161542310}
+  minerDigPos: {fileID: 8782198207359850779}
+  spawnOffsetX: -0.1
+  activeMiners: []
 --- !u!61 &7713290536623045454
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2146,19 +2150,6 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 3.4477515, y: 0.95716166}
   m_EdgeRadius: 0
---- !u!114 &8868694080100797770
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9017769452106845334}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 850b6d9298b62874186d47a88fcd8a60, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  punchCooldown: 0.15
 --- !u!1001 &167346262728943814
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2756,7 +2747,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6294508013172393196, guid: 043176b6a68be2b43b073aaaa4782c7d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 963181673866059382}
   m_SourcePrefab: {fileID: 100100000, guid: 043176b6a68be2b43b073aaaa4782c7d, type: 3}
 --- !u!4 &4672760377485874385 stripped
 Transform:
@@ -2768,6 +2762,18 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 6294508013172393196, guid: 043176b6a68be2b43b073aaaa4782c7d, type: 3}
   m_PrefabInstance: {fileID: 1694038998486175792}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &963181673866059382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4672760377485874396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a40561041d4a9941be5a201de9782df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2329881438204469598
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2896,6 +2902,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8172849020266659018, guid: 2af5562ce69fc2d448481a1587a352a5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6698631779681187234}
     - targetCorrespondingSourceObject: {fileID: 8172849020746995793, guid: 2af5562ce69fc2d448481a1587a352a5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2323617173096686800}
@@ -2938,6 +2947,18 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8172849020266659018, guid: 2af5562ce69fc2d448481a1587a352a5, type: 3}
   m_PrefabInstance: {fileID: 2329881438204469598}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6698631779681187234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5854305901662477716}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a40561041d4a9941be5a201de9782df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2888012475701489226
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3898,6 +3919,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2433282508537954060, guid: 3ef3ae421f71c5c4e97fe12dc2fc6312, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 143803178848613940}
     - targetCorrespondingSourceObject: {fileID: 2433282508537954050, guid: 3ef3ae421f71c5c4e97fe12dc2fc6312, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5004628938351465531}
@@ -3912,6 +3936,19 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 2433282508537954060, guid: 3ef3ae421f71c5c4e97fe12dc2fc6312, type: 3}
   m_PrefabInstance: {fileID: 5415906942887179534}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &143803178848613940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7705073093941643778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3a267e2e6ce6754793d5e21191c86d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sfxClip: {fileID: 8300000, guid: 8c522a194396ac749843afae67d6e495, type: 3}
 --- !u!1 &7705073093941643788 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2433282508537954050, guid: 3ef3ae421f71c5c4e97fe12dc2fc6312, type: 3}

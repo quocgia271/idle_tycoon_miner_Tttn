@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0737b48a91d6354aa495a5860cb7c54, type: 3}
+  m_Name: GlobalGameConfig
+  m_EditorClassIdentifier: 
+  ShaftUnlockBaseCost: 50
+  ShaftDepthMultiplier: 15
+  ShaftIncomeDepthMultiplier: 12
+  ShaftIncomeLevelMultiplier: 1.07
+  CapacityLevelMultiplier: 1.1
+  RoundDifficultyMultiplier: 1000000

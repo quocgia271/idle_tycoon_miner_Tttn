@@ -75,9 +75,21 @@ public class PrestigeModalUI : MonoBehaviour
         double nextMultiplier = Gamemanager.Instance.CalculateNextPrestigeMultiplier();
 
         double baseRequirement = 1000000 * Gamemanager.Instance.RoundMultiplier;
+        bool isDeadGame = DeadGameChecker.Instance != null && DeadGameChecker.Instance.IsDeadGame;
 
-        // Kiểm tra xem đã đủ điều kiện chưa (Ví dụ: Cần 1 Triệu * RoundMultiplier)
-        if (lifetimeCash < baseRequirement)
+        if (isDeadGame)
+        {
+            // Trường hợp Dead Game (thợ mỏ chết hết hoặc không có thợ mỏ)
+            infoText.text = $"<color=orange><b>ĐẶC CÁCH CHUYỂN SINH! (DEAD GAME)</b></color>\n\n" +
+                            $"Tất cả thợ mỏ đã hi sinh hoặc không thể tiếp tục.\n" +
+                            $"Hệ thống cho phép bạn tái khởi động lại từ đầu.\n\n" +
+                            $"Hệ số hiện tại: <b>x{currentMultiplier:F1}</b>\n" +
+                            $"Hệ số mới sẽ nhận: <color=yellow><b>x{nextMultiplier:F1}</b></color>";
+
+            // Mở khóa nút xác nhận
+            if (confirmButton != null) confirmButton.interactable = true;
+        }
+        else if (lifetimeCash < baseRequirement)
         {
             infoText.text = $"<color=red><b>CHƯA ĐỦ ĐIỀU KIỆN</b></color>\n\n" +
                             $"Bạn cần kiếm tổng cộng <b>{CurrencyFormatter.FormatMoney(baseRequirement)}</b> Vàng trong vòng này để có thể Chuyển Sinh.\n" +

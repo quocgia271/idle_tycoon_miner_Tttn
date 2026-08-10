@@ -119,15 +119,7 @@ public class BossHealth : MonoBehaviour, IDamageable, ISaveable
 
         Debug.Log($"[{gameObject.name}] Đã bị tiêu diệt!");
 
-        // KIỂM TRA ĐIỀU KIỆN WIN GAME (CHỈ Ở ROUND 3)
-        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound == 3)
-        {
-            if (AreAllBossesDead())
-            {
-                Debug.Log("<color=magenta>★★★ CHÚC MỪNG! BẠN ĐÃ TIÊU DIỆT BOSS CUỐI VÀ PHÁ ĐẢO TRÒ CHƠI! ★★★</color>");
-                // Gắn thêm code mở màn hình Win Game (Win Screen) vào đây nếu cần!
-            }
-        }
+
 
         if (useProceduralDeath)
         {
@@ -135,7 +127,7 @@ public class BossHealth : MonoBehaviour, IDamageable, ISaveable
         }
         else
         {
-            Destroy(gameObject, 0.5f);
+            gameObject.SetActive(false);
         }
     }
 
@@ -173,7 +165,35 @@ public class BossHealth : MonoBehaviour, IDamageable, ISaveable
         }
 
         yield return new WaitForSeconds(0.5f);
-        Destroy(gameObject);
+
+        // KIỂM TRA ĐIỀU KIỆN WIN GAME (Đã dời xuống đây để đợi chạy xong hết VFX chết)
+        if (Gamemanager.Instance != null && Gamemanager.Instance.CurrentRound == 3)
+        {
+            if (AreAllBossesDead())
+            {
+                Debug.Log("<color=magenta>★★★ CHÚC MỪNG! BẠN ĐÃ TIÊU DIỆT BOSS CUỐI VÀ PHÁ ĐẢO TRÒ CHƠI! ★★★</color>");
+                
+                WinModalUI winUI = WinModalUI.Instance;
+                if (winUI == null)
+                {
+                    WinModalUI[] allUIs = Resources.FindObjectsOfTypeAll<WinModalUI>();
+                    if (allUIs.Length > 0) winUI = allUIs[0];
+                }
+
+                if (winUI != null)
+                {
+                    // Ép buộc bật GameObject lên để Awake có thể chạy
+                    winUI.gameObject.SetActive(true);
+                    winUI.TriggerWinSequence();
+                }
+                else
+                {
+                    Debug.LogWarning("Không tìm thấy script WinModalUI! Hãy đảm bảo bạn đã kéo thả script vào UI Win Game trên Scene.");
+                }
+            }
+        }
+
+        gameObject.SetActive(false);
     }
 
     private bool AreAllBossesDead()
