@@ -14928,6 +14928,7 @@ GameObject:
   - component: {fileID: 720032441500949353}
   - component: {fileID: 2176361842392860168}
   - component: {fileID: 7133908052525811404}
+  - component: {fileID: 7182297983267409208}
   m_Layer: 0
   m_Name: FX_Projectile_White
   m_TagString: Untagged
@@ -19859,6 +19860,19 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &7182297983267409208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5907577995302021571}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3a267e2e6ce6754793d5e21191c86d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sfxClip: {fileID: 8300000, guid: 4cc2c2ad430528b45a17393abed69b50, type: 3}
 --- !u!1001 &2132342465360499503
 PrefabInstance:
   m_ObjectHideFlags: 0

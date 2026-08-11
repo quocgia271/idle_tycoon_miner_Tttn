@@ -40,6 +40,21 @@ public class WarehouseProjectile : MonoBehaviour
             // Cho phép đạn bay bổng ngẫu nhiên lên trên hoặc xuống dưới để các góc bắn đa dạng
             dynamicCurveHeight = UnityEngine.Random.Range(-curveHeight, curveHeight * 1.5f);
             isFlying = true;
+
+            // Restart ParticleSystems for pooled object
+            ParticleSystem[] pss = GetComponentsInChildren<ParticleSystem>();
+            foreach (var ps in pss)
+            {
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                ps.Play(true);
+            }
+
+            // Clear TrailRenderers for pooled object
+            TrailRenderer[] trails = GetComponentsInChildren<TrailRenderer>();
+            foreach (var trail in trails)
+            {
+                trail.Clear();
+            }
         }
         else
         {
@@ -104,6 +119,14 @@ public class WarehouseProjectile : MonoBehaviour
                 
                 hitVfx.SetActive(true); // Bật nó lên trong trường hợp Prefab gốc bị tắt (Inactive)
                 
+                // Reset particles for pooled hit vfx
+                ParticleSystem[] pss = hitVfx.GetComponentsInChildren<ParticleSystem>();
+                foreach (var ps in pss)
+                {
+                    ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    ps.Play(true);
+                }
+
                 if (hitVfx.GetComponent<AutoDespawn>() == null)
                 {
                     hitVfx.AddComponent<AutoDespawn>().lifetime = 1.5f;

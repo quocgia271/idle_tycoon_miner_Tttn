@@ -17,6 +17,14 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Thời gian màn hình sáng dần để vào Game")]
     public float fadeInTime = 0.5f;
 
+    [Header("Fake Loading Customization")]
+    [Tooltip("Font chữ cho Loading (kéo thả Font vào đây, để trống dùng mặc định)")]
+    public Font customLoadingFont;
+    [Tooltip("Đổi màu liên tục? (Tắt đi nếu chỉ muốn 1 màu cố định)")]
+    public bool useRainbowColor = true;
+    [Tooltip("Màu của chữ Loading (chỉ có tác dụng nếu TẮT cầu vồng ở trên)")]
+    public Color staticLoadingColor = Color.white;
+
     // Cờ này để báo hiệu rẳng lần tới mở lại Scene thì bắt buộc hiện Menu
     public static bool forceShowMenu = false;
 
@@ -142,10 +150,19 @@ public class MainMenuController : MonoBehaviour
             letterObj.transform.SetParent(textContainer.transform, false);
             Text letter = letterObj.AddComponent<Text>();
             letter.text = textStr[i].ToString();
-            letter.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (letter.font == null) letter.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            // Ưu tiên dùng Font tùy chỉnh nếu được gán, nếu không thì dùng mặc định
+            if (customLoadingFont != null)
+            {
+                letter.font = customLoadingFont;
+            }
+            else
+            {
+                letter.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                if (letter.font == null) letter.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            }
+            
             letter.fontSize = 35;
-            letter.color = Color.white;
+            letter.color = staticLoadingColor;
             letter.alignment = TextAnchor.MiddleCenter;
 
             RectTransform letterRt = letter.GetComponent<RectTransform>();
@@ -160,12 +177,15 @@ public class MainMenuController : MonoBehaviour
             // Hiệu ứng gợn sóng (nhảy lên xuống)
             letterRt.DOAnchorPosY(15f, 0.4f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(i * 0.1f);
 
-            // Hiệu ứng màu Blend (Cầu vồng mượt mà trôi qua từng chữ)
-            // Dùng DOVirtual để chạy biến Hue từ 0 đến 1, tạo ra đủ các dải màu xen kẽ
-            DOVirtual.Float(0f, 1f, 2f, (hue) => {
-                if (letter != null) 
-                    letter.color = Color.HSVToRGB(hue, 0.55f, 1f); // Saturation 0.55 để màu blend dạng pastel nịnh mắt
-            }).SetLoops(-1, LoopType.Restart).SetDelay(i * 0.15f).SetTarget(letterObj);
+            // Hiệu ứng màu
+            if (useRainbowColor)
+            {
+                // Cầu vồng mượt mà trôi qua từng chữ
+                DOVirtual.Float(0f, 1f, 2f, (hue) => {
+                    if (letter != null) 
+                        letter.color = Color.HSVToRGB(hue, 0.55f, 1f);
+                }).SetLoops(-1, LoopType.Restart).SetDelay(i * 0.15f).SetTarget(letterObj);
+            }
         }
 
         canvasObj.AddComponent<GraphicRaycaster>();
