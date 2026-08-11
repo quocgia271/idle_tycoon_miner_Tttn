@@ -450,8 +450,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: efeafeabc6974e44f8a11ca1666a320d, type: 2}
+  m_sharedMaterial: {fileID: -4504249212460522979, guid: efeafeabc6974e44f8a11ca1666a320d, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -605,6 +605,10 @@ PrefabInstance:
       propertyPath: m_enableWordWrapping
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4053360269596613631, guid: dac0cf948dbbaac4485524576b58fb39, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4567124807025260147, guid: dac0cf948dbbaac4485524576b58fb39, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -701,6 +705,10 @@ PrefabInstance:
       propertyPath: m_enableWordWrapping
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5015345355624274525, guid: dac0cf948dbbaac4485524576b58fb39, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5828166111772870656, guid: dac0cf948dbbaac4485524576b58fb39, type: 3}
       propertyPath: m_Name
       value: status
@@ -723,6 +731,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8141060554883539125, guid: dac0cf948dbbaac4485524576b58fb39, type: 3}
       propertyPath: m_enableWordWrapping
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8141060554883539125, guid: dac0cf948dbbaac4485524576b58fb39, type: 3}
+      propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8291811916611214208, guid: dac0cf948dbbaac4485524576b58fb39, type: 3}
@@ -831,7 +843,6 @@ MonoBehaviour:
   reviveGroup: {fileID: 7652533956139138640}
   reviveButton: {fileID: 5531822025389163437}
   reviveCostText: {fileID: 5858841601317983025}
-  reviveCost: 1000
 --- !u!114 &6066956500260662328 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8734652077118144712, guid: dac0cf948dbbaac4485524576b58fb39, type: 3}

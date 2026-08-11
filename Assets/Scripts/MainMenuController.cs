@@ -8,6 +8,12 @@ public class MainMenuController : MonoBehaviour
     [Header("UI References")]
     [Tooltip("Kéo CanvasGroup của Menu (nếu chưa có thì script sẽ tự thêm)")]
     public CanvasGroup menuCanvasGroup;
+    
+    [Header("End Game Setup")]
+    [Tooltip("Nút Play Game để có thể tắt đi nếu đã phá đảo")]
+    public Button playButton;
+    [Tooltip("Text/GameObject Coming Soon để bật lên khi phá đảo")]
+    public GameObject comingSoonText;
 
     [Header("Transition Settings")]
     [Tooltip("Thời gian màn hình tối đi khi bắt đầu Play")]
@@ -67,7 +73,9 @@ public class MainMenuController : MonoBehaviour
         {
             hasDoneInitialLoad = true;
             string savePath = Path.Combine(Application.persistentDataPath, "idle_tycoon_save.json");
-            if (File.Exists(savePath))
+            
+            // CHỈ auto skip vào game nếu người chơi CHƯA win game
+            if (File.Exists(savePath) && PlayerPrefs.GetInt("GameWon", 0) == 0)
             {
                 // Tắt Menu đi
                 menuCanvasGroup.alpha = 0;
@@ -87,6 +95,18 @@ public class MainMenuController : MonoBehaviour
         menuCanvasGroup.alpha = 1;
         menuCanvasGroup.interactable = true;
         menuCanvasGroup.blocksRaycasts = true;
+
+        // Kểm tra trạng thái Win Game để khóa nút Play
+        if (PlayerPrefs.GetInt("GameWon", 0) == 1)
+        {
+            if (playButton != null) playButton.interactable = false;
+            if (comingSoonText != null) comingSoonText.SetActive(true);
+        }
+        else
+        {
+            if (playButton != null) playButton.interactable = true;
+            if (comingSoonText != null) comingSoonText.SetActive(false);
+        }
     }
 
     public void PlayGame()

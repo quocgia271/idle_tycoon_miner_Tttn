@@ -91,6 +91,7 @@ public class WinModalUI : MonoBehaviour
     // Hàm gắn vào Button Return Home
     public void ReturnToMenu()
     {
+        PlayerPrefs.SetInt("GameWon", 1);
         PlayerPrefs.Save();
         Time.timeScale = 1f;
         MainMenuController.forceShowMenu = true;

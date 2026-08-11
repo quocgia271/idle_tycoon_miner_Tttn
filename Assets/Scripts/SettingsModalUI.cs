@@ -20,6 +20,10 @@ public class SettingsModalUI : MonoBehaviour
     [Tooltip("Text hiển thị phần trăm âm lượng SFX")]
     public TextMeshProUGUI sfxText;
 
+    [Header("Stats References")]
+    [Tooltip("Text hiển thị tổng số tiền đã kiếm được (Lifetime Cash)")]
+    public TextMeshProUGUI lifetimeCashText;
+
     private void Awake()
     {
         // Gắn listener 1 lần duy nhất ở Awake để tránh bị add trùng nhiều lần
@@ -48,6 +52,12 @@ public class SettingsModalUI : MonoBehaviour
             float sfxVol = PlayerPrefs.GetFloat("SFXVolume", 1f);
             sfxSlider.value = sfxVol;
             UpdateSFXText(sfxVol);
+        }
+
+        // Cập nhật Lifetime Cash khi mở Setting
+        if (lifetimeCashText != null && Gamemanager.Instance != null)
+        {
+            lifetimeCashText.text = "Tổng tiền đã cày: " + CurrencyFormatter.FormatMoney(Gamemanager.Instance.LifetimeCash);
         }
     }
 
