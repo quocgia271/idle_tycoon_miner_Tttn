@@ -98,9 +98,20 @@ public class PrestigeModalUI : MonoBehaviour
             // Khóa nút xác nhận
             if (confirmButton != null) confirmButton.interactable = false;
         }
+        else if (nextMultiplier <= currentMultiplier)
+        {
+            infoText.text = $"<color=red><b>CHƯA ĐỦ ĐIỀU KIỆN</b></color>\n\n" +
+                            $"Hệ số mới không cao hơn hệ số hiện tại.\n" +
+                            $"Bạn cần cày thêm tiền để có thể Chuyển Sinh.\n\n" +
+                            $"Hệ số hiện tại: <b>x{currentMultiplier:F1}</b>\n" +
+                            $"Tổng tiền đã cày: <b>{CurrencyFormatter.FormatMoney(lifetimeCash)}</b>";
+            
+            // Khóa nút xác nhận
+            if (confirmButton != null) confirmButton.interactable = false;
+        }
         else
         {
-            // Nếu đã đủ tiền
+            // Nếu đã đủ tiền và hệ số mới cao hơn
             infoText.text = $"<color=green><b>SẴN SÀNG CHUYỂN SINH!</b></color>\n\n" +
                             $"Hầm mỏ và Vàng hiện tại sẽ bị reset về 0.\n" +
                             $"Các Quản Lý (Manager) vẫn được giữ nguyên.\n\n" +

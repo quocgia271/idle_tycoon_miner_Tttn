@@ -22,6 +22,7 @@ public class Miner : MonoBehaviour
 
     private MinerState currentState = MinerState.Idle;
     private float currentDigTime = 0f;
+    public bool isReviving = false;
     
     private WorkerHealth workerHealth;
     private WorkerAnimation workerAnimation;
@@ -47,6 +48,7 @@ public class Miner : MonoBehaviour
     {
         // Nếu đã chết thì không làm gì cả
         if (workerHealth != null && workerHealth.healthState == WorkerHealth.HealthState.Dead) return;
+        if (isReviving) return;
 
         // Tự động đi làm nếu hầm có quản lý và không hỏng
         if (currentState == MinerState.Idle && currentShaft != null && currentShaft.currentManager != null && !currentShaft.isBroken)

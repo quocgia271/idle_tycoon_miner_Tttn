@@ -177,6 +177,7 @@ public class WorkerAnimation : MonoBehaviour
 
     private IEnumerator ReviveAnimationRoutine()
     {
+        if (miner != null) miner.isReviving = true;
         if (miner != null) miner.ResetStateToIdle();
         
         if (anim != null) anim.SetTrigger("idle");
@@ -210,6 +211,8 @@ public class WorkerAnimation : MonoBehaviour
         transform.DORotate(new Vector3(0, 0, 360), 0.9f, RotateMode.FastBeyond360).SetEase(Ease.OutBack);
 
         yield return bounceSeq.WaitForCompletion();
+        
+        if (miner != null) miner.isReviving = false;
         
         if (MoraleModalUI.Instance != null && MoraleModalUI.Instance.gameObject.activeInHierarchy)
         {

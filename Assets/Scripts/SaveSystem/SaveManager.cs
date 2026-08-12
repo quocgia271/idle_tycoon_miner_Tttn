@@ -42,9 +42,32 @@ public class SaveManager : MonoBehaviour
         }
     }
 
+    private bool hasLoadedFirstTime = false;
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (hasLoadedFirstTime)
+        {
+            Debug.Log("[SaveManager] Scene reloaded. Reapplying save data...");
+            OnGameLoaded?.Invoke();
+            StartCoroutine(ApplyDataAndCalculateOfflineRoutine());
+        }
+    }
+
     private void Start()
     {
         if (LoadOnStart) LoadGame();
+        hasLoadedFirstTime = true;
         StartCoroutine(AutoSaveRoutine());
     }
 

@@ -795,7 +795,6 @@ MonoBehaviour:
   targetUIImages: []
   dissolveMaterials:
   - {fileID: 2100000, guid: 0f7a929ab7c288547b94186787fc400f, type: 2}
-  - {fileID: 2100000, guid: 59106477a5f85d54d98f201a0be876d2, type: 2}
   dissolveDuration: 2
   dissolvePropertyName: Vector1_E974001A
   fullyVisibleValue: 3

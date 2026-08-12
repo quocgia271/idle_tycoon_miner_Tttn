@@ -38,7 +38,10 @@ public class DragonBossController : MonoBehaviour, ISaveable
     private AttackType currentAttack;
     
     private bool isBusy = false;
+    private bool isFlying = false; // Flag to prevent shooting while flying
+    private bool isChargingVFXActive = false; // Flag to precisely track charging state
     private Vector3 originalPos;
+    private bool initializedPos = false;
 
     private void Start()
     {
@@ -82,7 +85,24 @@ public class DragonBossController : MonoBehaviour, ISaveable
         this.enabled = true;
         gameObject.SetActive(true);
         
-        originalPos = transform.position;
+        isBusy = false;
+        isFlying = false;
+        isChargingVFXActive = false;
+        
+        if (!initializedPos)
+        {
+            originalPos = transform.position;
+            initializedPos = true;
+        }
+        else
+        {
+            // Reset về vị trí ban đầu trong trường hợp rồng bị lỗi kẹt ngoài màn hình khi thoát menu
+            transform.position = originalPos;
+        }
+        
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = true; // Bật lại collider nếu đang bay bị ngắt
+        
         timeBetweenAttacks = phase3A_AttackInterval;
         attackTimer = timeBetweenAttacks;
 
@@ -156,6 +176,13 @@ public class DragonBossController : MonoBehaviour, ISaveable
 
     private void DecideNextMajorAction()
     {
+        // Kiểm tra xem có mục tiêu hợp lệ nào không (nếu tất cả hầm đều khóa, hỏng, hoặc có khiên)
+        if (GetBaseValidShafts().Count == 0)
+        {
+            attackTimer = 1f; // Chờ 1 giây rồi check lại, không chạy animation khạc lửa vô ích
+            return;
+        }
+
         waveCount++;
 
         // Nếu đạt đủ số đợt đánh thường -> Khạc đạn bự
@@ -195,6 +222,7 @@ public class DragonBossController : MonoBehaviour, ISaveable
     {
         isBusy = true;
         currentAttack = AttackType.Big;
+        isChargingVFXActive = true;
 
         if (chargeVFX != null) chargeVFX.SetActive(true);
         if (dragonAnim != null) dragonAnim.speed = 0.25f;
@@ -203,6 +231,7 @@ public class DragonBossController : MonoBehaviour, ISaveable
 
         yield return new WaitForSeconds(5f);
 
+        isChargingVFXActive = false;
         if (chargeVFX != null) chargeVFX.SetActive(false);
         if (dragonAnim != null) dragonAnim.speed = 1f;
         
@@ -215,6 +244,7 @@ public class DragonBossController : MonoBehaviour, ISaveable
 
     public void ShootFireballEvent()
     {
+        if (isFlying) return; // Prevent shooting if animation triggers during flight
         StartCoroutine(ExecuteShootPattern());
     }
 
@@ -365,6 +395,7 @@ public class DragonBossController : MonoBehaviour, ISaveable
     private IEnumerator FlyOffScreenRoutine(bool isFleeing = false)
     {
         isBusy = true;
+        isFlying = true;
         // 0. Tắt Collider để người chơi không thể click chém rồng lúc nó đang cất cánh bay
         Collider2D col = GetComponent<Collider2D>();
         if (col != null) col.enabled = false;
@@ -410,6 +441,7 @@ public class DragonBossController : MonoBehaviour, ISaveable
 
         PlayAnim(idleAnimName);
         attackTimer = timeBetweenAttacks; // Tránh việc vừa bay về đã khạc lửa luôn
+        isFlying = false;
         isBusy = false;
     }
 
@@ -433,6 +465,18 @@ public class DragonBossController : MonoBehaviour, ISaveable
 
     public void LoadState(int savedWaveCount, float savedAttackTimer, bool isChargingBigFireball)
     {
+        StopAllCoroutines(); // Dọn dẹp các luồng chạy ngầm nếu LoadGame bị gọi nhiều lần liên tiếp
+        
+        isBusy = false;
+        isFlying = false;
+        isChargingVFXActive = false;
+        if (initializedPos) transform.position = originalPos;
+        
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = true;
+        
+        PlayAnim(idleAnimName);
+
         this.waveCount = savedWaveCount;
         this.attackTimer = savedAttackTimer;
 
@@ -459,9 +503,15 @@ public class DragonBossController : MonoBehaviour, ISaveable
     {
         if (Gamemanager.Instance == null || Gamemanager.Instance.CurrentRound != 3) return;
         
-        data.BossData.DragonWaveCount = this.waveCount;
+        // Nếu đang trong tiến trình đạn to nhưng đã bắn xong (đang chờ cười hoặc đang bay)
+        bool hasFiredButStillBusy = (isBusy && currentAttack == AttackType.Big && !isChargingVFXActive);
+        
+        // Tránh bị đánh liên tục 2 phát đạn to: nếu đã bắn rồi thì save số waveCount = 0 luôn
+        data.BossData.DragonWaveCount = hasFiredButStillBusy ? 0 : this.waveCount;
         data.BossData.DragonAttackTimer = this.attackTimer;
-        data.BossData.IsDragonChargingBigFireball = (isBusy && currentAttack == AttackType.Big);
+        
+        // Chỉ bắt gồng lại đạn to khi thực sự đang ở giai đoạn gồng
+        data.BossData.IsDragonChargingBigFireball = (isBusy && currentAttack == AttackType.Big && isChargingVFXActive);
     }
 
     public void LoadFromSaveData(SaveData data)

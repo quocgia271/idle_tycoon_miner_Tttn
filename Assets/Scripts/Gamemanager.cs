@@ -130,6 +130,13 @@ public class Gamemanager : MonoBehaviour
             return;
         }
 
+        double nextMultiplier = CalculateNextPrestigeMultiplier();
+        if (nextMultiplier <= PrestigeMultiplier && !isDeadGame)
+        {
+            Debug.Log($"<color=red>Chưa đủ điều kiện chuyển sinh! (Cần kiếm thêm tiền để tăng hệ số, hệ số mới phải lớn hơn {PrestigeMultiplier:F2}x)</color>");
+            return;
+        }
+
         if (isDeadGame)
         {
             Debug.Log("<color=orange>DEAD GAME DETECTED! Hệ thống cho phép Đặc cách Chuyển sinh sớm (Fail-Forward)!</color>");
@@ -160,48 +167,66 @@ public class Gamemanager : MonoBehaviour
     {
         if (transitionPrefab != null)
         {
-            // Tạo màn hình đen từ Prefab
             GameObject fadeObj = Instantiate(transitionPrefab);
             DontDestroyOnLoad(fadeObj);
 
             Image fadeImage = fadeObj.GetComponentInChildren<Image>();
+            bool useShader = false;
+
             if (fadeImage != null)
             {
-                Color c = fadeImage.color;
-                c.a = 0;
-                fadeImage.color = c;
-                
-                // Fade Out (Màn hình đen dần)
-                Tween fadeOut = fadeImage.DOFade(1f, 1f);
-                yield return fadeOut.WaitForCompletion();
+                fadeImage.color = Color.black; 
+                Shader circleShader = Shader.Find("UI/CircleReveal");
+                if (circleShader != null)
+                {
+                    useShader = true;
+                    Material mat = new Material(circleShader);
+                    mat.SetFloat("_Radius", 1.5f);
+                    fadeImage.material = mat;
+                    
+                    Tween fadeOut = fadeImage.material.DOFloat(0f, "_Radius", 0.5f).SetEase(Ease.InOutSine);
+                    yield return fadeOut.WaitForCompletion();
+                }
+                else
+                {
+                    Color c = fadeImage.color;
+                    c.a = 0;
+                    fadeImage.color = c;
+                    Tween fadeOut = fadeImage.DOFade(1f, 0.5f);
+                    yield return fadeOut.WaitForCompletion();
+                }
             }
 
             MainMenuController.skipMenuInstantly = true;
             
-            // Load Scene bất đồng bộ
             AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
             while (!asyncLoad.isDone)
             {
                 yield return null;
             }
 
-            yield return new WaitForSeconds(0.5f);
-
+            // Mở màn hình (Fade In)
             if (fadeImage != null)
             {
-                // Fade In (Màn hình sáng dần)
-                Tween fadeIn = fadeImage.DOFade(0f, 1f);
-                yield return fadeIn.WaitForCompletion();
+                if (useShader)
+                {
+                    Tween fadeIn = fadeImage.material.DOFloat(1.5f, "_Radius", 0.5f).SetEase(Ease.InOutSine);
+                    yield return fadeIn.WaitForCompletion();
+                    Destroy(fadeImage.material);
+                }
+                else
+                {
+                    Tween fadeIn = fadeImage.DOFade(0f, 0.5f);
+                    yield return fadeIn.WaitForCompletion();
+                }
             }
 
             Destroy(fadeObj);
         }
         else
         {
-            // Dự phòng nếu quên gắn transitionPrefab
             MainMenuController.skipMenuInstantly = true;
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-            yield return new WaitForSeconds(1.5f);
         }
         
         if (SaveManager.Instance != null)
@@ -230,41 +255,59 @@ public class Gamemanager : MonoBehaviour
             yield break;
         }
 
-        // Tạo màn hình đen từ Prefab
         GameObject fadeObj = Instantiate(transitionPrefab);
         DontDestroyOnLoad(fadeObj);
 
         Image fadeImage = fadeObj.GetComponentInChildren<Image>();
+        bool useShader = false;
+
         if (fadeImage != null)
         {
-            Color c = fadeImage.color;
-            c.a = 0;
-            fadeImage.color = c;
+            fadeImage.color = Color.black;
+            Shader circleShader = Shader.Find("UI/CircleReveal");
+            if (circleShader != null)
+            {
+                useShader = true;
+                Material mat = new Material(circleShader);
+                mat.SetFloat("_Radius", 1.5f);
+                fadeImage.material = mat;
+            }
         }
 
         // ==========================================
         // 1. TÍNH TOÁN VÀ LƯU DATA NGAY LẬP TỨC 
         // ==========================================
-        // Tính trước các thông số của Round mới
         CurrentRound++;
         IdleCash = 150 * RoundMultiplier;
         LifetimeCash = 0; 
         PrestigeMultiplier = 1.0; 
         
-        // Tạo 1 file save sạch tinh ngay lập tức (Ghi đè file cũ)
         if (SaveManager.Instance != null)
         {
             SaveManager.Instance.SaveResetState(); 
         }
-        // Kể từ khoảnh khắc này, nếu người chơi có tắt app thì dữ liệu trong máy ĐÃ LÀ ROUND MỚI!
 
         // ==========================================
-        // 2. HIỆU ỨNG HÌNH ẢNH (FADE OUT)
+        // 2. HIỆU ỨNG HÌNH ẢNH (FADE OUT VÀ FAKE LOADING)
         // ==========================================
-        Tween fadeOut = fadeImage.DOFade(1f, 1f);
-        yield return fadeOut.WaitForCompletion();
+        if (fadeImage != null)
+        {
+            if (useShader)
+            {
+                Tween fadeOut = fadeImage.material.DOFloat(0f, "_Radius", 0.5f).SetEase(Ease.InOutSine);
+                yield return fadeOut.WaitForCompletion();
+            }
+            else
+            {
+                Color c = fadeImage.color;
+                c.a = 0;
+                fadeImage.color = c;
+                Tween fadeOut = fadeImage.DOFade(1f, 0.5f);
+                yield return fadeOut.WaitForCompletion();
+            }
+        }
 
-        // 3. Sau khi màn hình đã đen, mới bắt đầu cập nhật UI và reset Manager
+        // 3. Cập nhật UI và reset Manager
         OnCashChanged?.Invoke(IdleCash);
         OnRoundChanged?.Invoke(CurrentRound);
         
@@ -276,7 +319,8 @@ public class Gamemanager : MonoBehaviour
         // ==========================================
         // 4. CHUYỂN SCENE
         // ==========================================
-        MainMenuController.skipMenuInstantly = true; // Bỏ qua Menu và Fake Loading
+        MainMenuController.skipMenuInstantly = true; 
+        
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
         while (!asyncLoad.isDone)
         {
@@ -285,22 +329,30 @@ public class Gamemanager : MonoBehaviour
 
         Debug.Log($"<color=cyan>Đã qua Round {CurrentRound}! Chúc may mắn với thử thách mới!</color>");
 
-        // Đợi 0.5s để người chơi chuẩn bị
-        yield return new WaitForSeconds(0.5f);
+        // Mở màn hình (Fade In)
+        if (fadeImage != null)
+        {
+            if (useShader)
+            {
+                Tween fadeIn = fadeImage.material.DOFloat(1.5f, "_Radius", 0.5f).SetEase(Ease.InOutSine);
+                yield return fadeIn.WaitForCompletion();
+                Destroy(fadeImage.material);
+            }
+            else
+            {
+                Tween fadeIn = fadeImage.DOFade(0f, 0.5f);
+                yield return fadeIn.WaitForCompletion();
+            }
+        }
 
-        // Fade In (Màn hình sáng dần)
-        Tween fadeIn = fadeImage.DOFade(0f, 1f);
-        yield return fadeIn.WaitForCompletion();
-
-        // Hủy Canvas sau khi Fade xong
         Destroy(fadeObj);
 
-        // MỞ KHÓA SAVE LẠI SAU KHI NGƯỜI CHƠI THỰC SỰ BẮT ĐẦU CHƠI
         if (SaveManager.Instance != null)
         {
             SaveManager.isTransitioning = false;
         }
     }
+
 
     public void AddCash(double amount)
     {
