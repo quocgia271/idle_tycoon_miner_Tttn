@@ -67,7 +67,7 @@ public partial class MineShaft : Facility
         
         ShaftUnlocker unlocker = GetComponentInChildren<ShaftUnlocker>(true);
         
-        if (data.IsBroken)
+        if (data.IsBroken)
         {
             BreakShaft(true); // Khôi phục trạng thái vỡ mà không play VFX nổ
         }
@@ -76,6 +76,7 @@ public partial class MineShaft : Facility
             // Tắt UI khóa hầm nếu đã mở khóa
             if (data.IsUnlocked && unlocker != null)
             {
+                unlocker.HideLockInstantly();
                 unlocker.gameObject.SetActive(false);
             }
             // Nếu chưa mở khóa, đảm bảo bật UI lên
@@ -83,7 +84,7 @@ public partial class MineShaft : Facility
             {
                 unlocker.gameObject.SetActive(true);
             }
-
+            
             UpdateEnduranceUI();
             
             CheckAndSpawnMiners();

@@ -138,14 +138,27 @@ public class MainMenuController : MonoBehaviour
         GameObject imageObj = new GameObject("FadeImage");
         imageObj.transform.SetParent(canvasObj.transform, false);
         Image fadeImage = imageObj.AddComponent<Image>();
-        // Nếu load thẳng vào thì đen luôn, nếu từ Menu thì trong suốt
-        fadeImage.color = startInstantlyBlack ? new Color(0, 0, 0, 1) : new Color(0, 0, 0, 0); 
+        fadeImage.color = Color.black; 
+        
+        Shader circleShader = Shader.Find("UI/CircleReveal");
+        if (circleShader != null)
+        {
+            Material mat = new Material(circleShader);
+            mat.SetFloat("_Radius", startInstantlyBlack ? 0f : 1.5f);
+            fadeImage.material = mat;
+        }
+        else 
+        {
+            fadeImage.color = startInstantlyBlack ? new Color(0, 0, 0, 1) : new Color(0, 0, 0, 0); 
+        }
         
         RectTransform rt = fadeImage.GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        float maxSize = Mathf.Max(Screen.width, Screen.height) * 1.5f;
+        rt.sizeDelta = new Vector2(maxSize, maxSize);
+        rt.anchoredPosition = Vector2.zero;
 
         // Container chứa chữ Loading dạng gợn sóng
         GameObject textContainer = new GameObject("LoadingTextContainer");
@@ -213,6 +226,8 @@ public class MainMenuController : MonoBehaviour
         // Kịch bản (Sequence) hiệu ứng chuyển cảnh "Fake Loading" mượt 100%
         Sequence seq = DOTween.Sequence();
         
+        bool useShader = circleShader != null;
+
         if (startInstantlyBlack)
         {
             // Nếu đã đen sẵn thì chỉ làm mờ chữ Loading hiện lên
@@ -220,8 +235,12 @@ public class MainMenuController : MonoBehaviour
         }
         else
         {
-            // Nếu từ Menu thì Màn tối dần và chữ hiện lên
-            seq.Append(fadeImage.DOFade(1f, fadeOutTime));
+            // Nếu từ Menu thì Màn tối dần (vòng tròn khép lại) và chữ hiện lên
+            if (useShader)
+                seq.Append(fadeImage.material.DOFloat(0f, "_Radius", fadeOutTime).SetEase(Ease.InOutSine));
+            else
+                seq.Append(fadeImage.DOFade(1f, fadeOutTime));
+                
             seq.Join(textCanvasGroup.DOFade(1f, fadeOutTime));
             
             // Lúc màn đen hoàn toàn, ẩn Menu gốc đi 
@@ -236,11 +255,15 @@ public class MainMenuController : MonoBehaviour
         // 4. Chữ mờ đi (Tốc độ mờ chữ luôn fix sẵn 0.4s cho đẹp)
         seq.Append(textCanvasGroup.DOFade(0f, 0.4f));
 
-        // 5. Mở sáng màn hình, lộ ra Game đang chạy sẵn
-        seq.Append(fadeImage.DOFade(0f, fadeInTime));
+        // 5. Mở sáng màn hình, lộ ra Game đang chạy sẵn (vòng tròn mở rộng ra)
+        if (useShader)
+            seq.Append(fadeImage.material.DOFloat(1.5f, "_Radius", fadeInTime).SetEase(Ease.InOutSine));
+        else
+            seq.Append(fadeImage.DOFade(0f, fadeInTime));
 
         // 6. Xóa Canvas ảo và tắt Script Menu
         seq.OnComplete(() => {
+            if (useShader && fadeImage.material != null) Destroy(fadeImage.material);
             Destroy(canvasObj);
             gameObject.SetActive(false);
         });

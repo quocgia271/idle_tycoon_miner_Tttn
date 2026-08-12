@@ -219,6 +219,12 @@ public class RoundTransitionBarrier : MonoBehaviour
         }
     }
 
+    [Header("Phase 3 Break VFX")]
+    public GameObject bulletVFX;
+    public Transform bulletTargetPos;
+    public GameObject explosionVFX;
+    public float bulletFlyDuration = 1f;
+
     private void ExecuteBarrierAction()
     {
         Debug.Log("Đã bấm nút YES Xác nhận đập vách ngăn!");
@@ -231,23 +237,8 @@ public class RoundTransitionBarrier : MonoBehaviour
             // Ở Round 3, đập vách ngăn tốn tiền nhưng không qua màn, chỉ gỡ giáp rồng
             if (Gamemanager.Instance.DeductCash(requireCashToPass))
             {
-                Debug.Log("<color=green>Đã đập vỡ vách ngăn! GỠ BỎ GIÁP BẤT TỬ CỦA RỒNG!</color>");
-                
-                BossHealth[] allBosses = FindObjectsOfType<BossHealth>(true);
-                foreach (var boss in allBosses)
-                {
-                    if (boss != null) boss.RemoveInvincibility();
-                }
-
-                // Kích nộ Rồng và Boss
-                DragonBossController dragon = FindObjectOfType<DragonBossController>();
-                if (dragon != null) dragon.Enrage();
-                
-                BossPhase3Controller boss3 = FindObjectOfType<BossPhase3Controller>();
-                if (boss3 != null) boss3.Enrage();
-
-                // Ẩn vách ngăn đi để người chơi thấy rõ Rồng
-                gameObject.SetActive(false);
+                Debug.Log("<color=green>Đã đập vỡ vách ngăn! Bắt đầu phá giáp...</color>");
+                StartCoroutine(BreakBarrierRoutine());
             }
         }
         else
@@ -257,8 +248,98 @@ public class RoundTransitionBarrier : MonoBehaviour
             if (Gamemanager.Instance.IdleCash >= requireCashToPass)
             {
                 Debug.Log("<color=green>Đã đập vỡ vách ngăn! Bắt đầu Qua Màn...</color>");
-                Gamemanager.Instance.ProceedToNextRound();
+                PlayDissolveEffect(() => Gamemanager.Instance.ProceedToNextRound());
             }
+        }
+    }
+
+    private System.Collections.IEnumerator BreakBarrierRoutine()
+    {
+        // 1. Bay đạn
+        if (bulletVFX != null && bulletTargetPos != null)
+        {
+            bulletVFX.SetActive(true);
+            float t = 0;
+            Vector3 startPos = bulletVFX.transform.position;
+            while (t < 1f)
+            {
+                t += Time.unscaledDeltaTime / bulletFlyDuration;
+                bulletVFX.transform.position = Vector3.Lerp(startPos, bulletTargetPos.position, t);
+                yield return null;
+            }
+            bulletVFX.SetActive(false);
+        }
+
+        // 2. Chạy VFX nổ
+        if (explosionVFX != null)
+        {
+            explosionVFX.SetActive(true);
+            ParticleSystem[] pss = explosionVFX.GetComponentsInChildren<ParticleSystem>();
+            foreach (var ps in pss)
+            {
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                ps.Play(true);
+            }
+        }
+
+        // 3. Tắt giáp và kích nộ
+        Debug.Log("<color=green>GỠ BỎ GIÁP BẤT TỬ CỦA RỒNG VÀ BOSS!</color>");
+        BossHealth[] allBosses = FindObjectsOfType<BossHealth>(true);
+        foreach (var boss in allBosses)
+        {
+            if (boss != null) boss.RemoveInvincibility();
+        }
+
+        DragonBossController dragon = FindObjectOfType<DragonBossController>();
+        if (dragon != null) dragon.Enrage();
+        
+        BossPhase3Controller boss3 = FindObjectOfType<BossPhase3Controller>();
+        if (boss3 != null) boss3.Enrage();
+
+        // Ẩn vách ngăn đi để người chơi thấy rõ Rồng, có thêm hiệu ứng Dissolve
+        PlayDissolveEffect(() => gameObject.SetActive(false));
+    }
+
+    private void PlayDissolveEffect(System.Action onComplete)
+    {
+        // Làm mờ từ từ các thành phần UI cùng lúc với vách ngăn thay vì tắt phụt đi
+        float duration = 1.5f; // Thời gian mặc định
+        
+        DissolveEffect effect = GetComponent<DissolveEffect>();
+        if (effect != null)
+        {
+            duration = effect.dissolveDuration;
+            effect.PlayEffect(onComplete);
+        }
+        else
+        {
+            // Nếu không có DissolveEffect thì chạy luôn hàm hoàn thành
+            onComplete?.Invoke();
+        }
+
+        // Tạo mờ dần cho Nút và Chữ
+        if (unlockButton != null)
+        {
+            Image btnImg = unlockButton.GetComponent<Image>();
+            if (btnImg != null) btnImg.DOFade(0f, duration).SetUpdate(true);
+        }
+        if (costText != null)
+        {
+            costText.DOFade(0f, duration).SetUpdate(true);
+        }
+    }
+
+    [ContextMenu("Test Play Dissolve Effect")]
+    public void TestDissolveEffect()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.Log("Đang chạy test hiệu ứng Dissolve...");
+            PlayDissolveEffect(() => Debug.Log("Test hiệu ứng hoàn tất!"));
+        }
+        else
+        {
+            Debug.LogWarning("Vui lòng bấm nút Play (▶) để test hiệu ứng này!");
         }
     }
 

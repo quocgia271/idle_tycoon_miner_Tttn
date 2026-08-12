@@ -23,6 +23,15 @@ public class ShaftUnlocker : MonoBehaviour
     [Header("Target Shaft")]
     public Transform shaftRoot; // Cục to nhất của hầm mỏ để rung lắc toàn bộ
 
+    [Header("Unlock Dissolve Effect")]
+    public DissolveEffect unlockDissolveEffect; // Hiệu ứng tan biến khi mở khóa
+    [Tooltip("Các UI Canvas bị ẩn đi khi đang khóa (để tránh đè lên Sprite Renderer) và sẽ hiện lại khi mở khóa xong.")]
+    public GameObject[] canvasElementsToHideWhileLocked;
+
+    [Header("Round Sprites (Đổi ảnh khóa theo Round)")]
+    public SpriteRenderer lockSpriteRenderer; // Kéo thả SpriteRenderer của cục đất khóa vào đây
+    public Sprite[] roundLockSprites; // index 0 = round 1, index 1 = round 2...
+
     private bool isBuilding = false;
     private bool isRepairMode = false;
     private double repairCost = 0;
@@ -33,6 +42,9 @@ public class ShaftUnlocker : MonoBehaviour
     {
         // Tính toán giá tiền lần đầu
         UpdateUnlockCost();
+
+        // Ẩn các thành phần Canvas UI nếu có cấu hình (tránh đè lên Sprite Renderer khóa)
+        HideCanvasElementsInstantly();
 
         // Khởi tạo UI (Chỉ khi không phải chế độ sửa chữa)
         if (!isRepairMode)
@@ -62,6 +74,8 @@ public class ShaftUnlocker : MonoBehaviour
             Gamemanager.Instance.OnCashChanged += OnCashChanged;
             Gamemanager.Instance.OnLevelChanged += OnLevelChanged;
             Gamemanager.Instance.OnRoundChanged += OnRoundChanged;
+            
+            UpdateLockSprite(Gamemanager.Instance.CurrentRound);
         }
     }
 
@@ -77,7 +91,23 @@ public class ShaftUnlocker : MonoBehaviour
 
     private void OnCashChanged(double cash) => UpdateRequirementColors();
     private void OnLevelChanged(int level) => UpdateRequirementColors();
-    private void OnRoundChanged(int round) => UpdateUnlockCost();
+    private void OnRoundChanged(int round)
+    {
+        UpdateUnlockCost();
+        UpdateLockSprite(round);
+    }
+
+    private void UpdateLockSprite(int round)
+    {
+        if (lockSpriteRenderer != null && roundLockSprites != null && roundLockSprites.Length > 0)
+        {
+            int index = round - 1;
+            if (index >= 0 && index < roundLockSprites.Length)
+            {
+                lockSpriteRenderer.sprite = roundLockSprites[index];
+            }
+        }
+    }
 
     public void UpdateUnlockCost()
     {
@@ -239,9 +269,21 @@ public class ShaftUnlocker : MonoBehaviour
 
     private IEnumerator FadeOutAndDisable()
     {
-        // Mờ dần hình che phủ (giảm Alpha)
-        if (lockImage != null)
+        // Chạy hiệu ứng tan biến nếu có
+        if (unlockDissolveEffect != null)
         {
+            Debug.Log("<color=cyan>Đang chạy hiệu ứng Dissolve Hide cho hầm mỏ...</color>");
+            bool effectDone = false;
+            unlockDissolveEffect.PlayEffect(() => { 
+                effectDone = true; 
+                Debug.Log("<color=cyan>Hiệu ứng Dissolve hoàn tất!</color>");
+            });
+            yield return new WaitUntil(() => effectDone);
+        }
+        // Nếu không có dissolve effect, dùng cách mờ dần cũ
+        else if (lockImage != null)
+        {
+            Debug.LogWarning("<color=orange>Chưa gán Unlock Dissolve Effect! Đang dùng chế độ mờ dần của UI cũ.</color>");
             float alpha = lockImage.color.a;
             while (alpha > 0)
             {
@@ -253,6 +295,9 @@ public class ShaftUnlocker : MonoBehaviour
             }
         }
         
+        // Bật lại các Canvas UI của hầm mỏ và Fade In sau khi ổ khóa tan biến xong
+        FadeCanvasElements(true);
+
         isBuilding = false; // Reset lại biến để sau này nếu vỡ hầm còn bấm nút được
         
         if (indicatorVFX != null) indicatorVFX.SetActive(false); // Chắc chắn tắt VFX
@@ -267,6 +312,15 @@ public class ShaftUnlocker : MonoBehaviour
         isBuilding = false; // Chắc chắn rằng không bị kẹt trạng thái Đang xây dựng từ trước
         repairCost = cost;
         gameObject.SetActive(true);
+
+        // Khôi phục lại trạng thái hiển thị của hiệu ứng Dissolve để đảm bảo khi sửa chữa sẽ có thể Dissolve Hide lại
+        if (unlockDissolveEffect != null)
+        {
+            unlockDissolveEffect.ResetToVisible(true); // Truyền true để nó đổi sprite renderer thành màu đen mờ
+        }
+
+        // Khi hầm bị vỡ, ẩn từ từ các Canvas UI đằng sau đi
+        FadeCanvasElements(false);
 
         // Bật lại VFX báo hiệu hầm đang cần được sửa chữa
         if (indicatorVFX != null) indicatorVFX.SetActive(true);
@@ -327,5 +381,80 @@ public class ShaftUnlocker : MonoBehaviour
             return string.Format("{0:00}:{1:00}:{2:00}", hours, minutes, seconds);
         else
             return string.Format("{0:00}:{1:00}", minutes, seconds);
+    }
+
+    private void HideCanvasElementsInstantly()
+    {
+        if (canvasElementsToHideWhileLocked == null) return;
+        foreach (var obj in canvasElementsToHideWhileLocked)
+        {
+            if (obj != null) 
+            {
+                CanvasGroup cg = obj.GetComponent<CanvasGroup>();
+                if (cg == null) cg = obj.AddComponent<CanvasGroup>();
+                cg.alpha = 0f;
+                obj.SetActive(false);
+            }
+        }
+    }
+
+    private void FadeCanvasElements(bool show)
+    {
+        if (canvasElementsToHideWhileLocked == null) return;
+        
+        // Khi hiện lên (sau khi mở khóa) thì cho fade cực nhanh (0.25s) cho mượt và snappy
+        // Khi ẩn đi (bị hỏng hầm) thì fade chậm lại theo hiệu ứng
+        float fadeDuration = show ? 0.25f : ((unlockDissolveEffect != null) ? unlockDissolveEffect.dissolveDuration : 1f);
+
+        foreach (var obj in canvasElementsToHideWhileLocked)
+        {
+            if (obj == null) continue;
+            
+            CanvasGroup cg = obj.GetComponent<CanvasGroup>();
+            if (cg == null) cg = obj.AddComponent<CanvasGroup>();
+            
+            cg.DOKill();
+            
+            if (show)
+            {
+                obj.SetActive(true);
+                cg.alpha = 0f;
+                cg.DOFade(1f, fadeDuration).SetEase(Ease.Linear);
+            }
+            else
+            {
+                cg.DOFade(0f, fadeDuration).SetEase(Ease.Linear).OnComplete(() => {
+                    obj.SetActive(false);
+                });
+            }
+        }
+    }
+
+    public void HideLockInstantly()
+    {
+        if (unlockDissolveEffect != null)
+        {
+            unlockDissolveEffect.HideInstantly();
+        }
+        else if (lockImage != null)
+        {
+            lockImage.gameObject.SetActive(false);
+        }
+
+        ShowCanvasElementsInstantly();
+    }
+
+    public void ShowCanvasElementsInstantly()
+    {
+        if (canvasElementsToHideWhileLocked == null) return;
+        foreach (var obj in canvasElementsToHideWhileLocked)
+        {
+            if (obj != null) 
+            {
+                obj.SetActive(true);
+                CanvasGroup cg = obj.GetComponent<CanvasGroup>();
+                if (cg != null) cg.alpha = 1f;
+            }
+        }
     }
 }

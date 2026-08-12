@@ -54,7 +54,22 @@ public class BossHealth : MonoBehaviour, IDamageable, ISaveable
         if (col != null) col.enabled = true;
     }
 
-    public bool IsInvincible { get; set; } = false;
+    [Header("Invincibility VFX")]
+    public GameObject shieldVFX;
+
+    private bool _isInvincible = false;
+    public bool IsInvincible
+    {
+        get { return _isInvincible; }
+        set
+        {
+            _isInvincible = value;
+            if (shieldVFX != null)
+            {
+                shieldVFX.SetActive(value);
+            }
+        }
+    }
 
     public void RemoveInvincibility()
     {

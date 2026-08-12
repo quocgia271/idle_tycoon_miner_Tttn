@@ -91,9 +91,10 @@ public class WinModalUI : MonoBehaviour
     // Hàm gắn vào Button Return Home
     public void ReturnToMenu()
     {
-        PlayerPrefs.SetInt("GameWon", 1);
-        PlayerPrefs.Save();
-        Time.timeScale = 1f;
+        // Chặn UI click ngay lập tức
+        if (UnityEngine.EventSystems.EventSystem.current != null)
+            UnityEngine.EventSystems.EventSystem.current.enabled = false;
+
         MainMenuController.forceShowMenu = true;
 
         GameObject canvasObj = new GameObject("TransitionCanvas");
@@ -106,22 +107,50 @@ public class WinModalUI : MonoBehaviour
         GameObject imageObj = new GameObject("FadeImage");
         imageObj.transform.SetParent(canvasObj.transform, false);
         Image fadeImage = imageObj.AddComponent<Image>();
-        fadeImage.color = new Color(0, 0, 0, 0); 
+        fadeImage.color = Color.black; 
+        
+        Shader circleShader = Shader.Find("UI/CircleReveal");
+        bool useShader = false;
+        if (circleShader != null)
+        {
+            Material mat = new Material(circleShader);
+            mat.SetFloat("_Radius", 1.5f);
+            fadeImage.material = mat;
+            useShader = true;
+        }
+        else 
+        {
+            fadeImage.color = new Color(0, 0, 0, 0); 
+        }
         
         RectTransform rt = fadeImage.GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        float maxSize = Mathf.Max(Screen.width, Screen.height) * 1.5f;
+        rt.sizeDelta = new Vector2(maxSize, maxSize);
+        rt.anchoredPosition = Vector2.zero;
 
         canvasObj.AddComponent<GraphicRaycaster>();
 
-        fadeImage.DOFade(1f, 1f).OnComplete(() =>
+        Tween fadeTween = useShader ? fadeImage.material.DOFloat(0f, "_Radius", 1f).SetEase(Ease.InOutSine) : fadeImage.DOFade(1f, 1f);
+        fadeTween.SetUpdate(true); // Đảm bảo tween chạy ngay cả khi timeScale = 0
+        
+        fadeTween.OnComplete(() =>
         {
+            // Lưu dữ liệu lúc màn hình đã đen để tránh giật lag
+            PlayerPrefs.SetInt("GameWon", 1);
+            PlayerPrefs.Save();
+            Time.timeScale = 1f;
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+                UnityEngine.EventSystems.EventSystem.current.enabled = true;
+
             UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
             
-            fadeImage.DOFade(0f, 1f).SetDelay(0.5f).OnComplete(() =>
+            Tween revealTween = useShader ? fadeImage.material.DOFloat(1.5f, "_Radius", 1f).SetEase(Ease.InOutSine) : fadeImage.DOFade(0f, 1f);
+            revealTween.SetDelay(0.5f).OnComplete(() =>
             {
+                if (useShader && fadeImage.material != null) Destroy(fadeImage.material);
                 Destroy(canvasObj);
             });
         });

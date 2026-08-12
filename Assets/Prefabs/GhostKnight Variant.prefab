@@ -384,10 +384,43 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 8854514581768807877}
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5761135411870427968, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 407628136540530860}
     - targetCorrespondingSourceObject: {fileID: 1123618856067950567, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5852374124453103452}
   m_SourcePrefab: {fileID: 100100000, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
+--- !u!1 &308968826479351237 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5761135411870427968, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
+  m_PrefabInstance: {fileID: 5456682285032898181}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &407628136540530860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 308968826479351237}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54611578c629279468dd792727e0d3f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  includeChildren: 1
+  targetSpriteRenderers: []
+  targetUIImages: []
+  dissolveMaterials:
+  - {fileID: 2100000, guid: 31422fc4b03346841856c96293a4ceeb, type: 2}
+  dissolveDuration: 4
+  dissolvePropertyName: Vector1_E974001A
+  fullyVisibleValue: 3
+  fullyHiddenValue: 0
+  objectsToHideInstantly: []
+  canvasGroupsToFade: []
+  dissolveMode: 1
+  playOnStart: 1
 --- !u!224 &2156954341752748450 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6220892939076618023, guid: 89ad709a0e4bf354eb61a2efe3087d99, type: 3}
