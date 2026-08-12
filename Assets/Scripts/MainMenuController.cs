@@ -90,8 +90,15 @@ public class MainMenuController : MonoBehaviour
         ShowMenu();
     }
 
-    private void ShowMenu()
+    public void ShowMenu()
     {
+        Time.timeScale = 0f; // Dừng hoàn toàn game khi ở Menu
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PauseGameAudio(); // Tắt các tiếng ồn của Game
+        }
+
         menuCanvasGroup.alpha = 1;
         menuCanvasGroup.interactable = true;
         menuCanvasGroup.blocksRaycasts = true;
@@ -117,10 +124,10 @@ public class MainMenuController : MonoBehaviour
             menuCanvasGroup.blocksRaycasts = false;
         }
 
-        // Nạp lại dữ liệu game khi bấm Play (giúp áp dụng Offline Progression nếu người chơi vừa treo máy ở Menu)
-        if (SaveManager.Instance != null)
+        // Tính toán lại tiến trình Offline (nếu người chơi vừa treo máy ở Menu hoặc mới mở game)
+        if (OfflineProgressionManager.Instance != null && SaveManager.Instance != null && SaveManager.Instance.CurrentSaveData != null)
         {
-            SaveManager.Instance.LoadGame();
+            OfflineProgressionManager.Instance.ProcessOfflineProgression(SaveManager.Instance.CurrentSaveData);
         }
 
         // Bật Fake Loading với hiệu ứng mờ dần từ sáng sang đen
@@ -208,7 +215,7 @@ public class MainMenuController : MonoBehaviour
             letterRt.anchoredPosition = new Vector2(xPos, 0);
 
             // Hiệu ứng gợn sóng (nhảy lên xuống)
-            letterRt.DOAnchorPosY(15f, 0.4f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(i * 0.1f);
+            letterRt.DOAnchorPosY(15f, 0.4f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(i * 0.1f).SetUpdate(true);
 
             // Hiệu ứng màu
             if (useRainbowColor)
@@ -217,7 +224,7 @@ public class MainMenuController : MonoBehaviour
                 DOVirtual.Float(0f, 1f, 2f, (hue) => {
                     if (letter != null) 
                         letter.color = Color.HSVToRGB(hue, 0.55f, 1f);
-                }).SetLoops(-1, LoopType.Restart).SetDelay(i * 0.15f).SetTarget(letterObj);
+                }).SetLoops(-1, LoopType.Restart).SetDelay(i * 0.15f).SetTarget(letterObj).SetUpdate(true);
             }
         }
 
@@ -225,6 +232,7 @@ public class MainMenuController : MonoBehaviour
 
         // Kịch bản (Sequence) hiệu ứng chuyển cảnh "Fake Loading" mượt 100%
         Sequence seq = DOTween.Sequence();
+        seq.SetUpdate(true); // Ignore Time.timeScale = 0
         
         bool useShader = circleShader != null;
 
@@ -254,6 +262,15 @@ public class MainMenuController : MonoBehaviour
 
         // 4. Chữ mờ đi (Tốc độ mờ chữ luôn fix sẵn 0.4s cho đẹp)
         seq.Append(textCanvasGroup.DOFade(0f, 0.4f));
+
+        // Gọi hàm bật lại thời gian và âm thanh ngay TRƯỚC KHI hé mở màn hình
+        seq.AppendCallback(() => {
+            Time.timeScale = 1f; 
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.ResumeGameAudio(); 
+            }
+        });
 
         // 5. Mở sáng màn hình, lộ ra Game đang chạy sẵn (vòng tròn mở rộng ra)
         if (useShader)

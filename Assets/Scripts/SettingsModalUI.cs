@@ -119,14 +119,7 @@ public class SettingsModalUI : MonoBehaviour
     /// </summary>
     public void ReturnToMenu()
     {
-        // Chặn UI click ngay lập tức
-        if (UnityEngine.EventSystems.EventSystem.current != null)
-            UnityEngine.EventSystems.EventSystem.current.enabled = false;
-
-        // Bật cờ bắt buộc hiện Menu để MainMenuController không tự động nhảy vào Game nữa
-        MainMenuController.forceShowMenu = true;
-
-        // Tạo màn đen mờ dần để che lúc reload Scene
+        // Chặn người chơi bấm nhầm bằng màng chắn (thay vì tắt EventSystem gây lỗi)
         GameObject canvasObj = new GameObject("TransitionCanvas");
         DontDestroyOnLoad(canvasObj);
         
@@ -164,27 +157,45 @@ public class SettingsModalUI : MonoBehaviour
         // Chặn người chơi bấm nhầm nút trong lúc đang chuyển cảnh
         canvasObj.AddComponent<GraphicRaycaster>();
 
-        // Khép vòng tròn (tăng lên 1s cho chậm rãi), sau đó load lại chính Scene hiện tại
+        // Khép vòng tròn (tăng lên 1s cho chậm rãi)
         Tween fadeTween = useShader ? fadeImage.material.DOFloat(0f, "_Radius", 1f).SetEase(Ease.InOutSine) : fadeImage.DOFade(1f, 1f);
         fadeTween.SetUpdate(true); // Đảm bảo tween chạy kể cả khi timeScale = 0
         
         fadeTween.OnComplete(() =>
         {
-            // Đưa logic lưu game vào đây, lúc màn hình đã đen hoàn toàn để không thấy game bị khựng
+            // Đưa logic lưu game vào đây lúc màn hình đã đen
             PlayerPrefs.Save();
             if (SaveManager.Instance != null)
             {
                 SaveManager.Instance.SaveGame(true);
             }
-            Time.timeScale = 1f;
-            if (UnityEngine.EventSystems.EventSystem.current != null)
-                UnityEngine.EventSystems.EventSystem.current.enabled = true;
 
-            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+            // Tắt bảng Setting
+            this.gameObject.SetActive(false);
+
+            // Bật Main Menu lên (Thay vì reload Scene cực kỳ tốn tài nguyên và dễ sinh bug)
+            MainMenuController mainMenu = FindObjectOfType<MainMenuController>(true);
+            if (mainMenu != null)
+            {
+                mainMenu.gameObject.SetActive(true);
+                
+                // Đảm bảo Main Menu luôn nằm trên cùng để nhận click (đè lên Game UI)
+                Canvas mmCanvas = mainMenu.GetComponentInParent<Canvas>();
+                if (mmCanvas != null)
+                {
+                    mmCanvas.sortingOrder = 99; // Đưa lên lớp trên cùng
+                }
+                
+                mainMenu.ShowMenu(); // Gọi trực tiếp để bật Canvas và set timeScale = 0
+            }
+
+            // Tắt ngay Raycaster của tấm màn đen chuyển cảnh để không cản trở click
+            GraphicRaycaster raycaster = canvasObj.GetComponent<GraphicRaycaster>();
+            if (raycaster != null) raycaster.enabled = false;
             
-            // Đợi 0.5s ở màn hình đen rồi từ từ mở vòng tròn lên trong 1s (cho cân bằng với lúc vào Game)
+            // Đợi 0.5s ở màn hình đen rồi từ từ mở vòng tròn lên trong 1s
             Tween revealTween = useShader ? fadeImage.material.DOFloat(1.5f, "_Radius", 1f).SetEase(Ease.InOutSine) : fadeImage.DOFade(0f, 1f);
-            revealTween.SetDelay(0.5f).OnComplete(() =>
+            revealTween.SetUpdate(true).SetDelay(0.5f).OnComplete(() =>
             {
                 if (useShader && fadeImage.material != null) Destroy(fadeImage.material);
                 Destroy(canvasObj);

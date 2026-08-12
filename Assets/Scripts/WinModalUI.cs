@@ -91,12 +91,7 @@ public class WinModalUI : MonoBehaviour
     // Hàm gắn vào Button Return Home
     public void ReturnToMenu()
     {
-        // Chặn UI click ngay lập tức
-        if (UnityEngine.EventSystems.EventSystem.current != null)
-            UnityEngine.EventSystems.EventSystem.current.enabled = false;
-
-        MainMenuController.forceShowMenu = true;
-
+        // Chặn người chơi bấm nhầm bằng màng chắn (thay vì tắt EventSystem gây lỗi)
         GameObject canvasObj = new GameObject("TransitionCanvas");
         DontDestroyOnLoad(canvasObj);
         
@@ -138,17 +133,39 @@ public class WinModalUI : MonoBehaviour
         
         fadeTween.OnComplete(() =>
         {
-            // Lưu dữ liệu lúc màn hình đã đen để tránh giật lag
+            // Lưu dữ liệu lúc màn hình đã đen
             PlayerPrefs.SetInt("GameWon", 1);
             PlayerPrefs.Save();
-            Time.timeScale = 1f;
-            if (UnityEngine.EventSystems.EventSystem.current != null)
-                UnityEngine.EventSystems.EventSystem.current.enabled = true;
+            if (SaveManager.Instance != null)
+            {
+                SaveManager.Instance.SaveGame(true);
+            }
 
-            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
-            
+            // Tắt bảng Win
+            this.gameObject.SetActive(false);
+
+            // Bật Main Menu lên (Thay vì reload Scene cực kỳ tốn tài nguyên và dễ sinh bug)
+            MainMenuController mainMenu = FindObjectOfType<MainMenuController>(true);
+            if (mainMenu != null)
+            {
+                mainMenu.gameObject.SetActive(true);
+                
+                // Đảm bảo Main Menu luôn nằm trên cùng để nhận click
+                Canvas mmCanvas = mainMenu.GetComponentInParent<Canvas>();
+                if (mmCanvas != null)
+                {
+                    mmCanvas.sortingOrder = 99;
+                }
+                
+                mainMenu.ShowMenu(); // Gọi trực tiếp để bật Canvas và set timeScale = 0
+            }
+
+            // Tắt ngay Raycaster của tấm màn đen chuyển cảnh để không cản trở click
+            GraphicRaycaster raycaster = canvasObj.GetComponent<GraphicRaycaster>();
+            if (raycaster != null) raycaster.enabled = false;
+
             Tween revealTween = useShader ? fadeImage.material.DOFloat(1.5f, "_Radius", 1f).SetEase(Ease.InOutSine) : fadeImage.DOFade(0f, 1f);
-            revealTween.SetDelay(0.5f).OnComplete(() =>
+            revealTween.SetUpdate(true).SetDelay(0.5f).OnComplete(() =>
             {
                 if (useShader && fadeImage.material != null) Destroy(fadeImage.material);
                 Destroy(canvasObj);

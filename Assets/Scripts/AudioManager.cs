@@ -153,6 +153,18 @@ public class AudioManager : MonoBehaviour
         }
         PlayerPrefs.SetFloat(SFX_VOL_KEY, volume);
     }
+
+    public void PauseGameAudio()
+    {
+        if (sfxSource != null) sfxSource.Pause();
+        if (fireLoopSource != null) fireLoopSource.Pause();
+    }
+
+    public void ResumeGameAudio()
+    {
+        if (sfxSource != null) sfxSource.UnPause();
+        if (fireLoopSource != null) fireLoopSource.UnPause();
+    }
     #endregion
 
     public void LoadSettings()
