@@ -120,7 +120,7 @@ public class OfflineProgressionManager : MonoBehaviour
         Elevator elevator = FindObjectOfType<Elevator>();
         if (elevator != null && elevator.currentManager != null)
         {
-             float avgRoundTripTime = elevator.loadTime + elevator.unloadTime + 5f; 
+             float avgRoundTripTime = elevator.GetLoadTime(elevator.Level) + elevator.GetUnloadTime(elevator.Level) + 5f; 
              elevatorThroughput = elevator.GetCapacity(elevator.Level) / avgRoundTripTime;
              Debug.Log($"[Offline] Elevator Throughput: {elevatorThroughput} (Capacity: {elevator.GetCapacity(elevator.Level)}, Time: {avgRoundTripTime})");
         }

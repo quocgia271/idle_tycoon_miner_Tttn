@@ -33,6 +33,13 @@ public partial class MineShaft : Facility
     public float fallbackExplosionDuration = 1.5f; // Dự phòng nếu VFX không có ParticleSystem
     public GameObject damagedStateVFX; // VFX khói lửa duy trì suốt lúc hỏng
     public double repairCost = 5000;
+    public int repairCostDurationSec = 30; // Tiền sửa hầm = Thu nhập x Giây
+    public double minRepairCost = 100;
+
+    [Header("Combat Magic Numbers")]
+    public float healBirdAmount = 25f;
+    public int bigFireClicks = 35;
+    public int smallFireClicks = 15;
 
     public void AddEndurance(float amount)
     #endregion
@@ -94,8 +101,8 @@ public partial class MineShaft : Facility
         // CÂN BẰNG TOÁN HỌC MỚI (Dynamic Income Taxation):
         // Boss 3 đánh hỏng hầm mỗi ~120s. Để tạo ra Thuế 25%,
         // Phí sửa chữa = 120s * 25% = 30 giây tổng thu nhập của Hầm.
-        repairCost = GetTotalExtractionPerSecond(Level) * 30;
-        if (repairCost < 100) repairCost = 100;
+        repairCost = GetTotalExtractionPerSecond(Level) * repairCostDurationSec;
+        if (repairCost < minRepairCost) repairCost = minRepairCost;
         
         // Tắt hết lửa nhỏ, lửa to một cách mượt mà (chờ các hạt tàn lụi)
         normalBurnTimer = 0f;
@@ -302,7 +309,7 @@ public partial class MineShaft : Facility
             {
                 PlayVFXSmoothly(bigBurnVFX);
             }
-            fireClicksRemaining = 35; // 35 clicks to extinguish big fire
+            fireClicksRemaining = bigFireClicks;
         }
         else
         {
@@ -313,7 +320,7 @@ public partial class MineShaft : Facility
             {
                 PlayVFXSmoothly(normalBurnVFX);
             }
-            if (fireClicksRemaining < 15) fireClicksRemaining = 15; // 15 clicks to extinguish small fire
+            if (fireClicksRemaining < smallFireClicks) fireClicksRemaining = smallFireClicks;
         }
 
         // Bật hệ thống đếm ngược nếu nó chưa chạy
@@ -517,8 +524,8 @@ public partial class MineShaft : Facility
         // Thanh tẩy
         ForceStopSkill3();
         
-        // Hồi 1 lượng sức bền nhỏ (25)
-        AddEndurance(25f, Color.yellow);
+        // Hồi 1 lượng sức bền nhỏ
+        AddEndurance(healBirdAmount, Color.yellow);
         
         foreach (var miner in activeMiners)
         {

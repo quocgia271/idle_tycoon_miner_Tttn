@@ -124,8 +124,17 @@ public class SettingsModalUI : MonoBehaviour
         DontDestroyOnLoad(canvasObj);
         
         Canvas canvas = canvasObj.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.worldCamera = Camera.main;
+        canvas.planeDistance = 10f;
         canvas.sortingOrder = 9999;
+        canvas.sortingLayerName = "Camera";
+        
+        UnityEngine.UI.CanvasScaler scaler = canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(540, 960);
+        scaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
         
         GameObject imageObj = new GameObject("FadeImage");
         imageObj.transform.SetParent(canvasObj.transform, false);
@@ -150,8 +159,8 @@ public class SettingsModalUI : MonoBehaviour
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
-        float maxSize = Mathf.Max(Screen.width, Screen.height) * 1.5f;
-        rt.sizeDelta = new Vector2(maxSize, maxSize);
+        // Dùng tọa độ chuẩn của CanvasScaler (540x960) nên 1500f là chắc chắn phủ kín mọi góc
+        rt.sizeDelta = new Vector2(1500f, 1500f);
         rt.anchoredPosition = Vector2.zero;
 
         // Chặn người chơi bấm nhầm nút trong lúc đang chuyển cảnh

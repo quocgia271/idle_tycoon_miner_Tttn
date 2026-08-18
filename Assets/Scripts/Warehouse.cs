@@ -23,6 +23,7 @@ public class Warehouse : Facility
     
     [Header("Warehouse Settings")]
     public double BaseCapacity = 40;
+    public float ProjectileDamagePercent = 0.02f; // Sát thương % máu của đạn
     
     [Header("Worker Settings")]
     public int MaxWorkers = 5;
@@ -262,12 +263,12 @@ public class Warehouse : Facility
             WarehouseProjectile wp = proj.GetComponent<WarehouseProjectile>();
             if (wp == null) wp = proj.AddComponent<WarehouseProjectile>();
 
-            // Lấy sát thương chuẩn 5% Máu Tối Đa của chính Mục Tiêu đó (Canonical Math)
+            // Lấy sát thương chuẩn theo % Máu Tối Đa của chính Mục Tiêu đó
             float finalDamage = 5f; // Fallback mặc định
             IDamageable damageableTarget = target.GetComponent<IDamageable>();
             if (damageableTarget != null)
             {
-                finalDamage = damageableTarget.MaxHealth * 0.02f; // Nerf từ 5% xuống 2%
+                finalDamage = damageableTarget.MaxHealth * ProjectileDamagePercent;
             }
 
             wp.Setup(target, finalDamage, offsetToUse);

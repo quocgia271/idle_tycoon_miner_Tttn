@@ -18,6 +18,11 @@ public class Gamemanager : MonoBehaviour
     [Header("UI References")]
     public GameObject transitionPrefab;
 
+    [Header("Transition Settings")]
+    public float transitionFadeOutTime = 1.0f;
+    public float transitionWaitTime = 0.5f;
+    public float transitionFadeInTime = 1.0f;
+
     [Header("Game Progression")]
     public GlobalGameConfigSO GlobalConfig;
     public double PrestigeMultiplier = 1.0; // Hệ số nhân tiền khi chuyển sinh
@@ -165,193 +170,121 @@ public class Gamemanager : MonoBehaviour
 
     private IEnumerator PrestigeTransitionRoutine()
     {
-        if (transitionPrefab != null)
-        {
-            GameObject fadeObj = Instantiate(transitionPrefab);
-            DontDestroyOnLoad(fadeObj);
-
-            Image fadeImage = fadeObj.GetComponentInChildren<Image>();
-            bool useShader = false;
-
-            if (fadeImage != null)
-            {
-                fadeImage.color = Color.black; 
-                Shader circleShader = Shader.Find("UI/CircleReveal");
-                if (circleShader != null)
-                {
-                    useShader = true;
-                    Material mat = new Material(circleShader);
-                    mat.SetFloat("_Radius", 1.5f);
-                    fadeImage.material = mat;
-                    
-                    Tween fadeOut = fadeImage.material.DOFloat(0f, "_Radius", 0.5f).SetEase(Ease.InOutSine);
-                    yield return fadeOut.WaitForCompletion();
-                }
-                else
-                {
-                    Color c = fadeImage.color;
-                    c.a = 0;
-                    fadeImage.color = c;
-                    Tween fadeOut = fadeImage.DOFade(1f, 0.5f);
-                    yield return fadeOut.WaitForCompletion();
-                }
-            }
-
+        yield return PlayFakeLoadingTransition(() => {
             MainMenuController.skipMenuInstantly = true;
-            
             AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
-            while (!asyncLoad.isDone)
-            {
-                yield return null;
-            }
+            return asyncLoad;
+        });
 
-            // Mở màn hình (Fade In)
-            if (fadeImage != null)
-            {
-                if (useShader)
-                {
-                    Tween fadeIn = fadeImage.material.DOFloat(1.5f, "_Radius", 0.5f).SetEase(Ease.InOutSine);
-                    yield return fadeIn.WaitForCompletion();
-                    Destroy(fadeImage.material);
-                }
-                else
-                {
-                    Tween fadeIn = fadeImage.DOFade(0f, 0.5f);
-                    yield return fadeIn.WaitForCompletion();
-                }
-            }
-
-            Destroy(fadeObj);
-        }
-        else
-        {
-            MainMenuController.skipMenuInstantly = true;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        }
-        
-        if (SaveManager.Instance != null)
-        {
-            SaveManager.isTransitioning = false;
-        }
-        
+        if (SaveManager.Instance != null) SaveManager.isTransitioning = false;
         Debug.Log($"<color=green>Đã Chuyển sinh! Hệ số tiền thưởng mới: x{PrestigeMultiplier}</color>");
     }
 
     [ContextMenu("Qua Màn (Next Round)")]
     public void ProceedToNextRound()
     {
-        if (SaveManager.Instance != null)
-        {
-            SaveManager.isTransitioning = true; // Khóa Save NGAY LẬP TỨC để chống lỗi tắt cái rụp
-        }
+        if (SaveManager.Instance != null) SaveManager.isTransitioning = true;
         StartCoroutine(TransitionToNextRoundRoutine());
     }
 
     private IEnumerator TransitionToNextRoundRoutine()
     {
-        if (transitionPrefab == null)
-        {
-            Debug.LogError("Transition Prefab is missing! Please assign it in the GameManager Inspector.");
-            yield break;
-        }
+        yield return PlayFakeLoadingTransition(() => {
+            CurrentRound++;
+            IdleCash = 150 * RoundMultiplier;
+            LifetimeCash = 0; 
+            PrestigeMultiplier = 1.0; 
+            
+            if (SaveManager.Instance != null) SaveManager.Instance.SaveResetState(); 
+            
+            MainMenuController.skipMenuInstantly = true; 
+            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
+            return asyncLoad;
+        });
 
-        GameObject fadeObj = Instantiate(transitionPrefab);
-        DontDestroyOnLoad(fadeObj);
-
-        Image fadeImage = fadeObj.GetComponentInChildren<Image>();
-        bool useShader = false;
-
-        if (fadeImage != null)
-        {
-            fadeImage.color = Color.black;
-            Shader circleShader = Shader.Find("UI/CircleReveal");
-            if (circleShader != null)
-            {
-                useShader = true;
-                Material mat = new Material(circleShader);
-                mat.SetFloat("_Radius", 1.5f);
-                fadeImage.material = mat;
-            }
-        }
-
-        // ==========================================
-        // 1. TÍNH TOÁN VÀ LƯU DATA NGAY LẬP TỨC 
-        // ==========================================
-        CurrentRound++;
-        IdleCash = 150 * RoundMultiplier;
-        LifetimeCash = 0; 
-        PrestigeMultiplier = 1.0; 
-        
-        if (SaveManager.Instance != null)
-        {
-            SaveManager.Instance.SaveResetState(); 
-        }
-
-        // ==========================================
-        // 2. HIỆU ỨNG HÌNH ẢNH (FADE OUT VÀ FAKE LOADING)
-        // ==========================================
-        if (fadeImage != null)
-        {
-            if (useShader)
-            {
-                Tween fadeOut = fadeImage.material.DOFloat(0f, "_Radius", 0.5f).SetEase(Ease.InOutSine);
-                yield return fadeOut.WaitForCompletion();
-            }
-            else
-            {
-                Color c = fadeImage.color;
-                c.a = 0;
-                fadeImage.color = c;
-                Tween fadeOut = fadeImage.DOFade(1f, 0.5f);
-                yield return fadeOut.WaitForCompletion();
-            }
-        }
-
-        // 3. Cập nhật UI và reset Manager
         OnCashChanged?.Invoke(IdleCash);
         OnRoundChanged?.Invoke(CurrentRound);
-        
-        if (ManagerController.Instance != null)
-        {
-            ManagerController.Instance.ResetManagers();
-        }
+        if (ManagerController.Instance != null) ManagerController.Instance.ResetManagers();
 
-        // ==========================================
-        // 4. CHUYỂN SCENE
-        // ==========================================
-        MainMenuController.skipMenuInstantly = true; 
-        
-        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
-        while (!asyncLoad.isDone)
-        {
-            yield return null;
-        }
-
+        if (SaveManager.Instance != null) SaveManager.isTransitioning = false;
         Debug.Log($"<color=cyan>Đã qua Round {CurrentRound}! Chúc may mắn với thử thách mới!</color>");
+    }
 
-        // Mở màn hình (Fade In)
-        if (fadeImage != null)
+    private IEnumerator PlayFakeLoadingTransition(Func<AsyncOperation> onMidpoint)
+    {
+        GameObject fadeObj = new GameObject("TransitionCanvas");
+        DontDestroyOnLoad(fadeObj);
+
+        Canvas canvas = fadeObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.worldCamera = Camera.main;
+        canvas.planeDistance = 10f;
+        canvas.sortingOrder = 9999;
+        canvas.sortingLayerName = "Camera";
+        
+        UnityEngine.UI.CanvasScaler scaler = fadeObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(540, 960);
+        scaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        GameObject imageObj = new GameObject("FadeImage");
+        imageObj.transform.SetParent(fadeObj.transform, false);
+        Image fadeImage = imageObj.AddComponent<Image>();
+        RectTransform rt = fadeImage.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        // Dùng tọa độ chuẩn của CanvasScaler (540x960) nên 1500f là chắc chắn phủ kín mọi góc
+        rt.sizeDelta = new Vector2(1500f, 1500f);
+        rt.anchoredPosition = Vector2.zero;
+        fadeImage.color = Color.black; 
+
+        bool useShader = false;
+        Shader circleShader = Shader.Find("UI/CircleReveal");
+        if (circleShader != null)
         {
-            if (useShader)
-            {
-                Tween fadeIn = fadeImage.material.DOFloat(1.5f, "_Radius", 0.5f).SetEase(Ease.InOutSine);
-                yield return fadeIn.WaitForCompletion();
-                Destroy(fadeImage.material);
-            }
-            else
-            {
-                Tween fadeIn = fadeImage.DOFade(0f, 0.5f);
-                yield return fadeIn.WaitForCompletion();
-            }
+            useShader = true;
+            Material mat = new Material(circleShader);
+            mat.SetFloat("_Radius", 1.5f);
+            fadeImage.material = mat;
+            Tween fadeOut = fadeImage.material.DOFloat(0f, "_Radius", transitionFadeOutTime).SetEase(Ease.InOutSine).SetUpdate(true);
+            yield return fadeOut.WaitForCompletion();
+        }
+        else
+        {
+            Color c = fadeImage.color;
+            c.a = 0;
+            fadeImage.color = c;
+            Tween fadeOut = fadeImage.DOFade(1f, transitionFadeOutTime).SetUpdate(true);
+            yield return fadeOut.WaitForCompletion();
+        }
+
+AsyncOperation asyncLoad = onMidpoint?.Invoke();
+        if (asyncLoad != null)
+        {
+            while (!asyncLoad.isDone) yield return null;
+        }
+
+        if (canvas != null) canvas.worldCamera = Camera.main;
+
+        yield return new WaitForSecondsRealtime(transitionWaitTime);
+
+if (useShader)
+        {
+            Tween fadeIn = fadeImage.material.DOFloat(1.5f, "_Radius", transitionFadeInTime).SetEase(Ease.InOutSine).SetUpdate(true);
+            yield return fadeIn.WaitForCompletion();
+            Destroy(fadeImage.material);
+        }
+        else
+        {
+            Tween fadeIn = fadeImage.DOFade(0f, transitionFadeInTime).SetUpdate(true);
+            yield return fadeIn.WaitForCompletion();
         }
 
         Destroy(fadeObj);
-
-        if (SaveManager.Instance != null)
-        {
-            SaveManager.isTransitioning = false;
-        }
     }
+
 
 
     public void AddCash(double amount)

@@ -17,10 +17,26 @@ public class Elevator : Facility
         Unloading
     }
 
+    public float moveSpeed => GetSpeed(Level);
+
     [Header("Elevator Settings")]
-    public float moveSpeed = 5f;
-    public float loadTime = 1f; 
-    public float unloadTime = 1f; 
+    public float baseLoadTime = 1f; 
+    public float baseUnloadTime = 1f; 
+    public float minLoadTime = 0.2f;
+    public float maxElevatorSpeed = 15f; // Giới hạn tốc độ tối đa
+
+    // Tính thời gian chất hàng/xả hàng theo Level
+    public float GetLoadTime(int targetLevel)
+    {
+        float time = baseLoadTime - ((targetLevel - 1) * 0.005f);
+        return Mathf.Max(minLoadTime, time);
+    }
+
+    public float GetUnloadTime(int targetLevel)
+    {
+        float time = baseUnloadTime - ((targetLevel - 1) * 0.005f);
+        return Mathf.Max(minLoadTime, time);
+    }
 
     [Header("Positions & Targets")]
     public Transform startPos; // PHẢI KÉO 1 EMPTY GAMEOBJECT NẰM Ở TRÊN CÙNG VÀO ĐÂY
@@ -218,7 +234,7 @@ public class Elevator : Facility
     {
         currentTimer += Time.deltaTime * ElevatorLoadSpeedBuff;
         
-        if (currentTimer >= loadTime)
+        if (currentTimer >= GetLoadTime(Level))
         {
             if (targetShaft != null)
             {
@@ -323,7 +339,7 @@ public class Elevator : Facility
     {
         currentTimer += Time.deltaTime * ElevatorLoadSpeedBuff;
         
-        if (currentTimer >= unloadTime)
+        if (currentTimer >= GetUnloadTime(Level))
         {
             DroppedResource += CurrentLoad;
             CurrentLoad = 0;
@@ -340,11 +356,11 @@ public class Elevator : Facility
 
         if (newState == ElevatorState.Loading && progressBar != null)
         {
-            progressBar.StartLoading(loadTime / ElevatorLoadSpeedBuff);
+            progressBar.StartLoading(GetLoadTime(Level) / ElevatorLoadSpeedBuff);
         }
         else if (newState == ElevatorState.Unloading && progressBar != null)
         {
-            progressBar.StartLoading(unloadTime / ElevatorLoadSpeedBuff);
+            progressBar.StartLoading(GetUnloadTime(Level) / ElevatorLoadSpeedBuff);
         }
     }
 
@@ -371,12 +387,42 @@ public class Elevator : Facility
     {
         float baseS = Config != null ? Config.BaseSpeed : 5f;
         float speed = baseS + ((targetLevel - 1) * 0.2f);
-        return Mathf.Min(speed, 15f); // Khóa tốc độ tối đa ở mức 15 để tránh lỗi xuyên tường
+        return Mathf.Min(speed, maxElevatorSpeed); // Khóa tốc độ tối đa để tránh lỗi xuyên tường
+    }
+
+    // Hiển thị thêm Tốc độ chất hàng (Index 3)
+    public override (string curVal, string nextVal) GetStatDisplay(int statIndex, int currentLevel, int nextLevel)
+    {
+        string curVal = "0";
+        string nextVal = "0";
+        
+        switch (statIndex)
+        {
+            case 0: // Tổng Sản lượng
+                curVal = CurrencyFormatter.FormatMoney(GetTotalThroughput(currentLevel)) + "/s";
+                nextVal = CurrencyFormatter.FormatMoney(GetTotalThroughput(nextLevel)) + "/s";
+                break;
+            case 1: // Sức chứa
+                curVal = CurrencyFormatter.FormatMoney(GetCapacity(currentLevel));
+                nextVal = CurrencyFormatter.FormatMoney(GetCapacity(nextLevel));
+                break;
+            case 2: // Tốc độ di chuyển
+                curVal = GetSpeed(currentLevel).ToString("F2");
+                nextVal = GetSpeed(nextLevel).ToString("F2");
+                break;
+            case 3: // Tốc độ chất/xả hàng
+                curVal = GetLoadTime(currentLevel).ToString("F2") + "s";
+                nextVal = GetLoadTime(nextLevel).ToString("F2") + "s";
+                break;
+        }
+
+        return (curVal, nextVal);
     }
 
     protected override void OnUpgraded()
     {
-        moveSpeed = GetSpeed(Level);
+        // Trống, vì Elevator giờ đây sử dụng hoàn toàn Computed Properties (Pull Model)
+        // để tự động lấy tốc độ và thời gian dựa trên Level hiện tại.
     }
 
     private void OnMouseDown()
