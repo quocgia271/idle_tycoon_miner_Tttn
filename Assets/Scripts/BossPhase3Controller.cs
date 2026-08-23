@@ -38,14 +38,23 @@ public class BossPhase3Controller : MonoBehaviour, ISaveable
     public GameObject warehouseBarrier;
     private bool nextBarrierIsWarehouse = false; // Luân phiên giữa 2 màn chắn
 
+    [Tooltip("Trọng số ra chiêu Barrier khi Boss bị khiêu khích")] 
+    public float barrierAggroWeight = 150f;
+    [Tooltip("Trọng số ra chiêu Barrier mặc định sau khi đã trả thù")] 
+    public float barrierNormalWeight = 25f;
+    [Tooltip("Thời gian phản đòn tối đa sau khi bị khiêu khích (giây)")] 
+    public float barrierAggroAttackDelay = 5f;
+
     [Header("Skill 3 Settings")]
     public float skill3Duration = 8f;
-    public float skill3DamagePerSec = 10f;
+    [Tooltip("Sát thương mỗi giây tính theo % máu tối đa của hầm (0.05 = 5%)")]
+    public float skill3DamagePercentMaxHP = 0.05f;
 
     [Header("Skill 4 Settings")]
     public List<GameObject> skill4CameraVFXs;
     public float skill4Duration = 3f;
-    public float skill4DamagePerSec = 5f;
+    [Tooltip("Sát thương mỗi giây tính theo % máu tối đa của hầm (0.05 = 5%)")]
+    public float skill4DamagePercentMaxHP = 0.05f;
     public Color skill4DamageColor = Color.magenta;
     private Coroutine skill4Coroutine;
     public float CurrentSkill4Timer = 0f;
@@ -146,7 +155,7 @@ public class BossPhase3Controller : MonoBehaviour, ISaveable
         {
             if (sw.skill == BossPhase3Skill.Barrier)
             {
-                sw.weight = 150f; // Tăng siêu trọng số lên 150 để phản ứng cực gắt
+                sw.weight = barrierAggroWeight; // Tăng siêu trọng số để phản ứng cực gắt
                 break;
             }
         }
@@ -155,9 +164,9 @@ public class BossPhase3Controller : MonoBehaviour, ISaveable
         nextBarrierIsWarehouse = true; 
 
         // Rút ngắn Cooldown: Boss tức giận nên sẽ phản đòn nhanh hơn bình thường!
-        if (attackTimer > 5f)
+        if (attackTimer > barrierAggroAttackDelay)
         {
-            attackTimer = 5f; 
+            attackTimer = barrierAggroAttackDelay; 
         }
     }
 
@@ -435,7 +444,7 @@ public class BossPhase3Controller : MonoBehaviour, ISaveable
         {
             if (sw.skill == BossPhase3Skill.Barrier)
             {
-                sw.weight = 25f; // Trả về trọng số mặc định ban đầu
+                sw.weight = barrierNormalWeight; // Trả về trọng số mặc định ban đầu
                 break;
             }
         }
@@ -468,9 +477,9 @@ public class BossPhase3Controller : MonoBehaviour, ISaveable
             MineShaft targetShaft = ChooseShaftWithPriority(validShafts);
             if (targetShaft != null)
             {
-                // Cân bằng Game (DoT Standard): Độc/Cháy trong game RPG/Idle chuẩn thường gây 5% Max HP mỗi giây.
-                // Tổng 5 giây = 25% máu, cho người chơi đủ thời gian phản ứng và không bị chết sốc khi dính đạn của Rồng.
-                float scaledDamage = targetShaft.maxEndurance * 0.05f;
+                // Cân bằng Game (DoT Standard): Độc/Cháy trong game RPG/Idle chuẩn thường gây % Max HP mỗi giây.
+                // Mặc định 5 giây = 25% máu, cho người chơi đủ thời gian phản ứng và không bị chết sốc khi dính đạn của Rồng.
+                float scaledDamage = targetShaft.maxEndurance * skill3DamagePercentMaxHP;
                 targetShaft.TriggerSkill3VFX(skill3Duration, scaledDamage);
             }
         }
@@ -515,8 +524,8 @@ public class BossPhase3Controller : MonoBehaviour, ISaveable
                 List<MineShaft> activeShafts = GetActiveShafts();
                 foreach (var shaft in activeShafts)
                 {
-                    // 5% max máu mỗi giây
-                    float scaledDamage = shaft.maxEndurance * 0.05f;
+                    // Gây % max máu mỗi giây
+                    float scaledDamage = shaft.maxEndurance * skill4DamagePercentMaxHP;
                     shaft.AddEndurance(-scaledDamage, skill4DamageColor);
                 }
                 tickTimer = 1f;
@@ -595,7 +604,13 @@ public class BossPhase3Controller : MonoBehaviour, ISaveable
         RoundTransitionBarrier barrier = FindObjectOfType<RoundTransitionBarrier>(true);
         if (barrier != null) 
         {
-            data.IsRound3BarrierBroken = !barrier.gameObject.activeInHierarchy;
+            data.IsRound3BarrierBroken = barrier.isBroken || !barrier.gameObject.activeInHierarchy;
+            
+            // Nếu barrier đã bị ẩn hoàn toàn (animation nổ đã xong) thì đánh dấu là đã xem nổ
+            if (!barrier.gameObject.activeInHierarchy)
+            {
+                data.HasSeenRound3BarrierExplosion = true;
+            }
         }
     }
 
@@ -617,6 +632,13 @@ public class BossPhase3Controller : MonoBehaviour, ISaveable
         RoundTransitionBarrier barrier = FindObjectOfType<RoundTransitionBarrier>(true);
         if (barrier != null && data.IsRound3BarrierBroken)
         {
+            // Triggers "Smart Load" VFX if the player hasn't seen it yet
+            if (!data.HasSeenRound3BarrierExplosion)
+            {
+                barrier.TriggerExplosionVFXOnly();
+                data.HasSeenRound3BarrierExplosion = true;
+                if (SaveManager.Instance != null) SaveManager.Instance.MarkAsDirty();
+            }
             barrier.gameObject.SetActive(false);
         }
         

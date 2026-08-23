@@ -21,6 +21,8 @@ public class MinionController : MonoBehaviour, IDamageable
     public string specialTriggerName = "special";
 
     [Header("Settings")]
+    [Tooltip("Số đòn đánh thường trước khi tung chiêu đặc biệt")]
+    public int specialAttackThreshold = 10;
     public float maxHealth = 100f;
     public float MaxHealth => maxHealth;
     public float attackInterval = 3f;
@@ -129,7 +131,7 @@ public class MinionController : MonoBehaviour, IDamageable
     private void PerformAttack()
     {
         attackCount++;
-        if (attackCount % 10 == 0)
+        if (attackCount % specialAttackThreshold == 0)
         {
             if (anim != null) anim.SetTrigger(specialTriggerName);
         }

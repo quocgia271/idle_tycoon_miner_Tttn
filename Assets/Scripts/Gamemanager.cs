@@ -15,6 +15,9 @@ public class Gamemanager : MonoBehaviour
 
     // AI Check đã được tách sang file DeadGameChecker.cs để tuân thủ SOLID
 
+    [Header("Economy Configuration")]
+    public EconomyConfig economyConfig;
+
     [Header("UI References")]
     public GameObject transitionPrefab;
 
@@ -27,7 +30,7 @@ public class Gamemanager : MonoBehaviour
     public GlobalGameConfigSO GlobalConfig;
     public double PrestigeMultiplier = 1.0; // Hệ số nhân tiền khi chuyển sinh
     public int CurrentRound = 1; // Vòng chơi hiện tại (1, 2, 3)
-    public double RoundMultiplier => Math.Pow(GlobalConfig != null ? GlobalConfig.RoundDifficultyMultiplier : 1000000, CurrentRound - 1); // Hệ số Dịch chuyển theo vòng
+    public double RoundMultiplier => MathHelper.CalculateRoundMultiplier(GlobalConfig != null ? GlobalConfig.RoundDifficultyMultiplier : 1000000, CurrentRound); // Hệ số Dịch chuyển theo vòng
 
     public Action<double> OnCashChanged;
     public Action<int> OnLevelChanged; // Event khi level thay đổi
@@ -104,20 +107,21 @@ public class Gamemanager : MonoBehaviour
     {
         if (IdleCash == 0)
         {
-            IdleCash = 150 * RoundMultiplier;
+            double startingCash = (GlobalConfig != null ? GlobalConfig.InitialStartingCash : 150) * RoundMultiplier;
+            IdleCash = startingCash;
             OnCashChanged?.Invoke(IdleCash);
         }
     }
 
     public double CalculateNextPrestigeMultiplier()
     {
-        double baseRequirement = 1000000 * RoundMultiplier;
+        double baseRequirement = (GlobalConfig != null ? GlobalConfig.BasePrestigeRequirement : 1000000) * RoundMultiplier;
 
-        // Yêu cầu kiếm được ít nhất 1 Triệu (nhân với RoundMultiplier) mới có thể chuyển sinh
+        // Yêu cầu kiếm đủ baseRequirement mới có thể chuyển sinh
         if (LifetimeCash < baseRequirement) return PrestigeMultiplier;
         
         // Công thức: 1.0 + căn bậc hai của (Tổng tiền / baseRequirement)
-        double newMultiplier = 1.0 + Math.Pow(LifetimeCash / baseRequirement, 0.5);
+        double newMultiplier = MathHelper.CalculatePrestigeMultiplier(LifetimeCash, baseRequirement);
         
         // Không cho phép hệ số bị giảm
         return Math.Max(PrestigeMultiplier, newMultiplier);
@@ -126,7 +130,7 @@ public class Gamemanager : MonoBehaviour
     [ContextMenu("Prestige (Chuyển Sinh)")]
     public void Prestige()
     {
-        double baseRequirement = 1000000 * RoundMultiplier;
+        double baseRequirement = (GlobalConfig != null ? GlobalConfig.BasePrestigeRequirement : 1000000) * RoundMultiplier;
         bool isDeadGame = DeadGameChecker.Instance != null && DeadGameChecker.Instance.IsDeadGame;
         
         if (LifetimeCash < baseRequirement && !isDeadGame)
@@ -150,7 +154,8 @@ public class Gamemanager : MonoBehaviour
         PrestigeMultiplier = CalculateNextPrestigeMultiplier();
         
         // Cấp vốn khởi nghiệp Vàng (Giữ nguyên LifetimeCash để cộng dồn cho lần chuyển sinh sau)
-        IdleCash = 150 * RoundMultiplier;
+        double startingCash = (GlobalConfig != null ? GlobalConfig.InitialStartingCash : 150) * RoundMultiplier;
+        IdleCash = startingCash;
         OnCashChanged?.Invoke(IdleCash);
         
         // Cực kỳ quan trọng: Reset toàn bộ Quản lý khi Chuyển sinh
@@ -191,7 +196,8 @@ public class Gamemanager : MonoBehaviour
     {
         yield return PlayFakeLoadingTransition(() => {
             CurrentRound++;
-            IdleCash = 150 * RoundMultiplier;
+            double startingCash = (GlobalConfig != null ? GlobalConfig.InitialStartingCash : 150) * RoundMultiplier;
+            IdleCash = startingCash;
             LifetimeCash = 0; 
             PrestigeMultiplier = 1.0; 
             

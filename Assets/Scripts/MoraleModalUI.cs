@@ -195,11 +195,13 @@ public class MoraleModalUI : MonoBehaviour
         // CÂN BẰNG TOÁN HỌC (Dynamic Income Taxation):
         // 100 Tinh thần (Max) = 3 giây thu nhập của 1 thợ mỏ.
         // Vậy 1 Tinh thần = 0.03 giây thu nhập.
-        double moraleUnitCost = 100; // Default fallback
+        double minCost = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.MinimumServiceCost : 100.0;
+        double moraleUnitCost = minCost; // Default fallback
         if (currentShaft != null)
         {
-            moraleUnitCost = currentShaft.GetWorkerProductivity(currentShaft.Level) * 0.03;
-            if (moraleUnitCost < 100) moraleUnitCost = 100; // Giá tối thiểu
+            float costMultiplier = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.MoraleCostMultiplier : 0.03f;
+            moraleUnitCost = currentShaft.GetWorkerProductivity(currentShaft.Level) * costMultiplier;
+            if (moraleUnitCost < minCost) moraleUnitCost = minCost; // Giá tối thiểu
         }
         
         if (selectedOption == 0) // +25 for selected
@@ -342,11 +344,13 @@ public class MoraleModalUI : MonoBehaviour
         // Boss 3 đánh mỗi 40s (Rút 50% máu). Để tạo Thuế 10-20%, 
         // 100 Máu hầm (Max) = 8 giây tổng thu nhập của hầm.
         // Vậy 1 Máu = 0.08 giây thu nhập.
-        double enduranceUnitCost = 100; // Default fallback
+        double minCost = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.MinimumServiceCost : 100.0;
+        double enduranceUnitCost = minCost; // Default fallback
         if (currentShaft != null)
         {
-            enduranceUnitCost = currentShaft.GetTotalExtractionPerSecond(currentShaft.Level) * 0.08;
-            if (enduranceUnitCost < 100) enduranceUnitCost = 100; // Giá tối thiểu
+            float costMultiplier = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.EnduranceCostMultiplier : 0.08f;
+            enduranceUnitCost = MathHelper.CalculateEnduranceUnitCost(currentShaft.GetTotalExtractionPerSecond(currentShaft.Level), costMultiplier);
+            if (enduranceUnitCost < minCost) enduranceUnitCost = minCost; // Giá tối thiểu
         }
 
         float missingEndurance = currentShaft.maxEndurance - currentShaft.currentEndurance;

@@ -33,7 +33,7 @@ public partial class MineShaft : Facility
     public float fallbackExplosionDuration = 1.5f; // Dự phòng nếu VFX không có ParticleSystem
     public GameObject damagedStateVFX; // VFX khói lửa duy trì suốt lúc hỏng
     public double repairCost = 5000;
-    public int repairCostDurationSec = 30; // Tiền sửa hầm = Thu nhập x Giây
+    // public int repairCostDurationSec = 30; // Đã chuyển sang EconomyConfig
     public double minRepairCost = 100;
 
     [Header("Combat Magic Numbers")]
@@ -101,7 +101,8 @@ public partial class MineShaft : Facility
         // CÂN BẰNG TOÁN HỌC MỚI (Dynamic Income Taxation):
         // Boss 3 đánh hỏng hầm mỗi ~120s. Để tạo ra Thuế 25%,
         // Phí sửa chữa = 120s * 25% = 30 giây tổng thu nhập của Hầm.
-        repairCost = GetTotalExtractionPerSecond(Level) * repairCostDurationSec;
+        float durationMultiplier = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.RepairCostDurationSec : 30f;
+        repairCost = MathHelper.CalculateRepairCost(GetTotalExtractionPerSecond(Level), durationMultiplier);
         if (repairCost < minRepairCost) repairCost = minRepairCost;
         
         // Tắt hết lửa nhỏ, lửa to một cách mượt mà (chờ các hạt tàn lụi)

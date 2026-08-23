@@ -24,11 +24,6 @@ public class Warehouse : Facility
     [Header("Warehouse Settings")]
     public double BaseCapacity = 40;
     public float ProjectileDamagePercent = 0.02f; // Sát thương % máu của đạn
-    
-    [Header("Worker Settings")]
-    public int MaxWorkers = 5;
-    public float MaxMoveSpeed = 5f;
-    public float MinLoadTime = 0.5f;
 
     [Header("Worker Spawn Settings")]
     public WarehouseWorker workerPrefab;
@@ -39,24 +34,35 @@ public class Warehouse : Facility
 
     public double Capacity => GetWorkerCapacity(Level);
     public float moveSpeed => GetWorkerMoveSpeed(Level) * WorkerMoveSpeedBuff;
-    public float loadTime => GetWorkerLoadTime(Level) / WorkerLoadSpeedBuff;
+    public float loadTime => GetWorkerLoadTime(Level);
 
     public int GetWorkersCount(int targetLevel)
     {
-        int count = 1 + (targetLevel / 10);
-        return Mathf.Min(count, MaxWorkers);
+        int max = Config != null ? Config.MaxWorkers : 5;
+        int levelsPerWorker = Config != null ? Config.LevelsPerWorker : 10;
+        
+        int count = 1 + (targetLevel / levelsPerWorker);
+        return Mathf.Min(count, max);
     }
 
     public float GetWorkerMoveSpeed(int targetLevel)
     {
-        float speed = Config != null ? Config.BaseSpeed + (targetLevel * 0.05f) : 3f;
-        return Mathf.Min(speed, MaxMoveSpeed);
+        float maxSpeed = Config != null ? Config.MaxSpeed : 5f;
+        float speedInc = Config != null ? Config.SpeedIncreasePerLevel : 0.05f;
+        float baseSpeed = Config != null ? Config.BaseSpeed : 3f;
+        
+        float speed = baseSpeed + (targetLevel * speedInc);
+        return Mathf.Min(speed, maxSpeed);
     }
 
     public float GetWorkerLoadTime(int targetLevel)
     {
-        float time = 2f - (targetLevel * 0.01f);
-        return Mathf.Max(time, MinLoadTime);
+        float baseTime = Config != null ? Config.BaseActionTime : 2f;
+        float decrease = Config != null ? Config.ActionTimeDecreasePerLevel : 0.01f;
+        float minTime = Config != null ? Config.MinActionTime : 0.5f;
+        
+        float time = baseTime - (targetLevel * decrease);
+        return Mathf.Max(time, minTime);
     }
 
     public double GetWorkerCapacity(int targetLevel)
@@ -66,7 +72,7 @@ public class Warehouse : Facility
         {
             capacityMultiplier = Gamemanager.Instance.GlobalConfig.CapacityLevelMultiplier;
         }
-        double baseCap = BaseCapacity * System.Math.Pow(capacityMultiplier, targetLevel - 1);
+        double baseCap = MathHelper.CalculateCapacity(BaseCapacity, capacityMultiplier, targetLevel, 1, 1);
         
         // --- CHUẨN GAME DESIGN: MILESTONE JUMPS ---
         // Cơ chế bùng nổ sức chứa tại các mốc Level chẵn để bắt kịp sản lượng của Hầm mới.

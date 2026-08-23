@@ -27,7 +27,7 @@ public class WorkerInput : MonoBehaviour
                 {
                     QuickHeal();
                 }
-                else if (miner != null && miner.IsIdle() && miner.currentShaft != null && !miner.currentShaft.isBroken)
+                else if (miner != null && miner.IsIdle() && miner.currentShaft != null && !miner.currentShaft.isBroken && miner.currentShaft.IsUnlocked)
                 {
                     miner.StartWalkingToDig();
                 }
@@ -42,7 +42,8 @@ public class WorkerInput : MonoBehaviour
         if (workerHealth.healthState == WorkerHealth.HealthState.Dead)
         {
             double workerProductivity = miner.currentShaft.GetWorkerProductivity(miner.currentShaft.Level);
-            double cost = workerProductivity * 3; 
+            float reviveMultiplier = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.ReviveIncomeSeconds : 3f;
+            double cost = MathHelper.CalculateReviveCost(workerProductivity, reviveMultiplier);
             if (Gamemanager.Instance.DeductCash(cost))
             {
                 workerHealth.Revive();
@@ -52,10 +53,12 @@ public class WorkerInput : MonoBehaviour
         {
             float missingMorale = workerHealth.maxMorale - workerHealth.morale;
             double workerProductivity = miner.currentShaft.GetWorkerProductivity(miner.currentShaft.Level);
-            double cost = workerProductivity * 0.03 * missingMorale;
+            float costMultiplier = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.MoraleCostMultiplier : 0.03f;
+            double cost = MathHelper.CalculateMoraleCost(workerProductivity, costMultiplier, missingMorale);
             if (Gamemanager.Instance.DeductCash(cost))
             {
-                workerHealth.Cleanse();
+                workerHealth.Cleanse(); // Chữa trạng thái bệnh (và hồi 25 máu từ hàm gốc của con chim)
+                workerHealth.AddMorale(missingMorale); // Bơm NỐT phần máu còn thiếu cho đầy bình (vì đã thu tiền full)
             }
         }
     }

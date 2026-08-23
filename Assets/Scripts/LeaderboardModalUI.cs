@@ -79,7 +79,7 @@ public class LeaderboardModalUI : MonoBehaviour
         // Đảm bảo 49 con bot được sinh ra sẽ giữ nguyên danh tính suốt 3 vòng.
         UnityEngine.Random.InitState(12345);
 
-        double prestigeRequirement = 1000000 * roundMultiplier; 
+        double prestigeRequirement = (Gamemanager.Instance != null && Gamemanager.Instance.GlobalConfig != null ? Gamemanager.Instance.GlobalConfig.BasePrestigeRequirement : 1000000) * roundMultiplier; 
 
         // TÍNH TOÁN THỜI GIAN NGƯỜI CHƠI ĐÃ OFFLINE (TÍNH TỪ LẦN MỞ BẢNG XẾP HẠNG TRƯỚC)
         string lastOpenStr = PlayerPrefs.GetString("LastLeaderboardOpen", "");

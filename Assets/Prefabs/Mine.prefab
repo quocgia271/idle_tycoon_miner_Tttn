@@ -2297,6 +2297,11 @@ MonoBehaviour:
   fallbackExplosionDuration: 1.5
   damagedStateVFX: {fileID: 2034200448056001491}
   repairCost: 5000
+  repairCostDurationSec: 30
+  minRepairCost: 100
+  healBirdAmount: 25
+  bigFireClicks: 35
+  smallFireClicks: 15
   normalBurnVFX: {fileID: 4672760377485874396}
   bigBurnVFX: {fileID: 5854305901662477716}
   skill3VFXs:
@@ -2312,9 +2317,6 @@ MonoBehaviour:
   bigBurnDamagePerSec: 5
   fireClicksRemaining: 0
   cleanseVFX: {fileID: 4257741543953881260}
-  MaxMiners: 5
-  MaxMoveSpeed: 5
-  MinDigTime: 0.5
   minerPrefab: {fileID: 6625610793755389604, guid: 02a9eb59f9a3c8a4695c3ad51d99953a, type: 3}
   minerStartPos: {fileID: 3793058806161542310}
   minerDigPos: {fileID: 8782198207359850779}

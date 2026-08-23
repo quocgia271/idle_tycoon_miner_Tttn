@@ -17,4 +17,17 @@ public class FacilityConfigSO : ScriptableObject
     public double CostMultiplier = 1.15; // Mỗi level giá tăng 15%
     public float BaseCapacity = 100f; // Sức chứa cơ bản ở Level 1
     public float BaseSpeed = 2f;      // Tốc độ cơ bản ở Level 1
+
+    [Header("Workers / Units Settings")]
+    public int MaxWorkers = 5;
+    public int LevelsPerWorker = 10; // Cứ bao nhiêu level thì thêm 1 nhân viên
+
+    [Header("Speed Limits")]
+    public float MaxSpeed = 5f;
+    public float SpeedIncreasePerLevel = 0.05f;
+
+    [Header("Action Time Settings (Dig/Load)")]
+    public float BaseActionTime = 2f; // Thời gian thực hiện hành động ở level 1
+    public float MinActionTime = 0.5f; // Giới hạn thời gian nhanh nhất
+    public float ActionTimeDecreasePerLevel = 0.01f; // Trừ đi thời gian mỗi khi lên cấp
 }

@@ -19,6 +19,7 @@ public class WorkerHealth : MonoBehaviour
 
     private BossPhase2Controller currentBoss;
     private float dotTimer = 0f;
+    private float hauntTimer = 0f;
 
     private void Start()
     {
@@ -29,6 +30,16 @@ public class WorkerHealth : MonoBehaviour
     {
         if (healthState == HealthState.Injured && currentBoss != null)
         {
+            if (currentBoss.dotDuration > 0)
+            {
+                hauntTimer += Time.deltaTime;
+                if (hauntTimer >= currentBoss.dotDuration)
+                {
+                    Cleanse();
+                    return;
+                }
+            }
+
             dotTimer += Time.deltaTime;
             if (dotTimer >= currentBoss.dotInterval)
             {
@@ -55,6 +66,8 @@ public class WorkerHealth : MonoBehaviour
         if (healthState == HealthState.Injured) return;
         healthState = HealthState.Injured;
         currentBoss = boss;
+        hauntTimer = 0f;
+        dotTimer = 0f;
         OnInjured?.Invoke(boss);
     }
 

@@ -32,7 +32,8 @@ public class MoraleItemUI : MonoBehaviour
         {
             if (boundMiner == null || boundMiner.currentShaft == null) return 1000 * (Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0);
             double workerProductivity = boundMiner.currentShaft.GetWorkerProductivity(boundMiner.currentShaft.Level);
-            return workerProductivity * 3; // 3 giây thu nhập
+            float reviveMultiplier = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.ReviveIncomeSeconds : 3f;
+            return MathHelper.CalculateReviveCost(workerProductivity, reviveMultiplier);
         }
     }
 

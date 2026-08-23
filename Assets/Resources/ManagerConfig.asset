@@ -52,7 +52,7 @@ MonoBehaviour:
     MinCooldown: 120
     MaxCooldown: 150
   - Rarity: 1
-    Weight: 25
+    Weight: 29.5
     MinBuffValue: 60
     MaxBuffValue: 75
     MinDuration: 120
@@ -60,7 +60,7 @@ MonoBehaviour:
     MinCooldown: 300
     MaxCooldown: 360
   - Rarity: 2
-    Weight: 5
+    Weight: 0.5
     MinBuffValue: 80
     MaxBuffValue: 95
     MinDuration: 300

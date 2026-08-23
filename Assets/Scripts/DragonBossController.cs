@@ -31,6 +31,10 @@ public class DragonBossController : MonoBehaviour, ISaveable
     [Header("Movement Settings")]
     public float flySpeed = 8f;
 
+    [Header("Targeting Settings")]
+    [Tooltip("Hệ số ưu tiên hầm sâu. Càng lớn rồng càng thích khạc hầm dưới cùng.")]
+    public float targetDepthWeightExponent = 1.5f;
+
     private float attackTimer;
     private int waveCount = 0; 
     
@@ -284,7 +288,7 @@ public class DragonBossController : MonoBehaviour, ISaveable
         for (int i = 0; i < activeShafts.Count; i++)
         {
             float baseScore = i + 1; 
-            float weight = Mathf.Pow(baseScore, 1.5f); 
+            float weight = Mathf.Pow(baseScore, targetDepthWeightExponent); 
             weights.Add(weight);
             totalWeight += weight;
         }
@@ -478,7 +482,8 @@ public class DragonBossController : MonoBehaviour, ISaveable
         PlayAnim(idleAnimName);
 
         this.waveCount = savedWaveCount;
-        this.attackTimer = savedAttackTimer;
+        // Reset timer để đồng bộ với Phase 3B (Luôn cho người chơi thời gian thở khi load game)
+        this.attackTimer = this.timeBetweenAttacks;
 
         if (isChargingBigFireball)
         {

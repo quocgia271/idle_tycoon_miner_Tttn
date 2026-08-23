@@ -178,7 +178,7 @@ public class BarrierController : MonoBehaviour
         if (elevator == null) yield break;
         
         activeEffects++;
-        elevator.ElevatorMoveSpeedBuff = slowMultiplier;
+        elevator.ElevatorBossSlowMultiplier = slowMultiplier;
         
         // Bật VFX dư âm lên
         if (elevator.slowVFX != null)
@@ -191,7 +191,7 @@ public class BarrierController : MonoBehaviour
         
         if (elevator != null)
         {
-            elevator.ElevatorMoveSpeedBuff = 1f;
+            elevator.ElevatorBossSlowMultiplier = 1f;
             // Tắt VFX dư âm đi
             if (elevator.slowVFX != null)
             {

@@ -10,7 +10,10 @@ public class ManagerController : MonoBehaviour, ISaveable
     [Header("Manager Settings")]
     public ManagerConfigSO Config;
     public double BaseHireCost = 100;
-    public float HireMultiplier = 1.5f;
+    [Tooltip("Hệ số nhân giá mua manager Thang máy & Nhà kho")]
+    public float GlobalHireMultiplier = 5.0f;
+    [Tooltip("Hệ số nhân giá mua manager Hầm mỏ")]
+    public float LocalHireMultiplier = 4.0f;
     
     [Header("Data")]
     public Dictionary<FacilityType, int> TotalHiredCounts = new Dictionary<FacilityType, int>();
@@ -19,6 +22,12 @@ public class ManagerController : MonoBehaviour, ISaveable
 
     public Action OnManagerListUpdated; // Sự kiện khi danh sách thay đổi
     public Action OnPityUpdated; // Sự kiện khi biến đếm Pity thay đổi
+
+    private int GetSafePityThreshold()
+    {
+        int pity = Config != null ? Config.PityThreshold : 10;
+        return pity > 0 ? pity : 10; // Fallback to 10 nếu cấu hình bị lỗi (<= 0)
+    }
 
     private void Awake()
     {
@@ -40,7 +49,7 @@ public class ManagerController : MonoBehaviour, ISaveable
             foreach (FacilityType type in Enum.GetValues(typeof(FacilityType)))
             {
                 if (!TotalHiredCounts.ContainsKey(type)) TotalHiredCounts[type] = 0;
-                if (!HiresUntilPitys.ContainsKey(type)) HiresUntilPitys[type] = Config.PityThreshold;
+                if (!HiresUntilPitys.ContainsKey(type)) HiresUntilPitys[type] = GetSafePityThreshold();
             }
         }
     }
@@ -56,18 +65,18 @@ public class ManagerController : MonoBehaviour, ISaveable
         if (type == FacilityType.Elevator || type == FacilityType.Warehouse)
         {
             // Thang máy & Nhà kho: Hỗ trợ toàn cục, chống spam mạnh mẽ.
-            currentMultiplier = 5.0f; 
+            currentMultiplier = GlobalHireMultiplier; 
         }
         else 
         {
             // Hầm mỏ: Tác động cục bộ 1 hầm.
-            currentMultiplier = 4.0f;
+            currentMultiplier = LocalHireMultiplier;
         }
 
         // CÂN BẰNG TOÁN HỌC CHUẨN IDLE GAME: Giá thuê tăng theo hàm mũ (Multiplier ^ count)
         // Hệ số vòng được nhân vào để giữ nguyên độ cân bằng qua từng màn chơi.
         // Khi Prestige, hệ số lạm phát KHÔNG ĐƯỢC nhân vào đây nữa vì quản lý đã bị reset.
-        return baseCost * Math.Pow(currentMultiplier, count) * roundMultiplier;
+        return MathHelper.CalculateManagerCost(baseCost, currentMultiplier, count, roundMultiplier);
     }
 
     public bool CanUnlockSenior(FacilityType type)
@@ -90,7 +99,7 @@ public class ManagerController : MonoBehaviour, ISaveable
             foreach (FacilityType type in Enum.GetValues(typeof(FacilityType)))
             {
                 TotalHiredCounts[type] = 0;
-                HiresUntilPitys[type] = Config.PityThreshold;
+                HiresUntilPitys[type] = GetSafePityThreshold();
             }
         }
 
@@ -110,7 +119,7 @@ public class ManagerController : MonoBehaviour, ISaveable
         }
 
         if (!TotalHiredCounts.ContainsKey(type)) TotalHiredCounts[type] = 0;
-        if (!HiresUntilPitys.ContainsKey(type)) HiresUntilPitys[type] = Config != null ? Config.PityThreshold : 10;
+        if (!HiresUntilPitys.ContainsKey(type)) HiresUntilPitys[type] = GetSafePityThreshold();
 
         // Tạo quản lý mới
         ManagerData newManager = GenerateRandomManager(cost, type);
@@ -121,7 +130,7 @@ public class ManagerController : MonoBehaviour, ISaveable
 
         if (HiresUntilPitys[type] <= 0)
         {
-            HiresUntilPitys[type] = Config != null ? Config.PityThreshold : 10;
+            HiresUntilPitys[type] = GetSafePityThreshold();
         }
         
         OnManagerListUpdated?.Invoke();
@@ -154,8 +163,6 @@ public class ManagerController : MonoBehaviour, ISaveable
             float totalWeight = 0;
             foreach(var r in Config.RaritySettings)
             {
-                // Bỏ qua Senior nếu chưa mua đủ 9 lần (lần thứ 10 mới có thể ra)
-                if (r.Rarity == ManagerRarity.Senior && count < 9) continue;
                 totalWeight += r.Weight;
             }
             
@@ -165,8 +172,6 @@ public class ManagerController : MonoBehaviour, ISaveable
             
             foreach (var r in Config.RaritySettings)
             {
-                if (r.Rarity == ManagerRarity.Senior && count < 9) continue;
-                
                 currentSum += r.Weight;
                 if (roll <= currentSum)
                 {

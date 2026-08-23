@@ -111,8 +111,9 @@ public class DeadGameChecker : MonoBehaviour
                             }
                             else
                             {
-                                // Lấy giá hồi sinh (theo logic của game: năng suất * 3)
-                                double reviveCost = shaft.GetWorkerProductivity(shaft.Level) * 3;
+                                // Lấy giá hồi sinh (theo logic của game)
+                                float reviveMultiplier = (Gamemanager.Instance != null && Gamemanager.Instance.economyConfig != null) ? Gamemanager.Instance.economyConfig.ReviveIncomeSeconds : 3f;
+                                double reviveCost = MathHelper.CalculateReviveCost(shaft.GetWorkerProductivity(shaft.Level), reviveMultiplier);
                                 if (reviveCost < lowestReviveCost) lowestReviveCost = reviveCost;
                             }
                         }

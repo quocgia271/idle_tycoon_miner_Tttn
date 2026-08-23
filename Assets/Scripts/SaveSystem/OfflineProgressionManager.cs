@@ -5,6 +5,19 @@ public class OfflineProgressionManager : MonoBehaviour
 {
     public static OfflineProgressionManager Instance;
 
+    [Header("Offline Settings")]
+    [Tooltip("Thời gian Offline tối đa được cộng dồn (Giây). Mặc định 14400s = 4 giờ")]
+    public long maxOfflineSeconds = 14400;
+    
+    [Tooltip("Hệ số thu nhập Offline so với thu nhập thực. Mặc định 0.25 (25%)")]
+    public float offlineIncomeMultiplier = 0.25f;
+
+    [Tooltip("Sai số cho phép khi đối chiếu giờ phần cứng để chống Hack đổi giờ (Giây)")]
+    public int timeSyncTolerance = 60;
+
+    [Tooltip("Thời gian bù trừ cho thang máy chạy lên xuống (Giây)")]
+    public float elevatorTravelTimeDelay = 5f;
+
     private void Awake()
     {
         if (Instance == null)
@@ -47,23 +60,21 @@ public class OfflineProgressionManager : MonoBehaviour
         long uptimeDelta = currentUptime - currentSaveData.LastSaveUptimeSeconds;
         
         // Nếu uptimeDelta >= 0 (máy chưa bị khởi động lại) và thời gian trôi qua trên đồng hồ lớn hơn bất thường so với thời gian máy chạy
-        // (Cho phép sai số 60 giây để hệ điều hành sync giờ)
-        if (uptimeDelta >= 0 && offlineSeconds > uptimeDelta + 60)
+        // (Cho phép sai số để hệ điều hành sync giờ)
+        if (uptimeDelta >= 0 && offlineSeconds > uptimeDelta + timeSyncTolerance)
         {
             Debug.LogWarning($"[Anti-Cheat] Phát hiện gian lận đổi giờ! WallClockDelta: {offlineSeconds}s, UptimeDelta: {uptimeDelta}s. Ép thời gian Offline về Uptime thật.");
             offlineSeconds = uptimeDelta; // Ép thời gian trôi qua chỉ bằng thời gian máy thực sự đã chạy
         }
 
-        // Theo thiết kế: Max offline time 4 giờ
-        long maxOfflineSeconds = 14400; 
         long effectiveOfflineSeconds = Math.Min(offlineSeconds, maxOfflineSeconds);
 
         Debug.Log($"[SaveManager] Player was offline for {offlineSeconds}s. Calculating rewards for {effectiveOfflineSeconds}s.");
 
         // Tính Offline Math
         double offlineIncomeRate = CalculateBaseBottleneckIncome(currentSaveData);
-        // Thu nhập offline chỉ bằng 25% (0.25)
-        double totalOfflineCash = offlineIncomeRate * effectiveOfflineSeconds * 0.25;
+        // Tính thu nhập offline qua MathHelper
+        double totalOfflineCash = MathHelper.CalculateOfflineIncome(offlineIncomeRate, effectiveOfflineSeconds, offlineIncomeMultiplier);
 
         Debug.Log($"[Offline] BaseIncomeRate (Bottleneck): {offlineIncomeRate}, TotalOfflineCash: {totalOfflineCash}");
 
@@ -120,7 +131,7 @@ public class OfflineProgressionManager : MonoBehaviour
         Elevator elevator = FindObjectOfType<Elevator>();
         if (elevator != null && elevator.currentManager != null)
         {
-             float avgRoundTripTime = elevator.GetLoadTime(elevator.Level) + elevator.GetUnloadTime(elevator.Level) + 5f; 
+             float avgRoundTripTime = elevator.GetLoadTime(elevator.Level) + elevator.GetUnloadTime(elevator.Level) + elevatorTravelTimeDelay; 
              elevatorThroughput = elevator.GetCapacity(elevator.Level) / avgRoundTripTime;
              Debug.Log($"[Offline] Elevator Throughput: {elevatorThroughput} (Capacity: {elevator.GetCapacity(elevator.Level)}, Time: {avgRoundTripTime})");
         }

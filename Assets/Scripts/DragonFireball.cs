@@ -13,8 +13,7 @@ public class DragonFireball : MonoBehaviour
 
     void Start()
     {
-        // Ghi đè cứng thời gian cháy chuẩn (15s nhỏ, 25s to)
-        burnDuration = isBigFireball ? 25f : 15f;
+        // Đã xóa hard-code, bây giờ bạn có thể tuỳ chỉnh burnDuration trực tiếp trên Prefab trong Inspector!
     }
 
     void Update()

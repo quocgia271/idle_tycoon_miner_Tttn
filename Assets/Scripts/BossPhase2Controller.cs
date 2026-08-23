@@ -9,12 +9,14 @@ public class BossPhase2Controller : MonoBehaviour
     [Header("Settings")]
     public float baseTimeBetweenAttacks = 60f; // Cân bằng APM: Tăng từ 30s lên 60s
     public float minTimeBetweenAttacks = 30f;  // Cân bằng APM: Tăng từ 10s lên 30s
+    public float cooldownReductionPerShaft = 2f; // Số giây giảm cooldown cho mỗi hầm được mở
     public Transform suckTargetPos; // Kéo object tâm điểm hút vào đây
     public List<MineShaft> allShafts; // Kéo toàn bộ 10 hầm mỏ vào đây theo thứ tự từ 1 đến 10
 
     [Header("Damage Settings")]
     [SerializeField] public float dotDamage = 4f; // Sát thương mỗi lần nhảy
     [SerializeField] public float dotInterval = 1f; // Thời gian nhảy sát thương (giây)
+    [SerializeField] public float dotDuration = 10f; // Thời gian kéo dài hiệu ứng ám (giây). Đặt = 0 nếu muốn vĩnh viễn.
     
     private float attackTimer;
 
@@ -91,9 +93,9 @@ public class BossPhase2Controller : MonoBehaviour
                 }
             }
             
-            // Giảm 2 giây cooldown cho MỖI hầm được mở (Giới hạn giảm tối đa 20s cho 10 hầm)
+            // Giảm X giây cooldown cho MỖI hầm được mở (Mặc định X = 2s)
             // Nhịp độ Boss sẽ căng thẳng dần theo từng giai đoạn (Early -> Mid -> Late game)
-            float newCooldown = baseTimeBetweenAttacks - (unlockedShaftsCount * 2f);
+            float newCooldown = baseTimeBetweenAttacks - (unlockedShaftsCount * cooldownReductionPerShaft);
             attackTimer = Mathf.Max(newCooldown, minTimeBetweenAttacks);
         }
     }

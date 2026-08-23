@@ -12,6 +12,18 @@ public partial class MineShaft : Facility
     [Tooltip("Thứ tự của hầm (từ 1 đến 10). Dùng để tính toán Cost/Income theo độ sâu.")]
     public int ShaftIndex = 1;
 
+    public bool IsUnlocked
+    {
+        get
+        {
+            ShaftUnlocker unlocker = GetComponentInChildren<ShaftUnlocker>(true);
+            // Hầm chỉ thực sự mở khóa (được click) khi UI ổ khóa đã bị tắt hoàn toàn (xây xong, chạy xong hiệu ứng)
+            return unlocker == null || !unlocker.gameObject.activeSelf || this.isBroken;
+        }
+    }
+
+
+
     // Ghi đè để áp dụng Toán học độ sâu hầm
     public override double ScaledBaseCost 
     {
@@ -21,9 +33,9 @@ public partial class MineShaft : Facility
             double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;
             if (Gamemanager.Instance != null && Gamemanager.Instance.GlobalConfig != null)
             {
-                return Config.BaseCost * System.Math.Pow(Gamemanager.Instance.GlobalConfig.ShaftDepthMultiplier, ShaftIndex - 1) * roundMultiplier;
+                return MathHelper.CalculateScaledCostByDepth(Config.BaseCost, Gamemanager.Instance.GlobalConfig.ShaftDepthMultiplier, ShaftIndex, roundMultiplier);
             }
-            return Config.BaseCost * System.Math.Pow(15, ShaftIndex - 1) * roundMultiplier;
+            return MathHelper.CalculateScaledCostByDepth(Config.BaseCost, 15, ShaftIndex, roundMultiplier);
         }
     }
     
@@ -54,9 +66,9 @@ public partial class MineShaft : Facility
         }
 
         // Thu nhập cơ bản tăng theo độ sâu hầm (Gấp 12 lần mỗi hầm)
-        double scaledBaseIncome = BaseResourcePerSecond * System.Math.Pow(depthMultiplier, ShaftIndex - 1); 
+        double scaledBaseIncome = MathHelper.CalculateBaseIncome(BaseResourcePerSecond, depthMultiplier, ShaftIndex); 
         // 1.07 là hệ số nhân mũ mỗi cấp độ của hầm.
-        double exponentialIncome = scaledBaseIncome * System.Math.Pow(levelMultiplier, targetLevel - 1);
+        double exponentialIncome = MathHelper.CalculateExponentialIncome(scaledBaseIncome, levelMultiplier, targetLevel);
         
         double prestigeMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.PrestigeMultiplier : 1.0;
         double roundMultiplier = Gamemanager.Instance != null ? Gamemanager.Instance.RoundMultiplier : 1.0;

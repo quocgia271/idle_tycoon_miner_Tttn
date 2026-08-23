@@ -24,6 +24,9 @@ public class WarehouseWorker : MonoBehaviour
     private WorkerMovement workerMovement;
     private WorkerAnimation workerAnimation;
     private WorkerUI workerUI;
+    
+    [Header("Shiny Effect Target")]
+    public ShinyEffectController shinyEffect;
 
     private void Awake()
     {
@@ -42,6 +45,12 @@ public class WarehouseWorker : MonoBehaviour
     private void Update()
     {
         if (warehouse == null) return;
+        
+        if (shinyEffect != null)
+        {
+            bool shouldShine = (currentState == WorkerState.Idle && warehouse.currentManager == null);
+            shinyEffect.SetShiny(shouldShine);
+        }
 
         if (currentState == WorkerState.Idle)
         {
@@ -95,7 +104,7 @@ public class WarehouseWorker : MonoBehaviour
 
     private void HandleLoading()
     {
-        currentTimer += Time.deltaTime;
+        currentTimer += Time.deltaTime * warehouse.WorkerLoadSpeedBuff;
         if (currentTimer >= warehouse.loadTime)
         {
             currentTimer = 0f;
@@ -115,7 +124,7 @@ public class WarehouseWorker : MonoBehaviour
 
     private void HandleDepositing()
     {
-        currentTimer += Time.deltaTime;
+        currentTimer += Time.deltaTime * warehouse.WorkerLoadSpeedBuff;
         if (currentTimer >= warehouse.loadTime)
         {
             currentTimer = 0f;
@@ -155,7 +164,7 @@ public class WarehouseWorker : MonoBehaviour
 
             case WorkerState.Loading:
                 if (workerAnimation != null) workerAnimation.PlayAnimTrigger("idle");
-                if (workerUI != null) workerUI.StartLoadingProgress(warehouse.loadTime);
+                if (workerUI != null) workerUI.StartLoadingProgress(warehouse.loadTime / warehouse.WorkerLoadSpeedBuff);
                 if (warehouse != null) warehouse.AddLoadingWorker();
                 break;
 
@@ -169,7 +178,7 @@ public class WarehouseWorker : MonoBehaviour
 
             case WorkerState.Depositing:
                 if (workerAnimation != null) workerAnimation.PlayAnimTrigger("idle");
-                if (workerUI != null) workerUI.StartLoadingProgress(warehouse.loadTime);
+                if (workerUI != null) workerUI.StartLoadingProgress(warehouse.loadTime / warehouse.WorkerLoadSpeedBuff);
                 break;
         }
     }

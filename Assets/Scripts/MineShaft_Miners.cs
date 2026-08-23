@@ -5,11 +5,6 @@ using DG.Tweening;
 
 public partial class MineShaft : Facility 
 {
-    [Header("Miner Settings")]
-    public int MaxMiners = 5;
-    public float MaxMoveSpeed = 5f;
-    public float MinDigTime = 0.5f;
-
     [Header("Miner Spawn Settings")]
     public Miner minerPrefab;
     public Transform minerStartPos;
@@ -19,22 +14,32 @@ public partial class MineShaft : Facility
 
     public int GetMinersCount(int targetLevel)
     {
-        // Mỗi 10 cấp thêm 1 thợ, tối đa là MaxMiners
-        int count = 1 + (targetLevel / 10);
-        return Mathf.Min(count, MaxMiners);
+        int max = Config != null ? Config.MaxWorkers : 5;
+        int levelsPerWorker = Config != null ? Config.LevelsPerWorker : 10;
+        
+        int count = 1 + (targetLevel / levelsPerWorker);
+        return Mathf.Min(count, max);
     }
 
     public float GetMinerMoveSpeed(int targetLevel)
     {
-        float speed = Config != null ? Config.BaseSpeed + (targetLevel * 0.05f) : 2f;
-        speed = Mathf.Min(speed, MaxMoveSpeed);
+        float maxSpeed = Config != null ? Config.MaxSpeed : 5f;
+        float speedInc = Config != null ? Config.SpeedIncreasePerLevel : 0.05f;
+        float baseSpeed = Config != null ? Config.BaseSpeed : 2f;
+        
+        float speed = baseSpeed + (targetLevel * speedInc);
+        speed = Mathf.Min(speed, maxSpeed);
         return speed * MinerMoveSpeedBuff;
     }
 
     public float GetMinerDigTime(int targetLevel)
     {
-        float digTime = 2f - (targetLevel * 0.01f);
-        digTime = Mathf.Max(digTime, MinDigTime);
+        float baseTime = Config != null ? Config.BaseActionTime : 2f;
+        float decrease = Config != null ? Config.ActionTimeDecreasePerLevel : 0.01f;
+        float minTime = Config != null ? Config.MinActionTime : 0.5f;
+        
+        float digTime = baseTime - (targetLevel * decrease);
+        digTime = Mathf.Max(digTime, minTime);
         return digTime / MinerDigSpeedBuff;
     }
     // Hàm này được gọi bởi con thợ mỏ sau khi nó đào xong

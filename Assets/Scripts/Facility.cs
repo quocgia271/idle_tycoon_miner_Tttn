@@ -199,7 +199,7 @@ public abstract class Facility : MonoBehaviour, ISaveable
         {
             capacityMultiplier = Gamemanager.Instance.GlobalConfig.CapacityLevelMultiplier;
         }
-        return Config.BaseCapacity * System.Math.Pow(capacityMultiplier, targetLevel - 1) * roundMultiplier * prestigeMultiplier;
+        return MathHelper.CalculateCapacity(Config.BaseCapacity, capacityMultiplier, targetLevel, roundMultiplier, prestigeMultiplier);
     }
 
     // 2. Tính Tốc Độ (Tăng từ từ tuyến tính để không hỏng animation)

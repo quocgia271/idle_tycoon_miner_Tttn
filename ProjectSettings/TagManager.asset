@@ -55,6 +55,9 @@ TagManager:
   - name: warehouse
     uniqueID: 3738961591
     locked: 0
+  - name: day
+    uniqueID: 4104699601
+    locked: 0
   - name: elevator
     uniqueID: 2302334227
     locked: 0

@@ -5,6 +5,8 @@ using DG.Tweening;
 
 public class RoundTransitionBarrier : MonoBehaviour
 {
+    [HideInInspector] public bool isBroken = false;
+
     [Header("Yêu cầu qua màn")]
     public double requireCashToPass = 10000000; // Số tiền cần để đập vỡ vách ngăn
     
@@ -40,11 +42,11 @@ public class RoundTransitionBarrier : MonoBehaviour
         if (Gamemanager.Instance != null && Gamemanager.Instance.GlobalConfig != null)
         {
             var config = Gamemanager.Instance.GlobalConfig;
-            requireCashToPass = config.ShaftUnlockBaseCost * System.Math.Pow(config.ShaftDepthMultiplier, 10) * roundMultiplier;
+            requireCashToPass = MathHelper.CalculateUnlockCost(config.ShaftUnlockBaseCost, config.ShaftDepthMultiplier, config.BarrierShaftDepthIndex, roundMultiplier);
         }
         else
         {
-            requireCashToPass = 50 * System.Math.Pow(15, 10) * roundMultiplier;
+            requireCashToPass = MathHelper.CalculateUnlockCost(50, 15, 10, roundMultiplier);
         }
 
         if (costText != null)
@@ -237,6 +239,7 @@ public class RoundTransitionBarrier : MonoBehaviour
             // Ở Round 3, đập vách ngăn tốn tiền nhưng không qua màn, chỉ gỡ giáp rồng
             if (Gamemanager.Instance.DeductCash(requireCashToPass))
             {
+                isBroken = true;
                 Debug.Log("<color=green>Đã đập vỡ vách ngăn! Bắt đầu phá giáp...</color>");
                 StartCoroutine(BreakBarrierRoutine());
             }
@@ -263,7 +266,7 @@ public class RoundTransitionBarrier : MonoBehaviour
             Vector3 startPos = bulletVFX.transform.position;
             while (t < 1f)
             {
-                t += Time.unscaledDeltaTime / bulletFlyDuration;
+                t += Time.deltaTime / bulletFlyDuration;
                 bulletVFX.transform.position = Vector3.Lerp(startPos, bulletTargetPos.position, t);
                 yield return null;
             }
@@ -271,16 +274,7 @@ public class RoundTransitionBarrier : MonoBehaviour
         }
 
         // 2. Chạy VFX nổ
-        if (explosionVFX != null)
-        {
-            explosionVFX.SetActive(true);
-            ParticleSystem[] pss = explosionVFX.GetComponentsInChildren<ParticleSystem>();
-            foreach (var ps in pss)
-            {
-                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                ps.Play(true);
-            }
-        }
+        TriggerExplosionVFXOnly();
 
         // 3. Tắt giáp và kích nộ
         Debug.Log("<color=green>GỠ BỎ GIÁP BẤT TỬ CỦA RỒNG VÀ BOSS!</color>");
@@ -298,6 +292,38 @@ public class RoundTransitionBarrier : MonoBehaviour
 
         // Ẩn vách ngăn đi để người chơi thấy rõ Rồng, có thêm hiệu ứng Dissolve
         PlayDissolveEffect(() => gameObject.SetActive(false));
+    }
+
+    public void TriggerExplosionVFXOnly()
+    {
+        if (explosionVFX != null)
+        {
+            explosionVFX.SetActive(true);
+            
+            // Tách VFX ra khỏi barrier để không bị mất khi barrier SetActive(false)
+            explosionVFX.transform.SetParent(null);
+
+            ParticleSystem[] pss = explosionVFX.GetComponentsInChildren<ParticleSystem>();
+            float maxDuration = 2f; // Mặc định 2 giây
+            foreach (var ps in pss)
+            {
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                ps.Play(true);
+                float duration = ps.main.duration + ps.main.startLifetime.constantMax;
+                if (duration > maxDuration) maxDuration = duration;
+            }
+            
+            StartCoroutine(HideVFXRoutine(maxDuration));
+        }
+    }
+
+    private System.Collections.IEnumerator HideVFXRoutine(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (explosionVFX != null)
+        {
+            explosionVFX.SetActive(false);
+        }
     }
 
     private void PlayDissolveEffect(System.Action onComplete)

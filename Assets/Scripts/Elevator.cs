@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using DG.Tweening;
 
 public class Elevator : Facility
 {
@@ -17,29 +18,45 @@ public class Elevator : Facility
         Unloading
     }
 
-    public float moveSpeed => GetSpeed(Level);
+    [Header("Shiny Effect Target")]
+    public ShinyEffectController shinyEffect;
 
-    [Header("Elevator Settings")]
-    public float baseLoadTime = 1f; 
-    public float baseUnloadTime = 1f; 
-    public float minLoadTime = 0.2f;
-    public float maxElevatorSpeed = 15f; // Giới hạn tốc độ tối đa
+    public float moveSpeed => GetSpeed(Level) * ElevatorMoveSpeedBuff;
 
+    // Các giới hạn tốc độ và thời gian nay đã được chuyển sang FacilityConfigSO
+    
     // Tính thời gian chất hàng/xả hàng theo Level
     public float GetLoadTime(int targetLevel)
     {
-        float time = baseLoadTime - ((targetLevel - 1) * 0.005f);
-        return Mathf.Max(minLoadTime, time);
+        float baseTime = Config != null ? Config.BaseActionTime : 1f;
+        float decrease = Config != null ? Config.ActionTimeDecreasePerLevel : 0.005f;
+        float minTime = Config != null ? Config.MinActionTime : 0.2f;
+
+        float time = baseTime - ((targetLevel - 1) * decrease);
+        return Mathf.Max(minTime, time);
     }
 
     public float GetUnloadTime(int targetLevel)
     {
-        float time = baseUnloadTime - ((targetLevel - 1) * 0.005f);
-        return Mathf.Max(minLoadTime, time);
+        float baseTime = Config != null ? Config.BaseActionTime : 1f;
+        float decrease = Config != null ? Config.ActionTimeDecreasePerLevel : 0.005f;
+        float minTime = Config != null ? Config.MinActionTime : 0.2f;
+
+        float time = baseTime - ((targetLevel - 1) * decrease);
+        return Mathf.Max(minTime, time);
     }
 
     [Header("Positions & Targets")]
     public Transform startPos; // PHẢI KÉO 1 EMPTY GAMEOBJECT NẰM Ở TRÊN CÙNG VÀO ĐÂY
+    
+    [Header("Cable Effect")]
+    [Tooltip("Kéo SpriteRenderer của dây cáp vào đây. Nhớ chỉnh Draw Mode thành Tiled và Pivot thành Top")]
+    public SpriteRenderer cableSpriteRenderer;
+    [Tooltip("Điểm neo cố định trên cùng của sợi dây (ví dụ: bánh đà ròng rọc)")]
+    public Transform cableAnchorPos;
+    [Tooltip("Cộng thêm/Trừ bớt chiều dài dây (nếu dây chưa chạm tới móc thang máy)")]
+    public float cableLengthOffset = 0f;
+    
     public List<MineShaft> shafts; 
 
     [Header("UI")]
@@ -61,7 +78,7 @@ public class Elevator : Facility
         {
             capacityMultiplier = Gamemanager.Instance.GlobalConfig.CapacityLevelMultiplier;
         }
-        double baseCap = BaseCapacity * System.Math.Pow(capacityMultiplier, targetLevel - 1);
+        double baseCap = MathHelper.CalculateCapacity(BaseCapacity, capacityMultiplier, targetLevel, 1, 1);
         
         // --- CHUẨN GAME DESIGN: MILESTONE JUMPS ---
         // Cơ chế bùng nổ sức chứa tại các mốc Level chẵn để bắt kịp sản lượng của Hầm mới.
@@ -92,13 +109,17 @@ public class Elevator : Facility
 
     public float ElevatorMoveSpeedBuff = 1f;
     public float ElevatorLoadSpeedBuff = 1f;
+    [HideInInspector] public float ElevatorBossSlowMultiplier = 1f;
 
     [Header("Boss VFX")]
     public GameObject slowVFX; // Kéo thả VFX dư âm làm chậm vào đây
 
+    private float initialCableScaleX = 1f;
+
     protected override void Start()
     {
         base.Start(); 
+        if (cableSpriteRenderer != null) initialCableScaleX = cableSpriteRenderer.transform.localScale.x;
         ScanForShafts(); // Tự động quét hầm ngay khi mở game
         UpdateElevatorUI(); // Cập nhật UI lúc mới vào game
     }
@@ -146,6 +167,23 @@ public class Elevator : Facility
     {
         base.Update();
         
+        if (shinyEffect != null)
+        {
+            bool shouldShine = (currentState == ElevatorState.Idle && currentManager == null);
+            shinyEffect.SetShiny(shouldShine);
+        }
+        else
+        {
+            // Tạm thời log ra để xem user có bị mất kết nối tham chiếu không
+            if (Time.frameCount % 180 == 0) // Log mỗi ~3 giây để tránh spam
+            {
+                Debug.LogWarning($"[LỖI] Elevator {gameObject.name} bị mất liên kết Shiny Effect Target! Hãy kiểm tra lại Inspector.");
+            }
+        }
+
+        // Cập nhật toàn bộ hiệu ứng vật lý, xoay, co giãn của dây cáp
+        UpdateCableVisuals();
+
         switch (currentState)
         {
             case ElevatorState.Idle:
@@ -175,6 +213,29 @@ public class Elevator : Facility
         }
     }
     
+    private void UpdateCableVisuals()
+    {
+        if (cableAnchorPos == null || cableSpriteRenderer == null) return;
+
+        // --- CẬP NHẬT ĐỘ DÀI DÂY CÁP TỰ ĐỘNG ---
+        float distance = Mathf.Abs(cableAnchorPos.position.y - transform.position.y);
+        
+        // Khắc phục lỗi "dây bị ngắn" khi bị scale
+        float scaleY = cableSpriteRenderer.transform.lossyScale.y;
+        float actualDistance = (scaleY > 0) ? (distance / scaleY) : distance;
+        
+        // Bù trừ offset
+        actualDistance += cableLengthOffset;
+        
+        // Gán chiều dài
+        Vector2 currentSize = cableSpriteRenderer.size;
+        currentSize.y = actualDistance;
+        cableSpriteRenderer.size = currentSize;
+        
+        // Neo điểm đầu
+        cableSpriteRenderer.transform.position = cableAnchorPos.position;
+    }
+
     // Kiểm tra xem toàn bộ khu mỏ có đồng nào không
     private bool HasAnyMoneyInShafts()
     {
@@ -221,7 +282,7 @@ public class Elevator : Facility
         }
 
         Vector3 targetPos = new Vector3(transform.position.x, targetShaft.transform.position.y, transform.position.z);
-        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * ElevatorMoveSpeedBuff * Time.deltaTime);
+        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * ElevatorBossSlowMultiplier * Time.deltaTime);
 
         // Tới hầm mục tiêu
         if (Vector3.Distance(transform.position, targetPos) < 0.01f)
@@ -318,7 +379,7 @@ public class Elevator : Facility
 
         // Đi về vị trí StartPos
         Vector3 targetPos = new Vector3(transform.position.x, startPos.position.y, transform.position.z);
-        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * ElevatorMoveSpeedBuff * Time.deltaTime);
+        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * ElevatorBossSlowMultiplier * Time.deltaTime);
 
         if (Vector3.Distance(transform.position, targetPos) < 0.01f)
         {
@@ -386,8 +447,11 @@ public class Elevator : Facility
     public override float GetSpeed(int targetLevel)
     {
         float baseS = Config != null ? Config.BaseSpeed : 5f;
-        float speed = baseS + ((targetLevel - 1) * 0.2f);
-        return Mathf.Min(speed, maxElevatorSpeed); // Khóa tốc độ tối đa để tránh lỗi xuyên tường
+        float speedInc = Config != null ? Config.SpeedIncreasePerLevel : 0.2f;
+        float maxSpeed = Config != null ? Config.MaxSpeed : 15f;
+
+        float speed = baseS + ((targetLevel - 1) * speedInc);
+        return Mathf.Min(speed, maxSpeed); // Khóa tốc độ tối đa để tránh lỗi xuyên tường
     }
 
     // Hiển thị thêm Tốc độ chất hàng (Index 3)

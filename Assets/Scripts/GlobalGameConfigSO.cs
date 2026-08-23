@@ -3,6 +3,10 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "GlobalGameConfig", menuName = "Tycoon/Global Game Config")]
 public class GlobalGameConfigSO : ScriptableObject
 {
+    [Header("Economy Settings")]
+    [Tooltip("Tiền khởi nghiệp khi mới vào game hoặc sau khi chuyển sinh/qua màn")]
+    public double InitialStartingCash = 150;
+
     [Header("Shaft Settings")]
     [Tooltip("Base cost to unlock the first shaft (or used as multiplier base)")]
     public double ShaftUnlockBaseCost = 50;
@@ -23,4 +27,10 @@ public class GlobalGameConfigSO : ScriptableObject
     [Header("Round / Prestige Settings")]
     [Tooltip("Multiplier for difficulty/income per round (e.g. 1000000)")]
     public double RoundDifficultyMultiplier = 1000000;
+
+    [Tooltip("Base cash requirement to prestige")]
+    public double BasePrestigeRequirement = 1000000;
+
+    [Tooltip("The shaft depth level where the barrier appears (e.g. 10 for shaft 11)")]
+    public int BarrierShaftDepthIndex = 10;
 }

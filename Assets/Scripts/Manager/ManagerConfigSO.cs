@@ -39,6 +39,7 @@ public class ManagerConfigSO : ScriptableObject
     {
         public ManagerRarity Rarity;
         [Tooltip("Tỷ lệ xuất hiện (Tổng số Weight)")]
+        [Min(0)]
         public float Weight;
         
         [Header("Buff Power Ranges")]
